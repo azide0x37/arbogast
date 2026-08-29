@@ -1,0 +1,143 @@
+{
+  "schema_version": "arbogast.example.m23-real-component.manifest/v2",
+  "dataset": {
+    "id": "m23_236_exact_inner_nielsen_class",
+    "status": "precomputed-exact-witnesses",
+    "group": {
+      "name": "M23",
+      "degree": 23,
+      "order": 10200960,
+      "embedding": "GAP 4.16 MathieuGroup(23) standard two-generator degree-23 action"
+    },
+    "passport": ["2A", "3A", "6A", "2A"],
+    "equivalence": "simultaneous inner conjugacy",
+    "braid_action": "right Hurwitz action using the six standard pure B4 generators",
+    "real_convention": "straight bouquet; c=1 means literal equality with the straight real transform"
+  },
+  "artifacts": {
+    "dataset": {
+      "path": "expected/dataset.json",
+      "sha256": "a638def28451710352d4c56999dd8eb0331471e13d8bf0e510367fe0e4d4df5e",
+      "bytes": 3192571,
+      "role": "finite theorem witnesses"
+    },
+    "generator": {
+      "path": "generate.g",
+      "sha256": "96315c210d6c1b477d372efab961cc3fae06ee8f1d51557638519fcab2d9cf97",
+      "bytes": 14499,
+      "role": "discovery-only GAP regeneration"
+    },
+    "independent_verifier": {
+      "path": "fixture.py",
+      "sha256": "274895e779a05dcac4f3927a043aeaf39c98e0b2bd94f4a759da843cd29658cb",
+      "bytes": 1039,
+      "role": "compatibility entrypoint for the public typed M23 exact verifier"
+    },
+    "generation_receipt": {
+      "path": "expected/generation-receipt.json",
+      "sha256": "e515d06b63ce2a2643cfdc2cfa6fa5879a8a69360d8b6d63d003e865002bf0e7",
+      "bytes": 2827,
+      "role": "backend, command, convention, and generation provenance"
+    },
+    "sources": {
+      "path": "expected/sources.json",
+      "sha256": "82bc96d221038c844515e24b143edf3e9ef775474d7e922b58abc9d26105f966",
+      "bytes": 4268,
+      "role": "versioned convention and nomenclature sidecar; not theorem proof"
+    }
+  },
+  "verified_claims": {
+    "generating_inner_nielsen_cardinality": 1428,
+    "pure_braid_transitive": true,
+    "c1_fixed": 20,
+    "inner_real_fixed": 70,
+    "all_product_one_inner_orbits": 7114,
+    "nongenerating_inner_orbits": 5686,
+    "nongenerating_c1": 212
+  },
+  "evidence_inventory": {
+    "pinned_standard_M23_generators": 2,
+    "canonical_generating_inner_representatives": 1428,
+    "per_vertex_class_conjugators": 5712,
+    "forward_pure_braid_transition_witnesses": 8568,
+    "real_transition_witnesses": 1428,
+    "c1_vertex_indices": 20,
+    "inner_real_fixed_indices": 70,
+    "centralizer_orbits_on_3A": 35,
+    "forced_6A_class_conjugators": 12465,
+    "all_product_one_inner_orbits": 7114,
+    "nongenerating_intransitivity_checks": 5686
+  },
+  "completeness_argument": {
+    "fixed_first_entry": "Pin a in 2A and quotient b in 3A by C_G(a).",
+    "forced_entries": "For every d in the full 2A conjugacy orbit, c=(a*b)^-1*d is uniquely forced by product one.",
+    "class_filter": "Every accepted c carries an explicit M23 conjugator from the pinned 6A representative; matching cycle shape without a conjugator fails closed.",
+    "inner_quotient": "C_C(b)-orbits on accepted c classify the remaining simultaneous-inner orbits.",
+    "accounting": {
+      "fixed_a_product_one_tuples": 18553024,
+      "weighted_inner_orbit_mass": "41413/6",
+      "all_inner_orbits": 7114,
+      "generating": 1428,
+      "nongenerating_intransitive": 5686
+    }
+  },
+  "real_boundary": {
+    "generating_inner_nielsen_c1": 20,
+    "nongenerating_product_one_c1": 212,
+    "interpretation": "The 20 points exhaust c=1 only inside the generating inner Nielsen class. The 212 nongenerating representatives are an explicit guardrail against an unqualified no-hidden-c1 statement."
+  },
+  "verification": {
+    "entrypoint": "arbogast.hurwitz.load_m23_exact_dataset",
+    "semantic_verifier": "hurwitz.m23_exact",
+    "certificate_schema": "arbogast.hurwitz.m23-exact/v1",
+    "projection_schema": "arbogast.example.m23-real-component.claim-projection/v3",
+    "public_verifier": {
+      "module": "arbogast.hurwitz.m23_exact",
+      "sha256": "e55ca54b7d08337d2155caec505f8b520dbc7023873119aaec010b5400fc50f3",
+      "bytes": 64177
+    },
+    "cli": "uv run python examples/hurwitz/m23_real_component/verify.py /tmp/m23-claims.json",
+    "requires_GAP": false,
+    "repeats_search": false,
+    "checks": [
+      "artifact SHA-256 and byte bindings",
+      "standard-generator Schreier order and exact M23 membership",
+      "pinned 2A, 3A, and 6A conjugacy witnesses",
+      "product-one and seed generation",
+      "inner canonicality and uniqueness",
+      "the exhaustive 7114-orbit product-one partition",
+      "intransitivity of all 5686 nongenerating representatives",
+      "every pure-braid transition witness, closure, and transitivity",
+      "the real permutation, involution, 70 inner-fixed points, 20 generating c=1 points, and 212-point nongenerating guardrail"
+    ],
+    "theorem_ready": true,
+    "claim_kind": "COMPUTED",
+    "epistemic_status": "CERTIFIED"
+  },
+  "expectation_provenance": [
+    {
+      "id": "goal-objective",
+      "path_base": "codex-attachment:4fe9145c-c1a4-4ed4-85c0-5ddd7377bfe7",
+      "path": "goal-objective.md",
+      "sha256": "6de8ba8f2b360dbe7361e9c2b686ee04f209b79b1a6fe67e28f86c1ff7b4eb33",
+      "bytes": 6351,
+      "role": "supplied expected values; not mathematical proof"
+    },
+    {
+      "id": "design-refinement",
+      "path_base": "codex-attachment:4fe9145c-c1a4-4ed4-85c0-5ddd7377bfe7",
+      "path": "pasted-text-2.txt",
+      "sha256": "3db1c1caadfb8dcf4c34317d4cbe74ef5cc450cc815cf88b5feca149970002ed",
+      "bytes": 18755,
+      "role": "supplied architecture and expected values; not mathematical proof"
+    }
+  ],
+  "literature_convention": {
+    "citation": "Frank Häfner, arXiv:2202.08222v3",
+    "url": "https://arxiv.org/abs/2202.08222v3",
+    "use": "right Hurwitz move and pure B4 generator convention only",
+    "claim_boundary": "The cited paper was not used as evidence for the numbers 1428, 70, 20, or the exhaustive partition.",
+    "typed_sidecar": "expected/sources.json"
+  },
+  "scope_exclusion": "This finite certificate proves the generating inner Nielsen class and its real action; it does not construct equations for the Hurwitz curve or prove a literature-novelty claim."
+}

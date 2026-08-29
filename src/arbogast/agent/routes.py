@@ -1,0 +1,239 @@
+"""Deterministic capability graph and shortest semantic routes."""
+
+from __future__ import annotations
+
+from collections import deque
+from collections.abc import Iterable, Mapping
+from dataclasses import dataclass
+from typing import Any
+
+from arbogast.formats import ROUTE_SCHEMA, JSONValue
+
+from .operations import OperationDescription
+
+
+class CapabilityRouteError(LookupError):
+    """Raised when no implemented capability route connects two types."""
+
+
+@dataclass(frozen=True, order=True, slots=True)
+class CapabilityEdge:
+    """One operation-induced hyperedge with conjunctive required inputs."""
+
+    required_inputs: tuple[str, ...]
+    target: str
+    operation: str
+    implemented: bool = True
+
+    def __post_init__(self) -> None:
+        required_inputs = (
+            (self.required_inputs,)
+            if isinstance(self.required_inputs, str)
+            else tuple(self.required_inputs)
+        )
+        object.__setattr__(self, "required_inputs", required_inputs)
+        if any(
+            not isinstance(value, str) or not value.strip()
+            for value in (*required_inputs, self.target, self.operation)
+        ):
+            raise ValueError("capability edges require non-blank inputs, target, and operation")
+        if not required_inputs:
+            raise ValueError("capability edges require at least one input")
+        if not isinstance(self.implemented, bool):
+            raise ValueError("capability edge implemented must be a boolean")
+
+    @property
+    def source(self) -> str:
+        """Return the legacy display label for this edge's complete input bundle."""
+
+        if len(self.required_inputs) == 1:
+            return self.required_inputs[0]
+        return "(" + " & ".join(self.required_inputs) + ")"
+
+    def to_dict(self) -> dict[str, JSONValue]:
+        return {
+            "implemented": self.implemented,
+            "operation": self.operation,
+            "required_inputs": list(self.required_inputs),
+            "source": self.source,
+            "target": self.target,
+        }
+
+    @classmethod
+    def from_dict(cls, value: Mapping[str, Any]) -> CapabilityEdge:
+        expected = {"implemented", "operation", "required_inputs", "source", "target"}
+        if set(value) != expected:
+            raise ValueError("capability edge has missing or unknown fields")
+        source = value["source"]
+        required_inputs = value["required_inputs"]
+        target = value["target"]
+        operation = value["operation"]
+        implemented = value["implemented"]
+        if any(not isinstance(item, str) for item in (source, target, operation)):
+            raise ValueError("capability edge labels must be strings")
+        if not isinstance(required_inputs, list) or any(
+            not isinstance(item, str) for item in required_inputs
+        ):
+            raise ValueError("capability edge required_inputs must be an array of strings")
+        if not isinstance(implemented, bool):
+            raise ValueError("capability edge implemented must be a boolean")
+        result = cls(tuple(required_inputs), target, operation, implemented)
+        if source != result.source:
+            raise ValueError("capability edge source does not match its required input bundle")
+        return result
+
+
+@dataclass(frozen=True, slots=True)
+class CapabilityRoute:
+    """A shortest deterministic route between semantic types."""
+
+    source: str
+    target: str
+    steps: tuple[CapabilityEdge, ...]
+    schema: str = ROUTE_SCHEMA
+
+    def __post_init__(self) -> None:
+        if any(
+            not isinstance(value, str) or not value.strip() for value in (self.source, self.target)
+        ):
+            raise ValueError("capability route endpoints must be non-blank strings")
+        if self.schema != ROUTE_SCHEMA:
+            raise ValueError("unsupported capability-route schema")
+        steps = tuple(self.steps)
+        if any(not isinstance(step, CapabilityEdge) for step in steps):
+            raise ValueError("capability route steps must be capability edges")
+        object.__setattr__(self, "steps", steps)
+        available = {self.source}
+        for step in steps:
+            missing = set(step.required_inputs) - available
+            if missing:
+                raise ValueError(
+                    "capability route step has unavailable required inputs: "
+                    + ", ".join(sorted(missing))
+                )
+            available.add(step.target)
+        if self.target not in available:
+            raise ValueError("capability route does not reach target")
+
+    @property
+    def operations(self) -> tuple[str, ...]:
+        return tuple(step.operation for step in self.steps)
+
+    def to_dict(self) -> dict[str, JSONValue]:
+        return {
+            "schema": self.schema,
+            "source": self.source,
+            "steps": [step.to_dict() for step in self.steps],
+            "target": self.target,
+        }
+
+    @classmethod
+    def from_dict(cls, value: Mapping[str, Any]) -> CapabilityRoute:
+        expected = {"schema", "source", "steps", "target"}
+        if set(value) != expected:
+            raise ValueError("capability route has missing or unknown fields")
+        if value["schema"] != ROUTE_SCHEMA:
+            raise ValueError("unsupported capability-route schema")
+        source = value["source"]
+        target = value["target"]
+        steps = value["steps"]
+        if not isinstance(source, str) or not isinstance(target, str):
+            raise ValueError("capability route endpoints must be strings")
+        if not isinstance(steps, list) or any(not isinstance(item, Mapping) for item in steps):
+            raise ValueError("capability route steps must be an array of objects")
+        return cls(source, target, tuple(CapabilityEdge.from_dict(item) for item in steps))
+
+
+class CapabilityGraph:
+    """A stable graph generated from operation contracts, not code imports."""
+
+    def __init__(self, edges: Iterable[CapabilityEdge] = ()) -> None:
+        self._edges = tuple(
+            sorted(
+                set(edges),
+                key=lambda edge: (edge.required_inputs, edge.operation, edge.target),
+            )
+        )
+
+    @classmethod
+    def from_operations(cls, operations: Iterable[OperationDescription]) -> CapabilityGraph:
+        edges: list[CapabilityEdge] = []
+        for operation in operations:
+            for required_inputs in operation.input_bundles:
+                for target in operation.outputs:
+                    edges.append(
+                        CapabilityEdge(
+                            required_inputs=required_inputs,
+                            target=target,
+                            operation=operation.name,
+                            implemented=operation.implemented,
+                        )
+                    )
+        return cls(edges)
+
+    @property
+    def edges(self) -> tuple[CapabilityEdge, ...]:
+        return self._edges
+
+    @property
+    def types(self) -> tuple[str, ...]:
+        sources = {source for edge in self._edges for source in edge.required_inputs}
+        targets = {edge.target for edge in self._edges}
+        return tuple(sorted(sources | targets))
+
+    def route(
+        self,
+        source: str,
+        target: str,
+        *,
+        include_unimplemented: bool = False,
+    ) -> CapabilityRoute:
+        if source == target:
+            return CapabilityRoute(source, target, ())
+        initial = frozenset((source,))
+        queue: deque[tuple[frozenset[str], tuple[CapabilityEdge, ...]]] = deque([(initial, ())])
+        visited = {initial}
+        while queue:
+            available, path = queue.popleft()
+            for edge in self._edges:
+                if not edge.implemented and not include_unimplemented:
+                    continue
+                if edge.target in available:
+                    continue
+                if not set(edge.required_inputs).issubset(available):
+                    continue
+                candidate = (*path, edge)
+                if edge.target == target:
+                    return CapabilityRoute(source, target, candidate)
+                next_available = available | {edge.target}
+                if next_available not in visited:
+                    visited.add(next_available)
+                    queue.append((next_available, candidate))
+        raise CapabilityRouteError(f"no capability route from {source!r} to {target!r}")
+
+    def missing_frontier(self, source: str) -> tuple[CapabilityEdge, ...]:
+        """Return unimplemented arrows reachable from implemented capabilities."""
+
+        reachable = {source}
+        changed = True
+        while changed:
+            changed = False
+            for edge in self._edges:
+                if (
+                    edge.implemented
+                    and edge.target not in reachable
+                    and set(edge.required_inputs).issubset(reachable)
+                ):
+                    reachable.add(edge.target)
+                    changed = True
+        return tuple(
+            edge
+            for edge in self._edges
+            if set(edge.required_inputs).issubset(reachable) and not edge.implemented
+        )
+
+    def to_dict(self) -> dict[str, JSONValue]:
+        return {
+            "edges": [edge.to_dict() for edge in self.edges],
+            "types": list(self.types),
+        }

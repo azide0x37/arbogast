@@ -1,0 +1,129 @@
+{
+  "schema_version": "arbogast.sources/v1",
+  "documents": [
+    {
+      "key": "atlas-m23-v3.004",
+      "citation": "ATLAS of Finite Group Representations, Mathieu group M23, version 3.004.",
+      "title": "ATLAS: Mathieu group M23",
+      "authors": [],
+      "year": null,
+      "url": "https://brauer.maths.qmul.ac.uk/Atlas/v3/spor/M23/",
+      "source_hash": null,
+      "identifiers": {
+        "atlas_group": "M23",
+        "version": "3.004"
+      }
+    },
+    {
+      "key": "haefner-arxiv-2202.08222v3",
+      "citation": "Frank Häfner, Braid orbits and the Mathieu group M23 as Galois group, arXiv:2202.08222v3 (2022).",
+      "title": "Braid orbits and the Mathieu group M23 as Galois group",
+      "authors": [
+        "Frank Häfner"
+      ],
+      "year": "2022",
+      "url": "https://arxiv.org/abs/2202.08222v3",
+      "source_hash": null,
+      "identifiers": {
+        "arxiv": "2202.08222v3",
+        "doi": "10.48550/arXiv.2202.08222"
+      }
+    }
+  ],
+  "references": [
+    {
+      "key": "atlas-m23-class-labels",
+      "document_key": "atlas-m23-v3.004",
+      "statement": {
+        "text": "The ATLAS class table for M23 contains the class labels 2A, 3A, and 6A, with centralizer orders 2688, 180, and 12 respectively.",
+        "language": "mathematics",
+        "renderings": {},
+        "parameters": {
+          "class_labels": [
+            "2A",
+            "3A",
+            "6A"
+          ],
+          "centralizer_orders": [
+            2688,
+            180,
+            12
+          ],
+          "group": "M23"
+        }
+      },
+      "locator": "Conjugacy classes of M23 table",
+      "kind": "table_entry",
+      "theorem_id": null,
+      "page": null,
+      "source_hash": null,
+      "imported_as": [],
+      "notes": "Nomenclature context only. Exact membership in each pinned class is replayed from finite conjugator witnesses."
+    },
+    {
+      "key": "atlas-m23-identity",
+      "document_key": "atlas-m23-v3.004",
+      "statement": {
+        "text": "The ATLAS entry names M23 as a group of order 10200960 and supplies a standard permutation representation of degree 23.",
+        "language": "mathematics",
+        "renderings": {},
+        "parameters": {
+          "degree": 23,
+          "group": "M23",
+          "order": 10200960
+        }
+      },
+      "locator": "group header, standard generators, and representations table",
+      "kind": "table_entry",
+      "theorem_id": null,
+      "page": null,
+      "source_hash": null,
+      "imported_as": [],
+      "notes": "Identity and naming context only. The fixture independently verifies the pinned permutation group order."
+    },
+    {
+      "key": "haefner-pure-b4-generators",
+      "document_key": "haefner-arxiv-2202.08222v3",
+      "statement": {
+        "text": "For B4 the six pure Hurwitz generators are beta12=beta2^2, beta13=beta2^-1 beta3^2 beta2, beta14=beta2^-1 beta3^-1 beta4^2 beta3 beta2, beta23=beta3^2, beta24=beta3^-1 beta4^2 beta3, and beta34=beta4^2.",
+        "language": "mathematics",
+        "renderings": {},
+        "parameters": {
+          "generator_count": 6,
+          "group": "B4"
+        }
+      },
+      "locator": "Section 3, displayed B4 pure generators",
+      "kind": "definition",
+      "theorem_id": null,
+      "page": null,
+      "source_hash": null,
+      "imported_as": [],
+      "notes": "Convention source only. It contains none of the fixture cardinalities or real-census conclusions."
+    },
+    {
+      "key": "haefner-right-hurwitz-action",
+      "document_key": "haefner-arxiv-2202.08222v3",
+      "statement": {
+        "text": "Equations (2.4) and (2.5) define the right Hurwitz generator action and its inverse on simultaneous-inner classes of generating systems.",
+        "language": "mathematics",
+        "renderings": {},
+        "parameters": {
+          "action_side": "right",
+          "equations": [
+            "2.4",
+            "2.5"
+          ]
+        }
+      },
+      "locator": "equations (2.4)-(2.5)",
+      "kind": "definition",
+      "theorem_id": null,
+      "page": null,
+      "source_hash": null,
+      "imported_as": [],
+      "notes": "Convention source only. The finite transition table and all conjugators are independently replayed."
+    }
+  ],
+  "provenance": []
+}

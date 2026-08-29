@@ -1,0 +1,71 @@
+{
+  "schema_version": "arbogast.example.m23-real-component.generation-receipt/v2",
+  "generated_at": "2026-08-28",
+  "generator": {
+    "path": "generate.g",
+    "sha256": "96315c210d6c1b477d372efab961cc3fae06ee8f1d51557638519fcab2d9cf97",
+    "bytes": 14499
+  },
+  "dataset": {
+    "path": "expected/dataset.json",
+    "sha256": "a638def28451710352d4c56999dd8eb0331471e13d8bf0e510367fe0e4d4df5e",
+    "bytes": 3192571
+  },
+  "backend": {
+    "name": "GAP",
+    "version": "4.16.0",
+    "executable_sha256": "411de834d558ce600460a1b55eab0b1ed5d595d0d68fd55cad28e38627fdadfb",
+    "tested_runtime_path_base": "igp24-workspace",
+    "tested_runtime_path": "outputs/steering-engine/.venv/lib/python3.11/site-packages/gap/gap"
+  },
+  "commands": {
+    "portable": "gap -A -q examples/hurwitz/m23_real_component/generate.g",
+    "exact_tested": "gtimeout 300 ../outputs/steering-engine/.venv/lib/python3.11/site-packages/gap/gap -A -q -l ../outputs/steering-engine/.venv/lib/python3.11/site-packages/gap examples/hurwitz/m23_real_component/generate.g"
+  },
+  "result": {
+    "exit_code": 0,
+    "runtime_ms": 123962,
+    "group_order": 10200960,
+    "passport": ["2A", "3A", "6A", "2A"],
+    "inner_nielsen_vertices": 1428,
+    "forward_pure_braid_transitions": 8568,
+    "inner_real_fixed": 70,
+    "generating_c1": 20,
+    "completeness": {
+      "centralizer_orbits_on_3A": 35,
+      "accepted_forced_6A_candidates": 12465,
+      "fixed_a_product_one_tuples": 18553024,
+      "all_product_one_inner_orbits": 7114,
+      "generating_inner_orbits": 1428,
+      "nongenerating_inner_orbits": 5686,
+      "nongenerating_orbits_transitive": 0,
+      "nongenerating_c1": 212,
+      "weighted_inner_orbit_mass": "41413/6"
+    }
+  },
+  "seed": {
+    "mersenne_twister_seed": 20260828,
+    "accepted_trial": 4387,
+    "orders": [2, 3, 6, 2],
+    "product_one": true,
+    "generated_group_order": 10200960
+  },
+  "braid_convention": {
+    "right_hurwitz_move": "(a,b)^sigma=(a*b*a^-1,a)",
+    "source": "Hafner, arXiv:2202.08222v3, equations 2.4-2.5 and the B4 pure generators displayed in Section 3",
+    "source_url": "https://arxiv.org/abs/2202.08222v3",
+    "pure_generator_words": {
+      "beta12": [1, 1],
+      "beta13": [-1, 2, 2, 1],
+      "beta14": [-1, -2, 3, 3, 2, 1],
+      "beta23": [2, 2],
+      "beta24": [-2, 3, 3, 2],
+      "beta34": [3, 3]
+    }
+  },
+  "workspace_provenance": {
+    "parent_git_head": "f3f952d101ea678a09ad8d3ed5a8054c493d1452",
+    "parent_worktree_was_dirty": true
+  },
+  "verification_boundary": "The GAP run discovered and serialized witnesses. verify.py does not invoke GAP or repeat the search; it independently replays group, class, completeness, braid, and real-action checks in Python. The 212 nongenerating c=1 representatives are explicitly outside the 20-point generating Nielsen census."
+}
