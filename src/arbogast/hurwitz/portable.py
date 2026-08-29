@@ -24,7 +24,12 @@ from arbogast.cert.canonical import (
 
 from ._cert import INNER_CONJUGACY_CONVENTION, RIGHT_HURWITZ_CONVENTION
 from .errors import CertificateVerificationError
-from .nielsen import NielsenClass, verify_nielsen_certificate_payload
+from .nielsen import (
+    NIELSEN_ENUMERATION_CLAIM,
+    NIELSEN_ENUMERATION_SCHEMA,
+    NielsenClass,
+    verify_nielsen_certificate_payload,
+)
 
 PORTABLE_OPERATION_SCHEMA = "arbogast.hurwitz.operation/v1"
 
@@ -105,13 +110,7 @@ def _integer_tuple(value: object, *, field: str) -> tuple[int, ...]:
 
 
 def _strict_nielsen_payload(value: object) -> dict[str, object]:
-    """Validate the transport shape before the legacy mathematical replay.
-
-    The original table verifier intentionally accepts ordinary JSON sequences,
-    but predates the strict transport boundary and uses ``int(...)`` in a few
-    places.  This front-end rejects booleans, strings, extra fields, and every
-    other coercible lookalike before calling it.
-    """
+    """Validate the nested transport shape and its advertised content address."""
 
     raw = _mapping(value, field="nielsen_certificate")
     _exact_keys(
@@ -135,7 +134,7 @@ def _strict_nielsen_payload(value: object) -> dict[str, object]:
         },
         record="portable Nielsen certificate",
     )
-    if raw["schema_version"] != "arbogast.hurwitz.nielsen-enumeration.v1":
+    if raw["schema_version"] != NIELSEN_ENUMERATION_SCHEMA:
         raise _fail("unsupported portable Nielsen schema")
     if raw["layer"] != CertificateLayer.VERIFICATION.value:
         raise _fail("portable Nielsen certificate has the wrong layer")
@@ -175,7 +174,7 @@ def _strict_nielsen_payload(value: object) -> dict[str, object]:
             field=f"Nielsen witness {index} conjugator_index",
             minimum=0,
         )
-    if raw["claim"] != "complete inner Nielsen class for the ordered explicit class vector":
+    if raw["claim"] != NIELSEN_ENUMERATION_CLAIM:
         raise _fail("portable Nielsen claim label mismatch")
     certificate_id = _string(raw["certificate_id"], field="Nielsen certificate_id")
     transported = dict(raw)

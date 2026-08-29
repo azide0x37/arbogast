@@ -1,10 +1,12 @@
 from __future__ import annotations
 
 import json
+from collections.abc import Callable
 from dataclasses import replace
 
 import pytest
 
+from arbogast.cert import content_address
 from arbogast.hurwitz import (
     CertificateVerificationError,
     ConcreteGroupMismatchError,
@@ -126,11 +128,124 @@ def test_nielsen_certificate_has_stable_transport_and_semantic_wrapper() -> None
     semantic = restored.verification_certificate()
     assert semantic.verify_integrity() == semantic.certificate_id
 
+    restored_without_id = NielsenEnumerationCertificate.from_dict(
+        certificate.to_canonical(),
+        group=group,
+        classes=(transpositions,) * 4,
+    )
+    assert restored_without_id.certificate_id == certificate.certificate_id
+    assert restored_without_id.verify()
+
     tampered = dict(payload)
     tampered["generating_count"] = 23
     with pytest.raises(ValueError, match="content address mismatch"):
         NielsenEnumerationCertificate.from_dict(
             tampered,
+            group=group,
+            classes=(transpositions,) * 4,
+        )
+
+
+@pytest.mark.parametrize(
+    ("mutation", "message"),
+    (
+        (lambda payload: payload.__setitem__("candidate_count", "27"), "must be an integer"),
+        (
+            lambda payload: payload.__setitem__("schema_version", "nielsen.v2"),
+            "unsupported Nielsen certificate schema",
+        ),
+        (lambda payload: payload.__setitem__("layer", "discovery"), "wrong layer"),
+        (lambda payload: payload.__setitem__("claim", "complete enough"), "claim label mismatch"),
+        (lambda payload: payload.__setitem__("unexpected", 1), "noncanonical fields"),
+    ),
+)
+def test_portable_nielsen_rejects_noncanonical_scalar_and_field_transport(
+    mutation: Callable[[dict[str, object]], None],
+    message: str,
+) -> None:
+    group, left, _ = s3()
+    transpositions = group.conjugacy_class(left)
+    certificate = nielsen_class(group, (transpositions,) * 4).certificate
+    assert certificate is not None
+    payload = certificate.to_canonical()
+
+    mutation(payload)
+    with pytest.raises(CertificateVerificationError, match=message):
+        verify_nielsen_certificate_payload(payload)
+
+
+@pytest.mark.parametrize("coercible", (True, "1", 1.0))
+def test_portable_nielsen_rejects_coercible_table_entries(coercible: object) -> None:
+    group, left, _ = s3()
+    transpositions = group.conjugacy_class(left)
+    certificate = nielsen_class(group, (transpositions,) * 4).certificate
+    assert certificate is not None
+    payload = certificate.to_canonical()
+    table = payload["multiplication_table"]
+    assert isinstance(table, tuple)
+    row = list(table[0])
+    row[1] = coercible
+    payload["multiplication_table"] = (tuple(row), *table[1:])
+
+    with pytest.raises(CertificateVerificationError, match="must be an integer"):
+        verify_nielsen_certificate_payload(payload)
+
+
+@pytest.mark.parametrize(
+    ("field", "value", "message"),
+    (
+        ("candidate_count", True, "must be an integer"),
+        ("candidate_count", "27", "must be an integer"),
+        ("schema_version", "nielsen.v2", "unsupported Nielsen certificate schema"),
+        ("layer", "discovery", "wrong layer"),
+        ("claim", "complete enough", "claim label mismatch"),
+        ("unexpected", 1, "noncanonical fields"),
+        ("certificate_id", None, "must be a nonempty string"),
+        ("certificate_id", "", "must be a nonempty string"),
+        ("certificate_id", f"sha256:{'0' * 64}", "content address mismatch"),
+    ),
+)
+def test_nielsen_from_dict_rejects_noncanonical_transport(
+    field: str,
+    value: object,
+    message: str,
+) -> None:
+    group, left, _ = s3()
+    transpositions = group.conjugacy_class(left)
+    certificate = nielsen_class(group, (transpositions,) * 4).certificate
+    assert certificate is not None
+
+    payload = certificate.to_dict()
+    payload[field] = value
+    with pytest.raises(CertificateVerificationError, match=message):
+        NielsenEnumerationCertificate.from_dict(
+            payload,
+            group=group,
+            classes=(transpositions,) * 4,
+        )
+
+
+@pytest.mark.parametrize("advertise_id", (False, True))
+def test_nielsen_from_dict_rejects_raw_tamper_with_or_without_id(
+    advertise_id: bool,
+) -> None:
+    group, left, _ = s3()
+    transpositions = group.conjugacy_class(left)
+    certificate = nielsen_class(group, (transpositions,) * 4).certificate
+    assert certificate is not None
+
+    readdressed = certificate.to_dict()
+    table = readdressed["multiplication_table"]
+    assert isinstance(table, list)
+    row = table[0]
+    assert isinstance(row, list)
+    row[1] = 0
+    readdressed.pop("certificate_id")
+    if advertise_id:
+        readdressed["certificate_id"] = content_address(readdressed)
+    with pytest.raises(CertificateVerificationError, match="reconstructed canonical payload"):
+        NielsenEnumerationCertificate.from_dict(
+            readdressed,
             group=group,
             classes=(transpositions,) * 4,
         )

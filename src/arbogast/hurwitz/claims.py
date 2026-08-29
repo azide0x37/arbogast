@@ -16,6 +16,7 @@ from arbogast.claims import (
     Derivation,
     EpistemicStatus,
     FormalStatement,
+    claim_boundary_hash,
 )
 
 from .nielsen import (
@@ -330,6 +331,16 @@ def _verify_portable_nielsen(certificate: VerificationCertificate) -> bool:
         raise SemanticVerificationError(
             "Nielsen envelope statement is not derived from its receipt"
         )
+    expected_boundary_hash = claim_boundary_hash(
+        certificate.claim_id,
+        assertion.statement,
+        kind=ClaimKind.COMPUTED,
+        status=EpistemicStatus.EXACT,
+    )
+    if certificate.claim_boundary_hash != expected_boundary_hash:
+        raise SemanticVerificationError("Nielsen envelope claim boundary is not canonical")
+    if certificate.claim_dependencies:
+        raise SemanticVerificationError("Nielsen envelope cannot bind claim dependencies")
     if certificate.checks != _CHECKS:
         raise SemanticVerificationError("Nielsen envelope check set is not canonical")
     if certificate.guarantees != _GUARANTEES:
@@ -358,6 +369,18 @@ def _verify_portable_operation(certificate: VerificationCertificate) -> bool:
         raise SemanticVerificationError("Hurwitz operation subject overstates its receipt")
     if certificate.statement_hash != assertion.statement.statement_hash:
         raise SemanticVerificationError("Hurwitz operation statement is not receipt-derived")
+    expected_boundary_hash = claim_boundary_hash(
+        certificate.claim_id,
+        assertion.statement,
+        kind=ClaimKind.COMPUTED,
+        status=EpistemicStatus.EXACT,
+    )
+    if certificate.claim_boundary_hash != expected_boundary_hash:
+        raise SemanticVerificationError("Hurwitz operation claim boundary is not receipt-derived")
+    if certificate.claim_dependencies:
+        raise SemanticVerificationError(
+            "self-contained Hurwitz operation cannot bind claim dependencies"
+        )
     if certificate.checks != checks:
         raise SemanticVerificationError("Hurwitz operation check set is not canonical")
     if certificate.guarantees != guarantees:
@@ -455,6 +478,12 @@ def verification_certificate_for(
         verifier=source.verifier,
         claim_id=identity,
         statement_hash=statement.statement_hash,
+        claim_boundary_hash=claim_boundary_hash(
+            identity,
+            statement,
+            kind=ClaimKind.COMPUTED,
+            status=EpistemicStatus.EXACT,
+        ),
         witness={"hurwitz_certificate": certificate.to_dict()},
         checks=source.checks,
         guarantees=source.guarantees,

@@ -607,9 +607,58 @@ class CyclicDecomposition:
         zero = DenseMatrix.zeros(
             representation.field, representation.dimension, representation.dimension
         )
+
+        try:
+            action = representation.action_matrix(self.generator)
+            generator_order = representation._cyclic_generator_order(self.generator)
+            if generator_order != len(representation.elements):
+                return False
+            if generator_order % representation.field.p == 0:
+                return False
+
+            annihilating_polynomial = _poly_trim(
+                (-1, *(0 for _ in range(generator_order - 1)), 1),
+                representation.field.p,
+            )
+            if _matrix_polynomial(action, annihilating_polynomial) != zero:
+                return False
+
+            expected_components: list[tuple[CyclicFactor, DenseMatrix, LinearSubspace]] = []
+            for coefficients in _factor_monic_squarefree(
+                annihilating_polynomial, representation.field.p
+            ):
+                factor_action = _matrix_polynomial(action, coefficients)
+                factor_kernel = _matrix_kernel_subspace(factor_action)
+                if factor_kernel.dimension:
+                    expected_components.append(
+                        (
+                            CyclicFactor(representation.field.p, coefficients),
+                            factor_action,
+                            factor_kernel,
+                        )
+                    )
+        except (TypeError, ValueError, NotImplementedError):
+            return False
+
+        if tuple(component.factor for component in self.components) != tuple(
+            factor for factor, _factor_action, _factor_kernel in expected_components
+        ):
+            return False
+
         total = zero
-        for left_index, left in enumerate(self.components):
+        for left_index, (left, expected) in enumerate(
+            zip(self.components, expected_components, strict=True)
+        ):
+            _factor, factor_action, factor_kernel = expected
             if left.projector @ left.projector != left.projector:
+                return False
+            if _matrix_image_subspace(left.projector) != left.subspace:
+                return False
+            if left.subspace != factor_kernel:
+                return False
+            if factor_action @ left.projector != zero:
+                return False
+            if action @ left.projector != left.projector @ action:
                 return False
             total = total + left.projector
             for right_index, right in enumerate(self.components):

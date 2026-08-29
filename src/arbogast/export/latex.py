@@ -2,7 +2,8 @@
 
 from __future__ import annotations
 
-from arbogast.claims import Claim, ClaimGraph, ClaimKind
+from arbogast.claims import Claim, ClaimGraph, ClaimKind, FormalStatement
+from arbogast.claims.statement import StatementError
 from arbogast.proof import ProofGap, ProofObligation
 
 
@@ -20,7 +21,7 @@ def export_latex(value: object) -> str:
 
 def _claim(claim: Claim) -> str:
     environment = "conjecture" if claim.kind is ClaimKind.CONJECTURED else "proposition"
-    statement = claim.what.render("latex")
+    statement = _statement(claim.what)
     lines = [
         f"\\begin{{{environment}}}[{_escape(claim.id)}]",
     ]
@@ -29,7 +30,7 @@ def _claim(claim: Claim) -> str:
             [
                 "\\textbf{Hypotheses.}",
                 "\\begin{enumerate}",
-                *(f"\\item {item.render('latex')}" for item in claim.hypotheses),
+                *(f"\\item {_statement(item)}" for item in claim.hypotheses),
                 "\\end{enumerate}",
                 "\\textbf{Conclusion.}",
             ]
@@ -54,6 +55,12 @@ def _claim(claim: Claim) -> str:
             "Evidence: "
             + (
                 ", ".join(f"\\texttt{{{_escape(item.ref)}}}" for item in claim.evidence)
+                or "none recorded"
+            )
+            + ".",
+            "Source: "
+            + (
+                ", ".join(f"\\texttt{{{_escape(item)}}}" for item in claim.source)
                 or "none recorded"
             )
             + ".",
@@ -96,9 +103,9 @@ def _gap(gap: ProofGap) -> str:
 def _obligation(obligation: ProofObligation) -> str:
     parts = [f"\\item[\\texttt{{{_escape(obligation.id)}}}] "]
     if obligation.context:
-        hypotheses = "; ".join(item.render("latex") for item in obligation.context)
+        hypotheses = "; ".join(_statement(item) for item in obligation.context)
         parts.append(f"\\textbf{{Context:}} {hypotheses}. ")
-    parts.append(f"\\textbf{{Obligation:}} {obligation.statement.render('latex')} ")
+    parts.append(f"\\textbf{{Obligation:}} {_statement(obligation.statement)} ")
     parts.append(f"(\\texttt{{{_escape(obligation.classification.value)}}}).")
     if obligation.discharged_by:
         references = ", ".join(f"\\texttt{{{_escape(item)}}}" for item in obligation.discharged_by)
@@ -128,6 +135,15 @@ def _escape(value: str) -> str:
         "^": r"\textasciicircum{}",
     }
     return "".join(replacements.get(character, character) for character in value)
+
+
+def _statement(statement: FormalStatement) -> str:
+    """Render explicit LaTeX verbatim and escape backend-independent prose fallback."""
+
+    try:
+        return statement.render("latex", fallback=False)
+    except StatementError:
+        return _escape(statement.text)
 
 
 __all__ = ["export_latex"]

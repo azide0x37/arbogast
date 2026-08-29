@@ -93,8 +93,8 @@
     "projection_schema": "arbogast.example.m23-real-component.claim-projection/v3",
     "public_verifier": {
       "module": "arbogast.hurwitz.m23_exact",
-      "sha256": "e55ca54b7d08337d2155caec505f8b520dbc7023873119aaec010b5400fc50f3",
-      "bytes": 64177
+      "sha256": "e7f0ddd75264a0bb1e7d038c993a21eff261d0859e2ebb1eb4819e36774c02f3",
+      "bytes": 65154
     },
     "cli": "uv run python examples/hurwitz/m23_real_component/verify.py /tmp/m23-claims.json",
     "requires_GAP": false,

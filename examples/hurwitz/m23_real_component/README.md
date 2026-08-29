@@ -131,9 +131,12 @@ embedding, its pure-braid transitivity, and the stated straight-real census. It 
 
 The dataset records its one-based GAP permutation convention, while the verifier converts it to
 zero-based internal tuples and replays the specified right action exactly. The pure-braid words
-follow the convention in
-[Häfner, arXiv:2202.08222v3](https://arxiv.org/abs/2202.08222), as summarized in
-[Mathematical conventions](../../../docs/mathematical-conventions.md). The paper supplies the
+follow Häfner's displayed basis, rather than the reflected basis returned by the generic
+`pure_braid_word` API. The two complete bases generate the same pure braid group and hence the
+same orbit partition, but their individual named words differ. Both formulas and their reflection
+equivalence are summarized in
+[Mathematical conventions](../../../docs/mathematical-conventions.md); the fixture basis itself
+follows [Häfner, arXiv:2202.08222v3](https://arxiv.org/abs/2202.08222). The paper supplies the
 action convention, not evidence for the verified counts. The
 [ATLAS M23 entry](https://brauer.maths.qmul.ac.uk/Atlas/v3/spor/M23/) supplies the group/class
 nomenclature sidecar; exact group order and class membership are still replayed from the finite

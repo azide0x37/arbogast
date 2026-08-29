@@ -85,6 +85,10 @@ class OperationSpec:
             raise OperationSpecError(
                 f"operation contract fields cannot be blank: {', '.join(missing)}"
             )
+        if not isinstance(self.exact, bool):
+            raise OperationSpecError("operation exact must be a boolean")
+        if not isinstance(self.shardable, bool):
+            raise OperationSpecError("operation shardable must be a boolean")
         object.__setattr__(self, "requires", tuple(self.requires))
         object.__setattr__(self, "ensures", tuple(self.ensures))
         object.__setattr__(self, "failure_modes", tuple(self.failure_modes))

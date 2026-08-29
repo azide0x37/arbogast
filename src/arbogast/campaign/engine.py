@@ -46,6 +46,7 @@ from .events import (
     Observation,
     OperationalState,
     Outcome,
+    OutcomeScope,
 )
 from .ledger import TargetLedger
 from .planner import (
@@ -55,7 +56,13 @@ from .planner import (
     RecommendationAction,
 )
 from .policy import PriorityPolicy
-from .results import AttemptRecord, CandidateEvidence, CandidateRecord, CandidateScope
+from .results import (
+    AttemptRecord,
+    CandidateEvidence,
+    CandidateRecord,
+    CandidateScope,
+    ExecutionTelemetry,
+)
 from .spec import CampaignSpec, Objective
 from .strategy import ExactGate, GateDisposition, Strategy, TaskFactory
 from .targets import TargetSpec, TargetState
@@ -486,6 +493,7 @@ class Campaign:
             target.target_id,
             task.campaign_task_id,
             Outcome.PROVED_IMPOSSIBLE,
+            outcome_scope=decision.outcome_scope,
             certificate=decision.certificate,
             input_refs=task.task.input_refs,
             parameters=task.provenance.parameters.to_dict(),
@@ -1266,13 +1274,17 @@ class Campaign:
         details = observation.details.to_dict()
         raw_resources = details.get("resource_usage", {})
         resources = raw_resources if isinstance(raw_resources, Mapping) else {}
-        completed = details.get("progress_completed", 0)
+        raw_spent = details.get("spent", {})
+        spent = raw_spent if isinstance(raw_spent, Mapping) else {}
+        completed = details.get("progress_completed")
         total = details.get("progress_total")
-        if isinstance(completed, bool) or not isinstance(completed, int):
-            completed = 0
+        if completed is not None and (
+            isinstance(completed, bool) or not isinstance(completed, int)
+        ):
+            completed = None
         if total is not None and (isinstance(total, bool) or not isinstance(total, int)):
             total = None
-        if total is not None and completed > total:
+        if total is not None and completed is not None and completed > total:
             completed = total
         detail = details.get("detail") or details.get("error")
         if detail is not None and not isinstance(detail, str):
@@ -1307,6 +1319,7 @@ class Campaign:
             progress_completed=completed,
             progress_total=total,
             resources=resources,
+            spent=spent,
         )
         event = self.ledger.record_attempt(terminal)
         if event is not None:
@@ -1496,10 +1509,12 @@ class Campaign:
             raise CampaignInvariantError("fleet run is not bound to the campaign task")
         value = self.executor.result_value(run)
         raw_outcome: object = None
+        raw_outcome_scope: object = None
         # A successful FleetRun consumes any resume checkpoint.  Only a fresh,
         # typed FleetInterruption may establish new resumable custody.
         checkpoint_ref: object | None = None
         certificate_value: object = None
+        execution_telemetry: ExecutionTelemetry | None = None
         details: dict[str, Any] = {
             "fleet_plan_hash": run.plan.plan_hash,
             "fleet_state": run.state.value,
@@ -1516,10 +1531,21 @@ class Campaign:
             details["fleet_receipt"] = receipt_to_dict()
         if isinstance(value, dict):
             raw_outcome = value.get("outcome")
+            raw_outcome_scope = value.get("outcome_scope")
             reducer_checkpoint = value.get("checkpoint_ref")
             if reducer_checkpoint is not None and reducer_checkpoint != checkpoint_ref:
                 details["rejected_untrusted_checkpoint_ref"] = reducer_checkpoint
             certificate_value = value.get("certificate")
+            telemetry_value = value.get("execution_telemetry")
+            if telemetry_value is not None:
+                if not isinstance(telemetry_value, Mapping):
+                    raise CampaignInvariantError("result execution_telemetry must be an object")
+                try:
+                    execution_telemetry = ExecutionTelemetry.from_dict(telemetry_value)
+                except CampaignSerializationError as error:
+                    raise CampaignInvariantError(
+                        "result execution_telemetry failed strict replay"
+                    ) from error
             details["result"] = value
         else:
             details["result"] = value
@@ -1529,7 +1555,32 @@ class Campaign:
                 outcome = Outcome(raw_outcome)
             except ValueError:
                 details["unrecognized_outcome"] = raw_outcome
+        outcome_scope = OutcomeScope.TASK_LOCAL
+        valid_outcome_scope = True
+        if raw_outcome_scope is None:
+            details["defaulted_outcome_scope"] = OutcomeScope.TASK_LOCAL.value
+        elif isinstance(raw_outcome_scope, str):
+            try:
+                outcome_scope = OutcomeScope(raw_outcome_scope)
+            except ValueError:
+                valid_outcome_scope = False
+                details["unrecognized_outcome_scope"] = raw_outcome_scope
+        else:
+            valid_outcome_scope = False
+            details["unrecognized_outcome_scope"] = raw_outcome_scope
         certificate = self._certificate_from_result(certificate_value)
+        if execution_telemetry is not None:
+            details["execution_telemetry"] = execution_telemetry.to_dict()
+            if execution_telemetry.progress_completed is not None:
+                details["progress_completed"] = execution_telemetry.progress_completed
+            if execution_telemetry.progress_total is not None:
+                details["progress_total"] = execution_telemetry.progress_total
+            details["resource_usage"] = execution_telemetry.resources.to_dict()
+            details["spent"] = execution_telemetry.spent.to_dict()
+        if not valid_outcome_scope and outcome in CLOSING_OUTCOMES:
+            details["rejected_unscoped_outcome"] = outcome.value
+            outcome = Outcome.UNKNOWN
+            certificate = None
         if outcome in CLOSING_OUTCOMES and certificate is None:
             details["rejected_unverified_outcome"] = outcome.value
             outcome = Outcome.UNKNOWN
@@ -1545,6 +1596,7 @@ class Campaign:
                 task.target_id,
                 task.campaign_task_id,
                 outcome,
+                outcome_scope=outcome_scope,
                 operational_state=operational_state,
                 certificate=certificate,
                 result_ref=run.result,

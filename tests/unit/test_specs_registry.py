@@ -17,7 +17,10 @@ from arbogast.hurwitz import (
 )
 from arbogast.rep import Permutation, PermutationGroup
 from arbogast.specs import (
+    FailureMode,
+    OperationExample,
     OperationRegistry,
+    OperationSpec,
     OperationSpecError,
     default_operations,
     operation,
@@ -147,3 +150,24 @@ def test_operation_decorator_requires_complete_contract() -> None:
         )
         def bad() -> None:
             return None
+
+
+@pytest.mark.parametrize("field", ("exact", "shardable"))
+@pytest.mark.parametrize("invalid", (None, 0, 1, "false", "true"))
+def test_operation_spec_rejects_non_boolean_contract_flags(field: str, invalid: object) -> None:
+    values: dict[str, object] = {
+        "name": "tests.strict-flags",
+        "mathematical_domain": "finite sets",
+        "requires": ("finite exact input",),
+        "ensures": ("returns a finite exact output",),
+        "exact": True,
+        "shardable": False,
+        "complexity": "O(1)",
+        "failure_modes": (FailureMode("invalid", "invalid input"),),
+        "certificate_type": None,
+        "examples": (OperationExample("strict_flags()"),),
+    }
+    values[field] = invalid
+
+    with pytest.raises(OperationSpecError, match=rf"{field} must be a boolean"):
+        OperationSpec(**values)  # type: ignore[arg-type]

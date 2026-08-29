@@ -66,13 +66,17 @@ claim graph.
 
 This matters most when no polynomial is found. The ledger records **mathematical outcome**
 separately from **operational state**; an interrupted worker cannot become a negative theorem.
-Compact campaign reports use the following explicit classifications:
+Compact campaign reports use the following explicit classifications. Exact outcomes also carry an
+`outcome_scope`: `TASK_LOCAL` records what one planned branch established, while
+`TARGET_GLOBAL` asserts that the target's full success or closure criterion was checked. Only a
+replay-verified `TARGET_GLOBAL` exact outcome closes the target, stops alternate strategies, or
+creates a computed campaign claim.
 
 | State | Mathematical meaning |
 | --- | --- |
-| `FOUND` | A replayable certificate verifies a witness meeting the target's stated success criterion. |
-| `PROVED_IMPOSSIBLE` | A certificate proves nonexistence under the stated hypotheses. |
-| `SEARCH_EXHAUSTED` | A declared finite search domain was completely checked; nothing broader follows. |
+| `FOUND` | A replayable certificate verifies a witness; only `TARGET_GLOBAL` says it meets the complete target criterion. |
+| `PROVED_IMPOSSIBLE` | A certificate proves nonexistence in its explicit task-local or target-global scope. |
+| `SEARCH_EXHAUSTED` | A declared finite search domain was completely checked; task-local exhaustion leaves other strategies open. |
 | `BUDGET_EXHAUSTED` | Work stopped at its recorded resource limit; the unexplored region remains open. |
 | `PREEMPTED` | Execution was interrupted; resume requires a typed checkpoint and an executor that owns its custody. |
 | `FAILED` | Software, input, or environment failed; this has no negative theorem content. |
@@ -80,13 +84,21 @@ Compact campaign reports use the following explicit classifications:
 
 The authoritative research state is the campaign ledger: targets, canonical plans, planned task
 specs, task and attempt events, per-metric candidates, resource use, result and typed-checkpoint
-references, outcomes, embedded closure certificates, and claim bindings. The surrounding
-`Campaign` owns the canonical `ClaimGraph`; accepting a verified closing observation creates and
-binds its computed claim. Task capability requirements and the campaign's declared local
+references, outcomes and their canonical scopes, embedded outcome certificates, and claim
+bindings. Scope is part of the certificate subject and the observation content identity, so a
+task-local result cannot be relabeled as target-global during replay. The surrounding `Campaign`
+owns the canonical `ClaimGraph`; accepting a verified target-global closing observation creates
+and binds its computed claim. Task capability requirements and the campaign's declared local
 capability set feed planning; 0.1 reports incompatible tasks through status and explanation
 blockers without inventing a failure event for work that never started. Later planners can
 consume recorded provenance as algorithm input, so a bounded negative result can rule out a
 repeated strategy or sharpen the next task rather than disappearing into logs.
+
+Successful operations may return the strict
+`arbogast.campaign.execution-telemetry.v1` envelope for operation-reported progress, resource, and
+spend counters. These are supplied measurements, not values inferred from requested resources,
+worker count, or elapsed timestamps. An absent envelope remains absent; an explicit zero remains
+zero in the observation, attempt ledger, status totals, and replay.
 
 Arbogast 0.1.0 includes deterministic local executors and extension protocols. Cooperative
 operations can yield typed single- or multi-shard checkpoint manifests to

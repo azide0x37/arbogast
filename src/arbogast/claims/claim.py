@@ -8,7 +8,7 @@ from dataclasses import dataclass, field
 from enum import StrEnum
 from typing import TYPE_CHECKING, Any, cast
 
-from arbogast.cert.base import Certificate, CertificateLayer, CertificateRef
+from arbogast.cert.base import Certificate, CertificateLayer, CertificateRef, ClaimBinding
 from arbogast.cert.canonical import (
     FrozenMap,
     canonicalize,
@@ -57,6 +57,50 @@ class EvidenceKind(StrEnum):
     ARTIFACT = "artifact"
     WITNESS = "witness"
     DATASET = "dataset"
+
+
+CLAIM_BOUNDARY_SCHEMA_VERSION = "arbogast.claim-boundary/v1"
+
+
+def claim_boundary_hash(
+    claim_id: str,
+    statement: FormalStatement | str,
+    *,
+    kind: ClaimKind | str,
+    status: EpistemicStatus | str | EpistemicValue[Any],
+    hypotheses: Sequence[FormalStatement | str] = (),
+    dependency_ids: Sequence[str] = (),
+) -> str:
+    """Hash the complete semantic boundary certified for one claim.
+
+    Evidence, prose provenance, and mutable project metadata are deliberately
+    outside this payload.  Including evidence would create a cycle between a
+    certificate's address and the claim it certifies.  The ordered hypotheses
+    and dependency identifiers are part of the theorem boundary and therefore
+    remain order-sensitive.
+    """
+
+    _validate_identifier(claim_id, field="claim id")
+    formal = _statement(statement)
+    claim_kind = ClaimKind(kind)
+    claim_status = status.status if isinstance(status, EpistemicValue) else EpistemicStatus(status)
+    hypothesis_records = tuple(_statement(item) for item in hypotheses)
+    dependencies = tuple(dependency_ids)
+    for dependency_id in dependencies:
+        _validate_identifier(dependency_id, field="claim dependency")
+    if len(set(dependencies)) != len(dependencies):
+        raise ClaimError("claim dependencies must be unique")
+    return content_address(
+        {
+            "schema_version": CLAIM_BOUNDARY_SCHEMA_VERSION,
+            "claim_id": claim_id,
+            "statement": formal,
+            "kind": claim_kind.value,
+            "status": claim_status.value,
+            "hypotheses": hypothesis_records,
+            "dependencies": dependencies,
+        }
+    )
 
 
 @dataclass(frozen=True)
@@ -248,6 +292,25 @@ class Claim:
         return content_address(self.to_canonical())
 
     @property
+    def boundary_hash(self) -> str:
+        """Return the evidence-independent digest certified by proof records."""
+
+        return claim_boundary_hash(
+            self.id,
+            self.what,
+            kind=self.kind,
+            status=self.status,
+            hypotheses=self.hypotheses,
+            dependency_ids=self.dependency_ids,
+        )
+
+    @property
+    def binding(self) -> ClaimBinding:
+        """Return this node's ID, conclusion digest, and semantic-boundary digest."""
+
+        return ClaimBinding(self.id, self.what.statement_hash, self.boundary_hash)
+
+    @property
     def dependency_ids(self) -> tuple[str, ...]:
         return tuple(ref.claim_id for ref in self.why)
 
@@ -337,6 +400,18 @@ class Claim:
             )
         try:
             checks = ["claim-boundaries"]
+            if self.dependency_ids:
+                missing = sorted(set(self.dependency_ids) - set(verified_dependencies))
+                if missing:
+                    raise ClaimVerificationError(
+                        f"claim has unverified dependencies: {', '.join(missing)}"
+                    )
+                if dependency_claims is None:
+                    raise ClaimVerificationError(
+                        "claim verification requires its dependency claim records"
+                    )
+                _verify_dependency_boundaries(self, dependency_claims)
+                checks.append("dependencies-verified")
             if self.kind is ClaimKind.ASSUMED:
                 raise ClaimVerificationError("assumptions are hypotheses, not verified claims")
             if self.kind is ClaimKind.CONJECTURED:
@@ -350,32 +425,25 @@ class Claim:
                     self,
                     resolved,
                     verifier_registry=verifier_registry,
+                    dependency_claims=dependency_claims,
                 )
                 checks.extend(("certificate-addresses", "certificate-replay"))
             elif self.kind is ClaimKind.DERIVED:
-                missing = sorted(set(self.dependency_ids) - set(verified_dependencies))
-                if missing:
-                    raise ClaimVerificationError(
-                        f"derived claim has unverified dependencies: {', '.join(missing)}"
-                    )
-                if dependency_claims is None:
-                    raise ClaimVerificationError(
-                        "derived claim verification requires its dependency claim records"
-                    )
-                _verify_dependency_boundaries(self, dependency_claims)
                 resolved = self._resolve_certificates(certificates)
                 _verify_computed_evidence(
                     self,
                     resolved,
                     verifier_registry=verifier_registry,
+                    dependency_claims=dependency_claims,
                 )
-                checks.extend(("dependencies-verified", "derivation-certificate-replay"))
+                checks.append("derivation-certificate-replay")
             if self.status is EpistemicStatus.CERTIFIED and self.kind is ClaimKind.IMPORTED:
                 resolved = self._resolve_certificates(certificates)
                 _verify_computed_evidence(
                     self,
                     resolved,
                     verifier_registry=verifier_registry,
+                    dependency_claims=dependency_claims,
                 )
                 checks.extend(("certified-status-binding", "certificate-replay"))
             return ClaimVerificationReport(
@@ -727,9 +795,7 @@ def _verify_dependency_boundaries(
     expected = set(claim.dependency_ids)
     missing = sorted(expected - dependencies.keys())
     if missing:
-        raise ClaimVerificationError(
-            f"derived claim is missing dependency records: {', '.join(missing)}"
-        )
+        raise ClaimVerificationError(f"claim is missing dependency records: {', '.join(missing)}")
     for dependency_id in claim.dependency_ids:
         dependency = dependencies[dependency_id]
         if dependency.id != dependency_id:
@@ -741,14 +807,14 @@ def _verify_dependency_boundaries(
             EpistemicStatus.UNKNOWN,
         }:
             raise ClaimVerificationError(
-                f"derived claim cannot erase the conditional status of {dependency_id}"
+                f"claim cannot erase the conditional status of {dependency_id}"
             )
         if (
             dependency.status is EpistemicStatus.UNKNOWN
             and claim.status is not EpistemicStatus.UNKNOWN
         ):
             raise ClaimVerificationError(
-                f"derived claim cannot erase the unknown status of {dependency_id}"
+                f"claim cannot erase the unknown status of {dependency_id}"
             )
         if dependency.status in {
             EpistemicStatus.NUMERICAL,
@@ -758,7 +824,7 @@ def _verify_dependency_boundaries(
             EpistemicStatus.CERTIFIED,
         }:
             raise ClaimVerificationError(
-                f"derived claim cannot promote the {dependency.status.value} status of "
+                f"claim cannot promote the {dependency.status.value} status of "
                 f"{dependency_id} to {claim.status.value}"
             )
 
@@ -768,6 +834,7 @@ def _verify_computed_evidence(
     certificates: Mapping[str, Certificate],
     *,
     verifier_registry: VerifierRegistry,
+    dependency_claims: Mapping[str, Claim] | None,
 ) -> None:
     certificate_refs = [ref for ref in claim.evidence if ref.kind is EvidenceKind.CERTIFICATE]
     if not certificate_refs:
@@ -811,6 +878,7 @@ def _verify_computed_evidence(
                 )
             if certificate.statement_hash != claim.what.statement_hash:
                 raise ClaimVerificationError("verification certificate statement hash mismatch")
+            _verify_claim_binding(certificate, claim, dependency_claims)
             _replay_verification_certificate(
                 certificate,
                 certificates,
@@ -824,10 +892,12 @@ def _verify_computed_evidence(
                 raise ClaimVerificationError("theorem certificate is bound to a different claim")
             if certificate.statement_hash != claim.what.statement_hash:
                 raise ClaimVerificationError("theorem certificate statement hash mismatch")
-            if set(certificate.dependencies) != set(claim.dependency_ids):
+            if certificate.dependencies != claim.dependency_ids:
                 raise ClaimVerificationError(
-                    "theorem certificate dependency IDs do not match the claim dependency graph"
+                    "theorem certificate dependency IDs do not match the ordered claim "
+                    "dependency graph"
                 )
+            _verify_claim_binding(certificate, claim, dependency_claims)
             for dependency in certificate.verification_certificates:
                 supporting = certificates.get(dependency.certificate_id)
                 if supporting is None:
@@ -853,6 +923,36 @@ def _verify_computed_evidence(
             replayed = True
     if not replayed:
         raise ClaimVerificationError("no verification- or theorem-layer evidence was replayed")
+
+
+def _verify_claim_binding(
+    certificate: VerificationCertificate | TheoremCertificate,
+    claim: Claim,
+    dependency_claims: Mapping[str, Claim] | None,
+) -> None:
+    if certificate.claim_boundary_hash != claim.boundary_hash:
+        raise ClaimVerificationError("certificate claim boundary hash mismatch")
+    if claim.dependency_ids and dependency_claims is None:
+        raise ClaimVerificationError(
+            "claim verification requires dependency records for semantic binding"
+        )
+    expected_bindings: list[ClaimBinding] = []
+    for dependency_id in claim.dependency_ids:
+        assert dependency_claims is not None
+        dependency = dependency_claims.get(dependency_id)
+        if dependency is None:
+            raise ClaimVerificationError(
+                f"claim is missing dependency record for binding: {dependency_id}"
+            )
+        if dependency.id != dependency_id:
+            raise ClaimVerificationError(
+                f"dependency resolver key {dependency_id} names claim {dependency.id}"
+            )
+        expected_bindings.append(dependency.binding)
+    if certificate.claim_dependencies != tuple(expected_bindings):
+        raise ClaimVerificationError(
+            "certificate claim dependency bindings do not match the current claim graph"
+        )
 
 
 def _validate_certificate_ref(reference: CertificateRef, certificate: Certificate) -> None:
@@ -916,6 +1016,7 @@ def _replay_verification_certificate(
 
 
 __all__ = [
+    "CLAIM_BOUNDARY_SCHEMA_VERSION",
     "Claim",
     "ClaimError",
     "ClaimKind",
@@ -924,4 +1025,5 @@ __all__ = [
     "ClaimVerificationReport",
     "EvidenceKind",
     "EvidenceRef",
+    "claim_boundary_hash",
 ]

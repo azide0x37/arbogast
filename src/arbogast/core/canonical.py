@@ -137,6 +137,43 @@ def _encode_canonical_data(value: CanonicalJSON) -> str:
     )
 
 
+def _encode_pretty_canonical_data(
+    value: CanonicalJSON,
+    *,
+    indent: int,
+    depth: int = 0,
+) -> str:
+    """Encode canonical data with whitespace but no decimal string-size limit."""
+
+    indentation = " " * max(indent, 0)
+    current_prefix = indentation * depth
+    child_prefix = indentation * (depth + 1)
+    if value is None:
+        return "null"
+    if isinstance(value, bool):
+        return "true" if value else "false"
+    if isinstance(value, int):
+        return _decimal_integer(value)
+    if isinstance(value, str):
+        return json.dumps(value, ensure_ascii=False)
+    if isinstance(value, list):
+        if not value:
+            return "[]"
+        items = ",\n".join(
+            f"{child_prefix}{_encode_pretty_canonical_data(item, indent=indent, depth=depth + 1)}"
+            for item in value
+        )
+        return f"[\n{items}\n{current_prefix}]"
+    if not value:
+        return "{}"
+    items = ",\n".join(
+        f"{child_prefix}{json.dumps(key, ensure_ascii=False)}: "
+        f"{_encode_pretty_canonical_data(value[key], indent=indent, depth=depth + 1)}"
+        for key in sorted(value)
+    )
+    return f"{{\n{items}\n{current_prefix}}}"
+
+
 def canonical_data(value: object) -> CanonicalJSON:
     """Convert *value* to the strict canonical JSON data model.
 
@@ -185,6 +222,25 @@ def canonical_json(value: object) -> str:
 
     try:
         return _encode_canonical_data(canonical_data(value))
+    except CanonicalEncodingError:
+        raise
+    except (RecursionError, UnicodeError, ValueError, TypeError) as exc:
+        raise CanonicalEncodingError(f"cannot encode canonical JSON: {exc}") from exc
+
+
+def pretty_canonical_json(value: object, *, indent: int = 2) -> str:
+    """Serialize *value* as deterministic indented JSON with exact integers.
+
+    This differs from :func:`canonical_json` only in insignificant whitespace.
+    The custom encoder avoids the interpreter's configurable decimal digit
+    limit, which otherwise makes ``json.dumps(..., indent=...)`` reject valid
+    arbitrary-size exact integers.
+    """
+
+    if not isinstance(indent, int):
+        raise CanonicalEncodingError("canonical JSON indentation must be an integer")
+    try:
+        return _encode_pretty_canonical_data(canonical_data(value), indent=indent)
     except CanonicalEncodingError:
         raise
     except (RecursionError, UnicodeError, ValueError, TypeError) as exc:

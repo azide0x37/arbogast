@@ -58,6 +58,118 @@ class CandidateScope(StrEnum):
     GLOBAL = "GLOBAL"
 
 
+def _counter_mapping(
+    value: Mapping[str, Any] | None,
+    *,
+    field_name: str,
+) -> FrozenMapping:
+    resolved = {} if value is None else value
+    for key, count in resolved.items():
+        if not isinstance(key, str) or not key.strip():
+            raise CampaignInvariantError(f"{field_name} counter names must be non-blank strings")
+        if isinstance(count, bool) or not isinstance(count, int) or count < 0:
+            raise CampaignInvariantError(f"{field_name} counters must be non-negative integers")
+    return FrozenMapping(resolved)
+
+
+@dataclass(frozen=True, slots=True, init=False)
+class ExecutionTelemetry:
+    """Optional operation-reported counters for one successful fleet result.
+
+    Absence of this envelope means that no measurements were reported.  A
+    literal zero inside the envelope is an observed zero and is preserved.
+    """
+
+    progress_completed: int | None
+    progress_total: int | None
+    resources: FrozenMapping
+    spent: FrozenMapping
+
+    schema = "arbogast.campaign.execution-telemetry.v1"
+
+    def __init__(
+        self,
+        *,
+        progress_completed: int | None = None,
+        progress_total: int | None = None,
+        resources: Mapping[str, Any] | None = None,
+        spent: Mapping[str, Any] | None = None,
+    ) -> None:
+        for field_name, count in (
+            ("progress_completed", progress_completed),
+            ("progress_total", progress_total),
+        ):
+            if count is not None and (
+                isinstance(count, bool) or not isinstance(count, int) or count < 0
+            ):
+                raise CampaignInvariantError(
+                    f"execution telemetry {field_name} must be a non-negative integer or null"
+                )
+        if (
+            progress_completed is not None
+            and progress_total is not None
+            and progress_completed > progress_total
+        ):
+            raise CampaignInvariantError("execution telemetry progress exceeds its total")
+        resolved_resources = _counter_mapping(resources, field_name="resource")
+        resolved_spent = _counter_mapping(spent, field_name="spend")
+        if (
+            progress_completed is None
+            and progress_total is None
+            and not resolved_resources
+            and not resolved_spent
+        ):
+            raise CampaignInvariantError(
+                "execution telemetry must report at least one progress, resource, or spend counter"
+            )
+        object.__setattr__(self, "progress_completed", progress_completed)
+        object.__setattr__(self, "progress_total", progress_total)
+        object.__setattr__(self, "resources", resolved_resources)
+        object.__setattr__(self, "spent", resolved_spent)
+
+    def to_dict(self) -> dict[str, JSONValue]:
+        return {
+            "progress_completed": self.progress_completed,
+            "progress_total": self.progress_total,
+            "resources": self.resources.to_dict(),
+            "schema": self.schema,
+            "spent": self.spent.to_dict(),
+        }
+
+    @classmethod
+    def from_dict(cls, value: Mapping[str, Any]) -> ExecutionTelemetry:
+        required = {
+            "progress_completed",
+            "progress_total",
+            "resources",
+            "schema",
+            "spent",
+        }
+        if set(value) != required:
+            raise CampaignSerializationError("execution telemetry has missing or unknown fields")
+        if value["schema"] != cls.schema:
+            raise CampaignSerializationError("unsupported execution telemetry schema")
+        resources = value["resources"]
+        spent = value["spent"]
+        if not isinstance(resources, Mapping) or not isinstance(spent, Mapping):
+            raise CampaignSerializationError("execution telemetry counters must be objects")
+        for field_name in ("progress_completed", "progress_total"):
+            count = value[field_name]
+            if count is not None and (isinstance(count, bool) or not isinstance(count, int)):
+                raise CampaignSerializationError(
+                    f"execution telemetry {field_name} must be an integer or null"
+                )
+        try:
+            return cls(
+                progress_completed=value["progress_completed"],
+                progress_total=value["progress_total"],
+                resources=resources,
+                spent=spent,
+            )
+        except CampaignInvariantError as error:
+            raise CampaignSerializationError("execution telemetry is invalid") from error
+
+
 @dataclass(frozen=True, slots=True, init=False)
 class CandidateRecord:
     """One canonical mathematical object and its observation-bound provenance.
@@ -281,9 +393,10 @@ class AttemptRecord:
     worker_id: str | None
     checkpoint_ref: str | None
     detail: str | None
-    progress_completed: int
+    progress_completed: int | None
     progress_total: int | None
     resources: FrozenMapping
+    spent: FrozenMapping
 
     schema = "arbogast.campaign.attempt.v1"
 
@@ -297,9 +410,10 @@ class AttemptRecord:
         worker_id: str | None = None,
         checkpoint_ref: object | None = None,
         detail: str | None = None,
-        progress_completed: int = 0,
+        progress_completed: int | None = None,
         progress_total: int | None = None,
         resources: Mapping[str, Any] | None = None,
+        spent: Mapping[str, Any] | None = None,
     ) -> None:
         if isinstance(attempt, bool) or not isinstance(attempt, int) or attempt < 1:
             raise CampaignInvariantError("attempt number must be a positive integer")
@@ -307,17 +421,17 @@ class AttemptRecord:
             raise CampaignInvariantError("attempt worker_id must be a non-blank string or null")
         if detail is not None and (not isinstance(detail, str) or not detail.strip()):
             raise CampaignInvariantError("attempt detail must be a non-blank string or null")
-        if (
+        if progress_completed is not None and (
             isinstance(progress_completed, bool)
             or not isinstance(progress_completed, int)
             or progress_completed < 0
         ):
-            raise CampaignInvariantError("attempt progress_completed must be non-negative")
+            raise CampaignInvariantError("attempt progress_completed must be non-negative or null")
         if progress_total is not None and (
             isinstance(progress_total, bool)
             or not isinstance(progress_total, int)
-            or progress_total < 1
-            or progress_completed > progress_total
+            or progress_total < 0
+            or (progress_completed is not None and progress_completed > progress_total)
         ):
             raise CampaignInvariantError("attempt progress_total is invalid")
         object.__setattr__(self, "target_id", _content_ref(target_id, "attempt target_id"))
@@ -337,7 +451,16 @@ class AttemptRecord:
         object.__setattr__(self, "detail", detail)
         object.__setattr__(self, "progress_completed", progress_completed)
         object.__setattr__(self, "progress_total", progress_total)
-        object.__setattr__(self, "resources", FrozenMapping(resources))
+        object.__setattr__(
+            self,
+            "resources",
+            _counter_mapping(resources, field_name="attempt resource"),
+        )
+        object.__setattr__(
+            self,
+            "spent",
+            _counter_mapping(spent, field_name="attempt spend"),
+        )
 
     @property
     def attempt_id(self) -> str:
@@ -366,6 +489,7 @@ class AttemptRecord:
             "progress_total": self.progress_total,
             "resources": self.resources.to_dict(),
             "schema": self.schema,
+            "spent": self.spent.to_dict(),
             "state": self.state.value,
             "target_id": self.target_id,
             "task_id": self.task_id,
@@ -387,6 +511,7 @@ class AttemptRecord:
             "record_id",
             "resources",
             "schema",
+            "spent",
             "state",
             "target_id",
             "task_id",
@@ -396,16 +521,23 @@ class AttemptRecord:
             raise CampaignSerializationError("attempt has missing or unknown fields")
         if value["schema"] != cls.schema:
             raise CampaignSerializationError("unsupported attempt schema")
-        for field_name in ("attempt", "progress_completed"):
-            raw = value[field_name]
-            if isinstance(raw, bool) or not isinstance(raw, int):
-                raise CampaignSerializationError(f"attempt {field_name} must be an integer")
+        raw_attempt = value["attempt"]
+        if isinstance(raw_attempt, bool) or not isinstance(raw_attempt, int):
+            raise CampaignSerializationError("attempt attempt must be an integer")
+        completed = value["progress_completed"]
+        if completed is not None and (
+            isinstance(completed, bool) or not isinstance(completed, int)
+        ):
+            raise CampaignSerializationError(
+                "attempt progress_completed must be an integer or null"
+            )
         total = value["progress_total"]
         if total is not None and (isinstance(total, bool) or not isinstance(total, int)):
             raise CampaignSerializationError("attempt progress_total must be an integer or null")
         resources = value["resources"]
-        if not isinstance(resources, Mapping):
-            raise CampaignSerializationError("attempt resources must be an object")
+        spent = value["spent"]
+        if not isinstance(resources, Mapping) or not isinstance(spent, Mapping):
+            raise CampaignSerializationError("attempt resources/spent must be objects")
         strings: dict[str, str | None] = {}
         for field_name in (
             "checkpoint_ref",
@@ -429,9 +561,10 @@ class AttemptRecord:
             worker_id=strings["worker_id"],
             checkpoint_ref=strings["checkpoint_ref"],
             detail=strings["detail"],
-            progress_completed=value["progress_completed"],
+            progress_completed=completed,
             progress_total=total,
             resources=resources,
+            spent=spent,
         )
         if not isinstance(value["attempt_id"], str) or value["attempt_id"] != record.attempt_id:
             raise CampaignSerializationError("attempt_id does not match canonical identity")
@@ -445,4 +578,5 @@ __all__ = [
     "CandidateEvidence",
     "CandidateRecord",
     "CandidateScope",
+    "ExecutionTelemetry",
 ]

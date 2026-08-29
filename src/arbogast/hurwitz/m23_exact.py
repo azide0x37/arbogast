@@ -20,6 +20,7 @@ from typing import ClassVar, TypeAlias, cast
 
 from arbogast.cert import (
     CertificateLayer,
+    ClaimBinding,
     ContentAddressedCertificate,
     FrozenMap,
     VerificationCertificate,
@@ -35,7 +36,9 @@ from arbogast.claims import (
     Derivation,
     EpistemicStatus,
     FormalStatement,
+    claim_boundary_hash,
 )
+from arbogast.core.canonical import _parse_decimal_integer
 
 DEGREE = 23
 IDENTITY = tuple(range(DEGREE))
@@ -102,6 +105,7 @@ def load_strict_json(raw: bytes, label: str) -> object:
         return json.loads(
             raw.decode("utf-8"),
             object_pairs_hook=unique_object,
+            parse_int=_parse_decimal_integer,
             parse_constant=reject_constant,
         )
     except UnicodeDecodeError as error:
@@ -1349,6 +1353,27 @@ def _statement_for(spec: _M23ClaimSpec) -> FormalStatement:
     )
 
 
+def _claim_boundary_for(spec: _M23ClaimSpec) -> str:
+    return claim_boundary_hash(
+        spec.claim_id,
+        _statement_for(spec),
+        kind=ClaimKind.COMPUTED,
+        status=EpistemicStatus.CERTIFIED,
+        hypotheses=spec.hypotheses,
+        dependency_ids=spec.why,
+    )
+
+
+def _claim_binding_for(spec: _M23ClaimSpec) -> ClaimBinding:
+    statement = _statement_for(spec)
+    return ClaimBinding(spec.claim_id, statement.statement_hash, _claim_boundary_for(spec))
+
+
+def _dependency_bindings_for(spec: _M23ClaimSpec) -> tuple[ClaimBinding, ...]:
+    specs = {item.claim_id: item for item in _M23_CLAIM_SPECS}
+    return tuple(_claim_binding_for(specs[dependency_id]) for dependency_id in spec.why)
+
+
 def m23_verification_certificate_for(
     dataset: M23ExactDataset,
     claim_id: str,
@@ -1371,6 +1396,8 @@ def m23_verification_certificate_for(
         verifier=M23_EXACT_VERIFIER,
         claim_id=spec.claim_id,
         statement_hash=statement.statement_hash,
+        claim_boundary_hash=_claim_boundary_for(spec),
+        claim_dependencies=_dependency_bindings_for(spec),
         witness={
             "m23_exact_certificate": dataset.certificate.to_dict(),
             "claim_key": spec.claim_key,

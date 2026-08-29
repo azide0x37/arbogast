@@ -177,8 +177,10 @@ class OperationDescription:
                 raise ValueError(f"operation {field_name} must be a string or null")
         if self.exact is not None and not isinstance(self.exact, bool):
             raise ValueError("operation exact must be a boolean or null")
-        if not isinstance(self.shardable, bool) or not isinstance(self.implemented, bool):
-            raise ValueError("operation flags must be booleans")
+        if not isinstance(self.shardable, bool):
+            raise ValueError("operation shardable must be a boolean")
+        if not isinstance(self.implemented, bool):
+            raise ValueError("operation implemented must be a boolean")
         if self.schema != OPERATION_DESCRIPTION_SCHEMA:
             raise ValueError("unsupported operation-description schema")
 
@@ -289,8 +291,10 @@ class OperationDescription:
             raise ValueError("operation description exact must be a boolean or null")
         shardable = value["shardable"]
         implemented = value["implemented"]
-        if not isinstance(shardable, bool) or not isinstance(implemented, bool):
-            raise ValueError("operation description flags must be booleans")
+        if not isinstance(shardable, bool):
+            raise ValueError("operation description shardable must be a boolean")
+        if not isinstance(implemented, bool):
+            raise ValueError("operation description implemented must be a boolean")
         return cls(
             name=name,
             inputs=strings("inputs"),
@@ -326,6 +330,20 @@ class OperationDescription:
                     return contract_data[key]
             return default
 
+        def boolean(name: str, *, default: bool) -> bool:
+            raw = first(name, default=default)
+            if not isinstance(raw, bool):
+                raise ValueError(f"semantic operation {name} must be a boolean")
+            return raw
+
+        def optional_boolean(name: str) -> bool | None:
+            raw = first(name, default=None)
+            if raw is None:
+                return None
+            if not isinstance(raw, bool):
+                raise ValueError(f"semantic operation {name} must be a boolean or null")
+            return raw
+
         declared_inputs = _strings(first("inputs", "input_types", default=()))
         declared_outputs = _strings(
             first("outputs", "output_types", "output_type", "returns", default=())
@@ -349,8 +367,8 @@ class OperationDescription:
                 if first("certificate_type", "certificate", default=None) is None
                 else str(first("certificate_type", "certificate", default=None))
             ),
-            exact=(None if first("exact", default=None) is None else bool(first("exact"))),
-            shardable=bool(first("shardable", default=False)),
+            exact=optional_boolean("exact"),
+            shardable=boolean("shardable", default=False),
             shard_strategy=(
                 None
                 if first("shard_strategy", default=None) is None

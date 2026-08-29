@@ -12,6 +12,7 @@ from arbogast.claims import (
     Derivation,
     EpistemicStatus,
     FormalStatement,
+    claim_boundary_hash,
 )
 from arbogast.cohom import (
     CertificateVerificationError,
@@ -58,6 +59,20 @@ class ScalarModule:
 
     def action_matrix(self, element: int) -> tuple[tuple[int, ...], ...]:
         return ((self._action[element],),)
+
+
+class MatrixModule:
+    def __init__(
+        self,
+        prime: int,
+        action: tuple[tuple[tuple[int, ...], ...], ...],
+    ) -> None:
+        self.field = PrimeField(prime)
+        self.dimension = len(action[0])
+        self._action = action
+
+    def action_matrix(self, element: int) -> tuple[tuple[int, ...], ...]:
+        return self._action[element]
 
 
 def trivial_module(prime: int, group_order: int) -> ScalarModule:
@@ -213,6 +228,13 @@ def test_semantic_verifier_derives_claim_identity_and_statement_from_domain_rece
         verifier=valid.verifier,
         claim_id="false",
         statement_hash=false_statement.statement_hash,
+        claim_boundary_hash=claim_boundary_hash(
+            "false",
+            false_statement,
+            kind=ClaimKind.COMPUTED,
+            status=EpistemicStatus.EXACT,
+        ),
+        claim_dependencies=valid.claim_dependencies,
         witness=valid.witness.to_dict(),
         checks=valid.checks,
         guarantees=valid.guarantees,
@@ -306,6 +328,48 @@ def test_certificate_rejects_noncanonical_residue_encodings() -> None:
     assert "canonical integer residues" in report.error
 
 
+def test_certificate_rejects_noncanonical_cocycle_basis_encodings() -> None:
+    identity = ((1, 0), (0, 1))
+    certificate = h0(CyclicGroup(2), MatrixModule(3, (identity, identity))).certificate
+    basis = certificate.cocycle_basis
+    assert len(basis) == 2
+
+    noncanonical_bases = (
+        (*basis, basis[0]),
+        tuple(reversed(basis)),
+        (tuple(2 * value % certificate.prime for value in basis[0]), basis[1]),
+    )
+    for noncanonical_basis in noncanonical_bases:
+        report = replace(certificate, cocycle_basis=noncanonical_basis).verify(raise_on_error=False)
+        assert not report
+        assert report.error is not None
+        assert "canonical kernel basis" in report.error
+
+
+def test_certificate_rejects_noncanonical_coboundary_basis_encodings() -> None:
+    identity = ((1, 0), (0, 1))
+    minus_identity = ((-1, 0), (0, -1))
+    certificate = h1(
+        CyclicGroup(2),
+        MatrixModule(3, (identity, minus_identity)),
+    ).certificate
+    basis = certificate.coboundary_basis
+    assert len(basis) == 2
+
+    noncanonical_bases = (
+        (*basis, basis[0]),
+        tuple(reversed(basis)),
+        (tuple(2 * value % certificate.prime for value in basis[0]), basis[1]),
+    )
+    for noncanonical_basis in noncanonical_bases:
+        report = replace(certificate, coboundary_basis=noncanonical_basis).verify(
+            raise_on_error=False
+        )
+        assert not report
+        assert report.error is not None
+        assert "canonical preceding-image basis" in report.error
+
+
 def test_certificate_from_dict_is_strict_and_json_rejects_duplicate_fields() -> None:
     certificate = h1(CyclicGroup(2), trivial_module(2, 2)).certificate
     payload = certificate.to_dict()
@@ -317,6 +381,34 @@ def test_certificate_from_dict_is_strict_and_json_rejects_duplicate_fields() -> 
     duplicated = encoded.replace('"prime":2', '"prime":2,"prime":2', 1)
     with pytest.raises(ValueError, match="duplicate JSON object key"):
         CohomologyCertificate.from_json(duplicated)
+
+
+@pytest.mark.parametrize("sign", [1, -1])
+def test_cohomology_certificate_json_replays_arbitrarily_large_integers(sign: int) -> None:
+    huge = sign * (10**5000 + 12345)
+    certificate = h1(CyclicGroup(2), trivial_module(2, 2)).certificate
+    payload = certificate.to_dict()
+    payload["prime"] = huge
+
+    restored = CohomologyCertificate.from_json(canonical_json(payload))
+
+    assert restored.prime == huge
+    pretty = restored.to_json(indent=3)
+    pretty_restored = CohomologyCertificate.from_json(pretty)
+    assert pretty_restored.prime == huge
+    assert '\n   "prime": ' in pretty
+
+
+@pytest.mark.parametrize("sign", [1, -1])
+def test_cohomology_certificate_verifies_huge_canonical_group_identifiers(sign: int) -> None:
+    huge_identifier = canonical_json(sign * (10**5000 + 12345))
+    certificate = h1(CyclicGroup(2), trivial_module(2, 2)).certificate
+    certificate = replace(
+        certificate,
+        group_element_ids=(huge_identifier, certificate.group_element_ids[1]),
+    )
+
+    assert CohomologyCertificate.from_json(certificate.to_json()).verify()
 
 
 def test_cohomology_hashes_share_the_core_canonical_json_boundary() -> None:

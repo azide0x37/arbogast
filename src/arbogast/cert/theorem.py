@@ -6,7 +6,13 @@ from collections.abc import Mapping, Sequence
 from dataclasses import dataclass, field
 from typing import ClassVar
 
-from .base import CertificateError, CertificateLayer, CertificateRef, ContentAddressedCertificate
+from .base import (
+    CertificateError,
+    CertificateLayer,
+    CertificateRef,
+    ClaimBinding,
+    ContentAddressedCertificate,
+)
 from .canonical import FrozenMap, freeze_mapping, validate_content_address
 
 
@@ -16,9 +22,11 @@ class TheoremCertificate(ContentAddressedCertificate):
 
     claim_id: str
     statement_hash: str
+    claim_boundary_hash: str
     verifier: str
     verification_certificates: tuple[CertificateRef, ...]
     dependencies: tuple[str, ...] = ()
+    claim_dependencies: tuple[ClaimBinding, ...] = ()
     conclusion: FrozenMap = field(default_factory=FrozenMap)
     theorem_name: str | None = None
 
@@ -35,6 +43,7 @@ class TheoremCertificate(ContentAddressedCertificate):
         if not self.verifier.strip():
             raise CertificateError("theorem certificate requires an inference verifier")
         validate_content_address(self.statement_hash)
+        validate_content_address(self.claim_boundary_hash)
         refs = tuple(self.verification_certificates)
         if not refs:
             raise CertificateError("theorem certificate requires verified evidence")
@@ -49,6 +58,7 @@ class TheoremCertificate(ContentAddressedCertificate):
             raise CertificateError("theorem verification certificates must be unique")
         object.__setattr__(self, "verification_certificates", refs)
         object.__setattr__(self, "dependencies", tuple(self.dependencies))
+        object.__setattr__(self, "claim_dependencies", tuple(self.claim_dependencies))
         object.__setattr__(self, "conclusion", freeze_mapping(self.conclusion))
         if any(
             not isinstance(dependency, str) or not dependency.strip()
@@ -57,6 +67,13 @@ class TheoremCertificate(ContentAddressedCertificate):
             raise CertificateError("theorem dependency IDs cannot be blank")
         if len(set(self.dependencies)) != len(self.dependencies):
             raise CertificateError("theorem dependency IDs must be unique")
+        if any(not isinstance(binding, ClaimBinding) for binding in self.claim_dependencies):
+            raise CertificateError("claim_dependencies must contain ClaimBinding values")
+        binding_ids = tuple(binding.claim_id for binding in self.claim_dependencies)
+        if binding_ids != self.dependencies:
+            raise CertificateError(
+                "claim dependency bindings must match theorem dependency IDs in order"
+            )
         if self.theorem_name is not None and (
             not isinstance(self.theorem_name, str) or not self.theorem_name.strip()
         ):
@@ -69,17 +86,21 @@ class TheoremCertificate(ContentAddressedCertificate):
         statement_hash: str,
         verification_certificates: Sequence[CertificateRef],
         *,
+        claim_boundary_hash: str,
         verifier: str,
         dependencies: Sequence[str] = (),
+        claim_dependencies: Sequence[ClaimBinding] = (),
         conclusion: Mapping[str, object] | None = None,
         theorem_name: str | None = None,
     ) -> TheoremCertificate:
         return cls(
             claim_id=claim_id,
             statement_hash=statement_hash,
+            claim_boundary_hash=claim_boundary_hash,
             verifier=verifier,
             verification_certificates=tuple(verification_certificates),
             dependencies=tuple(dependencies),
+            claim_dependencies=tuple(claim_dependencies),
             conclusion=freeze_mapping(conclusion),
             theorem_name=theorem_name,
         )
@@ -90,9 +111,11 @@ class TheoremCertificate(ContentAddressedCertificate):
             "layer": self.layer.value,
             "claim_id": self.claim_id,
             "statement_hash": self.statement_hash,
+            "claim_boundary_hash": self.claim_boundary_hash,
             "verifier": self.verifier,
             "verification_certificates": self.verification_certificates,
             "dependencies": self.dependencies,
+            "claim_dependencies": self.claim_dependencies,
             "conclusion": self.conclusion,
             "theorem_name": self.theorem_name,
         }
@@ -108,17 +131,21 @@ class TheoremCertificate(ContentAddressedCertificate):
                 "layer",
                 "claim_id",
                 "statement_hash",
+                "claim_boundary_hash",
                 "verifier",
                 "verification_certificates",
+                "claim_dependencies",
             },
             allowed={
                 "schema_version",
                 "layer",
                 "claim_id",
                 "statement_hash",
+                "claim_boundary_hash",
                 "verifier",
                 "verification_certificates",
                 "dependencies",
+                "claim_dependencies",
                 "conclusion",
                 "theorem_name",
                 "certificate_id",
@@ -138,20 +165,32 @@ class TheoremCertificate(ContentAddressedCertificate):
             if not isinstance(raw, Mapping):
                 raise CertificateError("certificate reference must be a mapping")
             refs.append(CertificateRef.from_dict(raw))
+        raw_claim_dependencies = value.get("claim_dependencies")
+        if isinstance(raw_claim_dependencies, str) or not isinstance(
+            raw_claim_dependencies, Sequence
+        ):
+            raise CertificateError("claim_dependencies must be a sequence")
+        claim_dependencies: list[ClaimBinding] = []
+        for raw in raw_claim_dependencies:
+            if not isinstance(raw, Mapping):
+                raise CertificateError("claim dependency binding must be a mapping")
+            claim_dependencies.append(ClaimBinding.from_dict(raw))
         theorem_name = value.get("theorem_name")
         if theorem_name is not None and not isinstance(theorem_name, str):
             raise CertificateError("theorem_name must be a string or null")
         theorem = cls.create(
             claim_id=_required_string(value, "claim_id"),
             statement_hash=_required_string(value, "statement_hash"),
+            claim_boundary_hash=_required_string(value, "claim_boundary_hash"),
             verifier=_required_string(value, "verifier"),
             verification_certificates=refs,
             dependencies=_strings(value.get("dependencies")),
+            claim_dependencies=claim_dependencies,
             conclusion=_mapping(value.get("conclusion")),
             theorem_name=theorem_name,
         )
-        expected = value.get("certificate_id")
-        if expected is not None:
+        if "certificate_id" in value:
+            expected = value["certificate_id"]
             if not isinstance(expected, str):
                 raise CertificateError("certificate_id must be a string")
             theorem.verify_integrity(expected)

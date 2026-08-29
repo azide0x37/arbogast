@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import json
 import unicodedata
 
 import pytest
@@ -9,6 +10,7 @@ from arbogast.core import (
     canonical_bytes,
     canonical_data,
     canonical_json,
+    pretty_canonical_json,
     require_canonical_json,
     sha256_hex,
     sha256_identity,
@@ -70,6 +72,19 @@ def test_require_canonical_json_rejects_invalid_input() -> None:
         require_canonical_json("not json")
 
 
+@pytest.mark.parametrize("indent", [0, 1, 4, -2])
+def test_pretty_canonical_json_preserves_stdlib_indent_layout(indent: int) -> None:
+    value = {"z": [3, {"empty": []}], "a": {"truth": True, "none": None}}
+
+    assert pretty_canonical_json(value, indent=indent) == json.dumps(
+        canonical_data(value),
+        ensure_ascii=False,
+        allow_nan=False,
+        sort_keys=True,
+        indent=indent,
+    )
+
+
 @pytest.mark.parametrize("sign", [1, -1])
 def test_arbitrarily_large_integers_have_stable_canonical_roundtrips(sign: int) -> None:
     magnitude = 10**5000
@@ -80,6 +95,8 @@ def test_arbitrarily_large_integers_have_stable_canonical_roundtrips(sign: int) 
     assert canonical_bytes(value) == expected.encode("ascii")
     assert require_canonical_json(expected) == value
     assert canonical_json({"z": value, "a": [value]}) == (f'{{"a":[{expected}],"z":{expected}}}')
+    pretty = pretty_canonical_json({"z": value, "a": [value]}, indent=3)
+    assert pretty == (f'{{\n   "a": [\n      {expected}\n   ],\n   "z": {expected}\n}}')
 
 
 def test_utf8_encoding_failures_use_the_canonical_exception_boundary() -> None:

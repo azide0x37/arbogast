@@ -109,6 +109,63 @@ class CertificateRef:
         return cls(certificate_id, parsed_layer, schema)
 
 
+@dataclass(frozen=True)
+class ClaimBinding:
+    """Content binding for one node in a mathematical claim graph.
+
+    A claim identifier is only a user-facing graph label.  It is not sufficient
+    to bind theorem evidence because the same label can be rebound to a
+    different statement or to a different set of hypotheses.  The statement
+    hash makes the conclusion explicit and ``boundary_hash`` commits to the
+    complete theorem boundary (kind, status, ordered hypotheses, and ordered
+    dependency identifiers).
+    """
+
+    claim_id: str
+    statement_hash: str
+    boundary_hash: str
+
+    def __post_init__(self) -> None:
+        if not isinstance(self.claim_id, str) or not self.claim_id.strip():
+            raise CertificateError("claim binding ID must be a non-blank string")
+        if not isinstance(self.statement_hash, str):
+            raise CertificateError("claim binding statement_hash must be a string")
+        if not isinstance(self.boundary_hash, str):
+            raise CertificateError("claim binding boundary_hash must be a string")
+        validate_content_address(self.statement_hash)
+        validate_content_address(self.boundary_hash)
+
+    def to_canonical(self) -> dict[str, object]:
+        return {
+            "claim_id": self.claim_id,
+            "statement_hash": self.statement_hash,
+            "boundary_hash": self.boundary_hash,
+        }
+
+    def to_dict(self) -> dict[str, object]:
+        return self.to_canonical()
+
+    @classmethod
+    def from_dict(cls, value: Mapping[str, object]) -> ClaimBinding:
+        allowed = {"claim_id", "statement_hash", "boundary_hash"}
+        unexpected = sorted(set(value) - allowed)
+        if unexpected:
+            raise CertificateError(f"unexpected claim binding fields: {', '.join(unexpected)}")
+        missing = sorted(allowed - set(value))
+        if missing:
+            raise CertificateError(f"missing claim binding fields: {', '.join(missing)}")
+        claim_id = value["claim_id"]
+        statement_hash = value["statement_hash"]
+        boundary_hash = value["boundary_hash"]
+        if not isinstance(claim_id, str):
+            raise CertificateError("claim binding claim_id must be a string")
+        if not isinstance(statement_hash, str):
+            raise CertificateError("claim binding statement_hash must be a string")
+        if not isinstance(boundary_hash, str):
+            raise CertificateError("claim binding boundary_hash must be a string")
+        return cls(claim_id, statement_hash, boundary_hash)
+
+
 class ContentAddressedCertificate:
     """Mixin implementing deterministic certificate identity and integrity checks."""
 
@@ -133,7 +190,11 @@ class ContentAddressedCertificate:
     def verify_integrity(self, expected_id: str | None = None) -> str:
         """Check structural content integrity, not the mathematical assertion."""
 
-        address = expected_id or self.certificate_id
+        # ``None`` means that the caller wants to check this object's computed
+        # identity.  Every string, including the empty string, is an explicitly
+        # supplied transport identity and must be validated rather than silently
+        # replaced by the computed address.
+        address = self.certificate_id if expected_id is None else expected_id
         return validate_content_address(address, self.to_canonical())
 
 
@@ -142,5 +203,6 @@ __all__ = [
     "CertificateError",
     "CertificateLayer",
     "CertificateRef",
+    "ClaimBinding",
     "ContentAddressedCertificate",
 ]

@@ -110,14 +110,40 @@ This matches equations (2.4)--(2.5) of
 Python slots. A `BraidWord` is applied from left to right in stored order; `first.then(second)`
 applies `first` and then `second`.
 
-For zero-based strands `left < right`, the standard pure generator is represented by
+For zero-based strands \(i<j\), the generic `pure_braid_word(i, j)` API uses the basis
+
+\[
+G_{i,j}=\sigma_{j-1}^{-1}\cdots\sigma_{i+1}^{-1}\sigma_i^2
+        \sigma_{i+1}\cdots\sigma_{j-1}.
+\]
+
+In code-like notation this is
 
 ```text
-sigma(right-1)^-1 ... sigma(left+1)^-1 sigma(left)^2
-sigma(left+1) ... sigma(right-1)
+sigma(j-1)^-1 ... sigma(i+1)^-1 sigma(i)^2
+sigma(i+1) ... sigma(j-1)
 ```
 
-and induces the identity permutation on tuple slots.
+The compact M23 example instead pins the basis displayed by Häfner (with his braid indices
+translated to zero-based Artin generators):
+
+\[
+H_{i,j}=\sigma_i^{-1}\cdots\sigma_{j-2}^{-1}\sigma_{j-1}^2
+        \sigma_{j-2}\cdots\sigma_i.
+\]
+
+Thus, for example, its `beta13` word is
+\(H_{0,2}=\sigma_0^{-1}\sigma_1^2\sigma_0\), whereas the generic API returns
+\(G_{0,2}=\sigma_1^{-1}\sigma_0^2\sigma_1\). These are different individual braid words,
+not interchangeable edge labels.
+
+Both bases consist of pure braids and generate the same pure braid group \(P_n\). More
+precisely, the reflection automorphism
+\(\phi(\sigma_k)=\sigma_{n-2-k}\) sends
+\(H_{n-1-j,n-1-i}\) to \(G_{i,j}\). Consequently the two complete generating families induce
+the same \(P_n\)-orbit partition, although their named generator edges differ. The generic API
+certifies the \(G\)-basis it actually applies; the M23 verifier separately pins and replays every
+Häfner \(H\)-word and transition. Each word induces the identity permutation on tuple slots.
 
 ## Real structures and genus
 

@@ -14,6 +14,7 @@ from types import ModuleType
 
 import pytest
 
+from arbogast.core import canonical_json
 from arbogast.hurwitz import (
     M23ExactCertificate,
     M23ExactDataset,
@@ -22,6 +23,7 @@ from arbogast.hurwitz import (
     m23_claim_graph_for,
     m23_verifier_registry,
 )
+from arbogast.hurwitz.m23_exact import load_strict_json
 
 PROJECT_ROOT = Path(__file__).resolve().parents[2]
 SOURCE_LANE = PROJECT_ROOT / "examples/hurwitz/m23_real_component"
@@ -40,6 +42,13 @@ def _load_fixture_module() -> ModuleType:
 
 
 FIXTURE = _load_fixture_module()
+
+
+@pytest.mark.parametrize("sign", [1, -1])
+def test_m23_strict_json_preserves_arbitrarily_large_exact_integers(sign: int) -> None:
+    huge = sign * (10**5000 + 12345)
+
+    assert load_strict_json(canonical_json({"value": huge}).encode(), "test") == {"value": huge}
 
 
 def _sha256(path: Path) -> str:

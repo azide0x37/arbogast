@@ -6,6 +6,7 @@ import pytest
 
 from arbogast.cert import (
     CertificateRef,
+    ClaimBinding,
     TheoremCertificate,
     VerificationCertificate,
     VerifierRegistry,
@@ -26,6 +27,7 @@ from arbogast.claims import (
     Exact,
     FormalStatement,
     Numerical,
+    claim_boundary_hash,
     epistemic_from_dict,
     require_certified,
     require_exact,
@@ -48,6 +50,12 @@ def _bound_claim(
         "tests.exact.v1",
         claim_id=claim_id,
         statement_hash=statement.statement_hash,
+        claim_boundary_hash=claim_boundary_hash(
+            claim_id,
+            statement,
+            kind=ClaimKind.COMPUTED,
+            status=EpistemicStatus.EXACT,
+        ),
         witness={"lhs": 1, "rhs": 1},
     )
     registry = VerifierRegistry()
@@ -133,6 +141,140 @@ def test_bound_computed_claim_replays_and_round_trips() -> None:
     assert restored.verify(verifier_registry=registry).verified
 
 
+def test_bound_certificate_rejects_hypothesis_and_status_mutation() -> None:
+    claim, certificate, registry = _bound_claim()
+    altered_hypotheses = Claim(
+        claim.id,
+        statement=claim.what,
+        hypotheses=("An additional unproved hypothesis.",),
+        kind=claim.kind,
+        status=claim.status,
+        how=claim.how,
+        certificate=certificate,
+    )
+    with pytest.raises(ClaimVerificationError, match="claim boundary hash mismatch"):
+        altered_hypotheses.verify(verifier_registry=registry)
+
+    altered_status = Claim(
+        claim.id,
+        statement=claim.what,
+        kind=claim.kind,
+        status=EpistemicStatus.CERTIFIED,
+        how=claim.how,
+        certificate=certificate,
+    )
+    with pytest.raises(ClaimVerificationError, match="claim boundary hash mismatch"):
+        altered_status.verify(verifier_registry=registry)
+
+    assumed_boundary = claim_boundary_hash(
+        claim.id,
+        claim.what,
+        kind=ClaimKind.ASSUMED,
+        status=EpistemicStatus.UNKNOWN,
+    )
+    computed_boundary = claim_boundary_hash(
+        claim.id,
+        claim.what,
+        kind=ClaimKind.COMPUTED,
+        status=EpistemicStatus.UNKNOWN,
+    )
+    assert assumed_boundary != computed_boundary
+
+
+def test_theorem_rejects_same_id_dependency_semantic_substitution() -> None:
+    original, _, _ = _bound_claim(claim_id="claim.premise", text="P")
+    substituted, _, registry = _bound_claim(claim_id="claim.premise", text="not P")
+    support = VerificationCertificate.create("inference support", "tests.support")
+    registry.register("tests.support", VerificationCertificate, lambda item: True)
+    registry.register("tests.inference", TheoremCertificate, lambda item: True)
+    conclusion = FormalStatement("Q")
+    theorem = TheoremCertificate.create(
+        "claim.conclusion",
+        conclusion.statement_hash,
+        (CertificateRef.from_certificate(support),),
+        claim_boundary_hash=claim_boundary_hash(
+            "claim.conclusion",
+            conclusion,
+            kind=ClaimKind.DERIVED,
+            status=EpistemicStatus.EXACT,
+            dependency_ids=(original.id,),
+        ),
+        verifier="tests.inference",
+        dependencies=(original.id,),
+        claim_dependencies=(original.binding,),
+    )
+    derived = Claim(
+        "claim.conclusion",
+        statement=conclusion,
+        kind=ClaimKind.DERIVED,
+        status=EpistemicStatus.EXACT,
+        why=(substituted.id,),
+        how=Derivation(DerivationKind.INFERENCE, "P implies Q"),
+        evidence=(support,),
+        certificate=theorem,
+    )
+
+    with pytest.raises(ClaimVerificationError, match="dependency bindings"):
+        ClaimGraph((substituted, derived)).verify(verifier_registry=registry)
+
+
+def test_computed_claim_cannot_erase_dependency_status() -> None:
+    sources = SourceRegistry()
+    sources.register_document(SourceDocument("paper", "A conditional theorem"))
+    sources.register_reference(
+        Reference.create(
+            "paper.conditional",
+            "paper",
+            "P",
+            theorem_id="Theorem 1",
+            imported_as=("claim.conditional",),
+        )
+    )
+    dependency = Claim(
+        "claim.conditional",
+        statement="P",
+        kind=ClaimKind.IMPORTED,
+        status=EpistemicStatus.CONDITIONAL,
+        source=("paper.conditional",),
+    )
+    conclusion = FormalStatement("A finite computation under P returns Q")
+    certificate = VerificationCertificate.create(
+        conclusion.text,
+        "tests.dependent-computation",
+        claim_id="claim.computed",
+        statement_hash=conclusion.statement_hash,
+        claim_boundary_hash=claim_boundary_hash(
+            "claim.computed",
+            conclusion,
+            kind=ClaimKind.COMPUTED,
+            status=EpistemicStatus.EXACT,
+            dependency_ids=(dependency.id,),
+        ),
+        claim_dependencies=(dependency.binding,),
+    )
+    computed = Claim(
+        "claim.computed",
+        statement=conclusion,
+        kind=ClaimKind.COMPUTED,
+        status=EpistemicStatus.EXACT,
+        why=(dependency.id,),
+        how=Derivation.computation("tests.dependent-computation"),
+        certificate=certificate,
+    )
+    registry = VerifierRegistry()
+    registry.register(
+        "tests.dependent-computation",
+        VerificationCertificate,
+        lambda item: True,
+    )
+
+    with pytest.raises(ClaimVerificationError, match="conditional status"):
+        ClaimGraph((dependency, computed)).verify(
+            verifier_registry=registry,
+            source_registry=sources,
+        )
+
+
 def test_claim_formalization_is_bound_canonical_and_not_a_math_promotion() -> None:
     base, certificate, registry = _bound_claim()
     obligation = ProofObligation.create(
@@ -211,6 +353,12 @@ def test_unresolved_or_unrelated_certificate_fails_closed() -> None:
         "tests.exact.v1",
         claim_id=claim.id,
         statement_hash=wrong_statement.statement_hash,
+        claim_boundary_hash=claim_boundary_hash(
+            claim.id,
+            wrong_statement,
+            kind=ClaimKind.COMPUTED,
+            status=EpistemicStatus.EXACT,
+        ),
         witness={"lhs": 1, "rhs": 1},
     )
     wrongly_bound = Claim(
@@ -285,12 +433,32 @@ def test_derived_claim_requires_replayable_entailment_evidence() -> None:
         )
 
     support = VerificationCertificate.create("support", "tests.support")
+    false_statement = FormalStatement("1 = 0")
+    true_statement = FormalStatement("1 = 1")
+    true_binding = ClaimBinding(
+        "claim.true",
+        true_statement.statement_hash,
+        claim_boundary_hash(
+            "claim.true",
+            true_statement,
+            kind=ClaimKind.IMPORTED,
+            status=EpistemicStatus.EXACT,
+        ),
+    )
     theorem = TheoremCertificate.create(
         "claim.false",
-        FormalStatement("1 = 0").statement_hash,
+        false_statement.statement_hash,
         (CertificateRef.from_certificate(support),),
+        claim_boundary_hash=claim_boundary_hash(
+            "claim.false",
+            false_statement,
+            kind=ClaimKind.DERIVED,
+            status=EpistemicStatus.EXACT,
+            dependency_ids=("claim.true",),
+        ),
         verifier="tests.inference",
         dependencies=("claim.true",),
+        claim_dependencies=(true_binding,),
     )
     with pytest.raises(ClaimError, match="inference derivation"):
         Claim(
@@ -311,12 +479,31 @@ def test_derived_claim_binds_graph_dependencies_and_conditional_status() -> None
     registry.register("tests.inference", TheoremCertificate, lambda item: True)
 
     conclusion = FormalStatement("Q")
+    wrong_dependency_statement = FormalStatement("not P")
+    wrong_dependency_binding = ClaimBinding(
+        "claim.not-premise",
+        wrong_dependency_statement.statement_hash,
+        claim_boundary_hash(
+            "claim.not-premise",
+            wrong_dependency_statement,
+            kind=ClaimKind.IMPORTED,
+            status=EpistemicStatus.EXACT,
+        ),
+    )
     mismatched = TheoremCertificate.create(
         "claim.conclusion",
         conclusion.statement_hash,
         (CertificateRef.from_certificate(support),),
+        claim_boundary_hash=claim_boundary_hash(
+            "claim.conclusion",
+            conclusion,
+            kind=ClaimKind.DERIVED,
+            status=EpistemicStatus.EXACT,
+            dependency_ids=("claim.not-premise",),
+        ),
         verifier="tests.inference",
         dependencies=("claim.not-premise",),
+        claim_dependencies=(wrong_dependency_binding,),
     )
     derived = Claim(
         "claim.conclusion",
@@ -363,8 +550,16 @@ def test_derived_claim_binds_graph_dependencies_and_conditional_status() -> None
         "claim.promoted",
         conclusion.statement_hash,
         (CertificateRef.from_certificate(support),),
+        claim_boundary_hash=claim_boundary_hash(
+            "claim.promoted",
+            conclusion,
+            kind=ClaimKind.DERIVED,
+            status=EpistemicStatus.EXACT,
+            dependency_ids=(imported.id,),
+        ),
         verifier="tests.inference",
         dependencies=(imported.id,),
+        claim_dependencies=(imported.binding,),
     )
     promoted = Claim(
         "claim.promoted",
@@ -393,8 +588,16 @@ def test_derived_claim_binds_graph_dependencies_and_conditional_status() -> None
         "claim.exact_conclusion",
         conclusion.statement_hash,
         (CertificateRef.from_certificate(support),),
+        claim_boundary_hash=claim_boundary_hash(
+            "claim.exact_conclusion",
+            conclusion,
+            kind=ClaimKind.DERIVED,
+            status=EpistemicStatus.EXACT,
+            dependency_ids=(imported_exact.id,),
+        ),
         verifier="tests.inference",
         dependencies=(imported_exact.id,),
+        claim_dependencies=(imported_exact.binding,),
     )
     exact_conclusion = Claim(
         "claim.exact_conclusion",
@@ -429,8 +632,16 @@ def test_derived_claim_binds_graph_dependencies_and_conditional_status() -> None
             exact_id,
             conclusion.statement_hash,
             (CertificateRef.from_certificate(support),),
+            claim_boundary_hash=claim_boundary_hash(
+                exact_id,
+                conclusion,
+                kind=ClaimKind.DERIVED,
+                status=EpistemicStatus.EXACT,
+                dependency_ids=(weak_id,),
+            ),
             verifier="tests.inference",
             dependencies=(weak_id,),
+            claim_dependencies=(weak_premise.binding,),
         )
         weak_promotion = Claim(
             exact_id,
@@ -461,6 +672,12 @@ def test_verification_certificate_dependencies_are_replayed() -> None:
         "tests.dependent",
         claim_id="claim.dependent",
         statement_hash=statement.statement_hash,
+        claim_boundary_hash=claim_boundary_hash(
+            "claim.dependent",
+            statement,
+            kind=ClaimKind.COMPUTED,
+            status=EpistemicStatus.EXACT,
+        ),
         dependencies=(missing,),
     )
     claim = Claim(
@@ -510,6 +727,12 @@ def test_theorem_certificate_cannot_promote_unrelated_valid_evidence() -> None:
         "tests.support",
         claim_id="claim.support",
         statement_hash=support_statement.statement_hash,
+        claim_boundary_hash=claim_boundary_hash(
+            "claim.support",
+            support_statement,
+            kind=ClaimKind.COMPUTED,
+            status=EpistemicStatus.EXACT,
+        ),
         witness={"dimension": 0},
     )
     false_statement = FormalStatement("One equals zero")
@@ -517,6 +740,12 @@ def test_theorem_certificate_cannot_promote_unrelated_valid_evidence() -> None:
         "claim.false",
         false_statement.statement_hash,
         (CertificateRef.from_certificate(support),),
+        claim_boundary_hash=claim_boundary_hash(
+            "claim.false",
+            false_statement,
+            kind=ClaimKind.COMPUTED,
+            status=EpistemicStatus.EXACT,
+        ),
         verifier="tests.missing-inference-rule",
         conclusion={"text": false_statement.text},
     )

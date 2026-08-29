@@ -9,6 +9,8 @@ from collections.abc import Mapping, Sequence
 from dataclasses import dataclass
 from typing import Any
 
+from arbogast.core.canonical import _parse_decimal_integer, pretty_canonical_json
+
 from ._linear import (
     Vector,
     compose_is_zero,
@@ -177,13 +179,7 @@ class CohomologyCertificate:
         canonical = _canonical_json(self.to_dict())
         if indent is None:
             return canonical
-        return json.dumps(
-            json.loads(canonical),
-            ensure_ascii=False,
-            allow_nan=False,
-            sort_keys=True,
-            indent=indent,
-        )
+        return pretty_canonical_json(self.to_dict(), indent=indent)
 
     @classmethod
     def from_dict(cls, payload: Mapping[str, object]) -> CohomologyCertificate:
@@ -237,7 +233,11 @@ class CohomologyCertificate:
 
     @classmethod
     def from_json(cls, payload: str | bytes | bytearray) -> CohomologyCertificate:
-        decoded = json.loads(payload, object_pairs_hook=_object_without_duplicate_keys)
+        decoded = json.loads(
+            payload,
+            object_pairs_hook=_object_without_duplicate_keys,
+            parse_int=_parse_decimal_integer,
+        )
         if not isinstance(decoded, Mapping):
             raise ValueError("certificate JSON must contain an object")
         return cls.from_dict(decoded)
@@ -277,6 +277,7 @@ class CohomologyCertificate:
                 decoded_identifier = json.loads(
                     identifier,
                     object_pairs_hook=_object_without_duplicate_keys,
+                    parse_int=_parse_decimal_integer,
                 )
                 canonical_identifier = _canonical_json(decoded_identifier)
             except (TypeError, ValueError, json.JSONDecodeError) as error:
@@ -373,13 +374,14 @@ class CohomologyCertificate:
             fresh_coboundaries: tuple[Vector, ...] = ()
         else:
             fresh_coboundaries = image_basis(differentials[self.degree - 1])
-        if span_basis(self.cocycle_basis, ambient_dimension, self.prime) != fresh_cocycles:
+        if self.cocycle_basis != fresh_cocycles:
             raise CertificateVerificationError(
-                "stored cocycles are not the freshly computed kernel"
+                "stored cocycle basis is not the freshly computed canonical kernel basis"
             )
-        if span_basis(self.coboundary_basis, ambient_dimension, self.prime) != fresh_coboundaries:
+        if self.coboundary_basis != fresh_coboundaries:
             raise CertificateVerificationError(
-                "stored coboundaries are not the freshly computed preceding image"
+                "stored coboundary basis is not the freshly computed canonical "
+                "preceding-image basis"
             )
         if any(not contains(fresh_cocycles, vector, self.prime) for vector in fresh_coboundaries):
             raise CertificateVerificationError("the preceding image is not contained in the kernel")

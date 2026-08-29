@@ -17,9 +17,11 @@ from arbogast.campaign import (
     CandidateEvidence,
     CapabilityUnavailableError,
     DerivationRule,
+    ExecutionTelemetry,
     Observation,
     OperationalState,
     Outcome,
+    OutcomeScope,
     RecommendationAction,
     Strategy,
     TargetSpec,
@@ -60,10 +62,25 @@ def _found_certificate_verifier(certificate: VerificationCertificate) -> bool:
     )
 
 
+def _exhausted_certificate_verifier(certificate: VerificationCertificate) -> bool:
+    witness = certificate.witness.to_dict()
+    task_hash = witness.get("task_hash")
+    return (
+        certificate.subject.endswith(":SEARCH_EXHAUSTED")
+        and isinstance(task_hash, str)
+        and len(task_hash) == 64
+    )
+
+
 default_verifiers.register(
     "test.campaign-found",
     VerificationCertificate,
     _found_certificate_verifier,
+)
+default_verifiers.register(
+    "test.campaign-exhausted",
+    VerificationCertificate,
+    _exhausted_certificate_verifier,
 )
 
 
@@ -86,6 +103,7 @@ def _found_operation() -> FunctionalOperation[dict[str, object], dict[str, objec
             target_id,
             Outcome.FOUND,
             "test.campaign-found",
+            outcome_scope=OutcomeScope.TARGET_GLOBAL,
             task_hash=task.task_hash,
             witness={"witness": partials[0]},
             checks=("finite witness checked",),
@@ -93,6 +111,7 @@ def _found_operation() -> FunctionalOperation[dict[str, object], dict[str, objec
         return {
             "certificate": certificate.to_dict(),
             "outcome": "FOUND",
+            "outcome_scope": OutcomeScope.TARGET_GLOBAL.value,
             "witness": partials[0],
         }
 
@@ -104,6 +123,108 @@ def _found_operation() -> FunctionalOperation[dict[str, object], dict[str, objec
             isinstance(result, dict) and result.get("outcome") == "FOUND"
         ),
     )
+
+
+def test_task_local_search_exhaustion_keeps_alternate_strategy_plannable(
+    tmp_path: Path,
+) -> None:
+    target = TargetSpec("case:branch-exhaustion")
+    exhausted_strategy = Strategy(
+        "bounded-family",
+        "test.exhaust-branch",
+        "exhaust one declared construction family",
+    )
+    alternate_strategy = Strategy(
+        "alternate-family",
+        "test.search-alternate",
+        "search a family outside the exhausted branch",
+    )
+
+    def reduce_exhausted(
+        task: TaskSpec,
+        _partials: Sequence[JSONValue],
+    ) -> dict[str, object]:
+        certificate = closure_certificate(
+            target.target_id,
+            Outcome.SEARCH_EXHAUSTED,
+            "test.campaign-exhausted",
+            outcome_scope=OutcomeScope.TASK_LOCAL,
+            task_hash=task.task_hash,
+            witness={"family": exhausted_strategy.name},
+            checks=("declared finite family checked completely",),
+        )
+        return {
+            "certificate": certificate.to_dict(),
+            "execution_telemetry": ExecutionTelemetry(
+                progress_completed=4,
+                progress_total=4,
+                resources={"cpu_seconds": 7, "io_bytes": 0},
+                spent={"credits": 3, "cache_credits": 0},
+            ).to_dict(),
+            "outcome": Outcome.SEARCH_EXHAUSTED.value,
+            "outcome_scope": OutcomeScope.TASK_LOCAL.value,
+        }
+
+    operation = FunctionalOperation(
+        planner=_one_shard,
+        runner=lambda _task, shard: {"shard": shard.key},
+        reducer=reduce_exhausted,
+    )
+    campaign = Campaign(
+        "branch-exhaustion-demo",
+        objective="Resolve the target across multiple construction families",
+        targets=(target,),
+        strategies=(exhausted_strategy, alternate_strategy),
+        executor=LocalExecutor(tmp_path / "fleet"),
+        operations={exhausted_strategy.operation: operation},
+    )
+    initial = campaign.recommend()
+    exhausted_task = next(
+        item.task
+        for item in initial.recommendations
+        if item.task.strategy == exhausted_strategy.name
+    )
+
+    observation = campaign.dispatch(exhausted_task)
+    replanned = campaign.recommend()
+
+    assert observation.verified
+    assert observation.outcome is Outcome.SEARCH_EXHAUSTED
+    assert observation.outcome_scope is OutcomeScope.TASK_LOCAL
+    assert not observation.closes_target
+    assert campaign.ledger.status(target).open
+    assert not campaign.claims.claims
+    assert {item.task.strategy for item in replanned.recommendations} == {alternate_strategy.name}
+    telemetry = observation.details.to_dict()["execution_telemetry"]
+    assert isinstance(telemetry, dict)
+    assert telemetry["progress_completed"] == 4
+    assert telemetry["resources"] == {"cpu_seconds": 7, "io_bytes": 0}
+    attempt = campaign.ledger.attempts_for_task(exhausted_task.campaign_task_id)[-1]
+    assert attempt.progress_completed == 4
+    assert attempt.progress_total == 4
+    assert attempt.resources.to_dict() == {"cpu_seconds": 7, "io_bytes": 0}
+    assert attempt.spent.to_dict() == {"cache_credits": 0, "credits": 3}
+    status = campaign.status().to_dict()
+    assert status["resource_usage"] == {"cpu_seconds": 7, "io_bytes": 0}
+    assert status["spent"] == {"cache_credits": 0, "credits": 3}
+    explanation = campaign.explain(target)
+    assert explanation.attempts[-1] == attempt
+    assert {item.task.strategy for item in explanation.recommendations} == {alternate_strategy.name}
+
+    artifact = tmp_path / "telemetry-campaign.json"
+    campaign.save(artifact)
+    restored = Campaign.load(
+        artifact,
+        executor=LocalExecutor(tmp_path / "fleet"),
+        operations={exhausted_strategy.operation: operation},
+    )
+    restored_attempt = restored.explain(target).attempts[-1]
+    assert restored.to_json() == campaign.to_json()
+    assert restored_attempt == attempt
+    assert restored.status().to_dict()["spent"] == {
+        "cache_credits": 0,
+        "credits": 3,
+    }
 
 
 def test_verified_success_derives_sibling_task_with_provenance(tmp_path: Path) -> None:
@@ -392,6 +513,7 @@ def test_external_observation_custody_and_evidence_references_are_strict() -> No
         target.target_id,
         Outcome.FOUND,
         "test.campaign-found",
+        outcome_scope=OutcomeScope.TARGET_GLOBAL,
         task_hash=task.task.task_hash,
         witness={"witness": {"candidate": 1}},
         checks=("candidate verified",),
@@ -406,6 +528,7 @@ def test_external_observation_custody_and_evidence_references_are_strict() -> No
                 target.target_id,
                 task.campaign_task_id,
                 Outcome.FOUND,
+                outcome_scope=OutcomeScope.TARGET_GLOBAL,
                 certificate=certificate,
                 input_refs=(*task.task.input_refs, "forged-input"),
                 parameters=exact_parameters,
@@ -420,6 +543,7 @@ def test_external_observation_custody_and_evidence_references_are_strict() -> No
                 target.target_id,
                 task.campaign_task_id,
                 Outcome.FOUND,
+                outcome_scope=OutcomeScope.TARGET_GLOBAL,
                 certificate=certificate,
                 result_ref=unbound_result,
                 input_refs=exact_input_refs,
@@ -445,6 +569,7 @@ def test_external_observation_custody_and_evidence_references_are_strict() -> No
         target.target_id,
         Outcome.FOUND,
         "test.campaign-found",
+        outcome_scope=OutcomeScope.TARGET_GLOBAL,
         task_hash=task.task.task_hash,
         witness={"result_ref": unbound_result, "witness": {"candidate": 1}},
         checks=("candidate and result content verified",),
@@ -453,6 +578,7 @@ def test_external_observation_custody_and_evidence_references_are_strict() -> No
         target.target_id,
         task.campaign_task_id,
         Outcome.FOUND,
+        outcome_scope=OutcomeScope.TARGET_GLOBAL,
         certificate=bound_certificate,
         result_ref=unbound_result,
         input_refs=exact_input_refs,
@@ -491,6 +617,12 @@ def test_unverified_found_is_recorded_as_unknown_not_proof(tmp_path: Path) -> No
     assert observation.outcome is Outcome.UNKNOWN
     assert observation.details["rejected_unverified_outcome"] == "FOUND"
     assert campaign.ledger.status(target).open
+    assert "execution_telemetry" not in observation.details
+    attempt = campaign.ledger.attempts_for_task(observation.task_id)[-1]
+    assert attempt.progress_completed is None
+    assert attempt.progress_total is None
+    assert not attempt.resources
+    assert not attempt.spent
 
 
 def test_checkpoint_resume_survives_campaign_save_and_load(tmp_path: Path) -> None:
@@ -1124,6 +1256,7 @@ def test_worker_pool_registry_candidates_claims_status_and_replay(tmp_path: Path
             target.target_id,
             Outcome.FOUND,
             "test.campaign-found",
+            outcome_scope=OutcomeScope.TARGET_GLOBAL,
             task_hash=task.task_hash,
             witness={"partials": partials, "witness": partials[0]},
             checks=("candidate canonical form independently checked",),
@@ -1142,6 +1275,7 @@ def test_worker_pool_registry_candidates_claims_status_and_replay(tmp_path: Path
             ],
             "certificate": certificate.to_dict(),
             "outcome": "FOUND",
+            "outcome_scope": OutcomeScope.TARGET_GLOBAL.value,
         }
 
     operation = FunctionalOperation(

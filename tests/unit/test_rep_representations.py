@@ -1,5 +1,7 @@
 from __future__ import annotations
 
+from dataclasses import replace
+
 import pytest
 
 from arbogast.linalg import DenseMatrix, LinearSubspace, PrimeField
@@ -80,6 +82,74 @@ def test_cyclic_nonsplit_component_is_retained_without_fake_eigenvalues() -> Non
     assert not decomposition.is_split
     with pytest.raises(NonSplitRepresentationError):
         representation.weight_spaces()
+
+
+def test_cyclic_decomposition_rejects_a_same_dimensional_wrong_component_space() -> None:
+    field = PrimeField(7)
+    group = CyclicGroup(3)
+    generator_action = DenseMatrix(field, ((1, 0, 0), (0, 2, 0), (0, 0, 4)))
+    representation = Representation.from_generators(
+        group,
+        field,
+        {group.generator: generator_action},
+    )
+    decomposition = representation.cyclic_decomposition()
+    assert len(decomposition.components) == 3
+    first, second, *remaining = decomposition.components
+    assert first.dimension == second.dimension == 1
+    assert first.subspace != second.subspace
+
+    forged = replace(
+        decomposition,
+        components=(replace(first, subspace=second.subspace), second, *remaining),
+    )
+
+    assert not forged.verify()
+    assert not replace(representation.weight_spaces(), cyclic=forged).verify()
+
+
+def test_cyclic_decomposition_rejects_swapped_factor_labels() -> None:
+    field = PrimeField(7)
+    group = CyclicGroup(3)
+    generator_action = DenseMatrix(field, ((1, 0, 0), (0, 2, 0), (0, 0, 4)))
+    representation = Representation.from_generators(
+        group,
+        field,
+        {group.generator: generator_action},
+    )
+    decomposition = representation.cyclic_decomposition()
+    first, second, *remaining = decomposition.components
+    assert first.factor != second.factor
+
+    forged = replace(
+        decomposition,
+        components=(
+            replace(first, factor=second.factor),
+            replace(second, factor=first.factor),
+            *remaining,
+        ),
+    )
+
+    assert not forged.verify()
+    assert not replace(representation.weight_spaces(), cyclic=forged).verify()
+
+
+def test_cyclic_decomposition_rejects_a_tampered_generator() -> None:
+    field = PrimeField(7)
+    group = CyclicGroup(3)
+    generator_action = DenseMatrix(field, ((1, 0, 0), (0, 2, 0), (0, 0, 4)))
+    representation = Representation.from_generators(
+        group,
+        field,
+        {group.generator: generator_action},
+    )
+    decomposition = representation.cyclic_decomposition()
+
+    assert not replace(decomposition, generator=group.identity).verify()
+
+    alternate_generator = group.multiply(group.generator, group.generator)
+    assert alternate_generator != group.generator
+    assert not replace(decomposition, generator=alternate_generator).verify()
 
 
 def test_character_projectors_give_s3_isotypic_parts() -> None:

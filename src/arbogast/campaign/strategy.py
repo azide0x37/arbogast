@@ -13,6 +13,7 @@ from arbogast.formats import FrozenMapping, JSONValue, normalize_json
 
 from .derive import TaskProvenance
 from .errors import CampaignInvariantError, CampaignSerializationError
+from .events import OutcomeScope
 from .targets import TargetSpec
 
 if TYPE_CHECKING:
@@ -42,6 +43,7 @@ class GateDecision:
 
     disposition: GateDisposition
     reason: str
+    outcome_scope: OutcomeScope
     certificate: Certificate | None
     certificate_ref: CertificateRef | None
     details: FrozenMapping
@@ -51,6 +53,7 @@ class GateDecision:
         disposition: GateDisposition | str,
         reason: str,
         *,
+        outcome_scope: OutcomeScope | str = OutcomeScope.TASK_LOCAL,
         certificate: Certificate | CertificateRef | None = None,
         certificate_ref: CertificateRef | None = None,
         details: Mapping[str, Any] | None = None,
@@ -60,6 +63,14 @@ class GateDecision:
         if certificate is not None and certificate_ref is not None:
             raise CampaignInvariantError("provide certificate or certificate_ref, not both")
         resolved_disposition = GateDisposition(disposition)
+        resolved_scope = OutcomeScope(outcome_scope)
+        if (
+            resolved_scope is OutcomeScope.TARGET_GLOBAL
+            and resolved_disposition is not GateDisposition.PROVED_IMPOSSIBLE
+        ):
+            raise CampaignInvariantError(
+                "TARGET_GLOBAL gate scope requires a proved-impossible decision"
+            )
         actual_certificate = (
             certificate
             if certificate is not None and not isinstance(certificate, CertificateRef)
@@ -79,6 +90,7 @@ class GateDecision:
                 )
         object.__setattr__(self, "disposition", resolved_disposition)
         object.__setattr__(self, "reason", reason)
+        object.__setattr__(self, "outcome_scope", resolved_scope)
         object.__setattr__(self, "certificate", actual_certificate)
         object.__setattr__(self, "certificate_ref", resolved_certificate)
         object.__setattr__(self, "details", FrozenMapping(details))
@@ -97,11 +109,13 @@ class GateDecision:
         reason: str,
         certificate: Certificate | CertificateRef,
         *,
+        outcome_scope: OutcomeScope | str = OutcomeScope.TASK_LOCAL,
         details: Mapping[str, Any] | None = None,
     ) -> GateDecision:
         return cls(
             GateDisposition.PROVED_IMPOSSIBLE,
             reason,
+            outcome_scope=outcome_scope,
             certificate=certificate,
             details=details,
         )
@@ -118,6 +132,7 @@ class GateDecision:
             ),
             "details": self.details.to_dict(),
             "disposition": self.disposition.value,
+            "outcome_scope": self.outcome_scope.value,
             "reason": self.reason,
         }
 

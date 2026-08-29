@@ -7,8 +7,9 @@ import math
 from collections.abc import Iterable, Iterator, Mapping, Sequence
 from dataclasses import dataclass
 from itertools import product
-from typing import TYPE_CHECKING, Any, cast, overload
+from typing import TYPE_CHECKING, cast, overload
 
+from arbogast.cert.canonical import canonicalize, validate_content_address
 from arbogast.core import sha256_hex
 
 if TYPE_CHECKING:
@@ -23,6 +24,141 @@ from .errors import (
     InvalidConjugacyClassError,
     InvalidNielsenTupleError,
 )
+
+NIELSEN_ENUMERATION_SCHEMA = "arbogast.hurwitz.nielsen-enumeration.v1"
+NIELSEN_ENUMERATION_CLAIM = "complete inner Nielsen class for the ordered explicit class vector"
+_NIELSEN_CANONICAL_FIELDS = frozenset(
+    {
+        "schema_version",
+        "layer",
+        "group_fingerprint",
+        "identity_index",
+        "multiplication_table",
+        "class_fingerprints",
+        "class_member_indices",
+        "inner_conjugacy_convention",
+        "candidate_count",
+        "product_one_count",
+        "generating_count",
+        "representative_keys",
+        "orbit_witnesses",
+        "claim",
+    }
+)
+_NIELSEN_TRANSPORT_FIELDS = _NIELSEN_CANONICAL_FIELDS | {"certificate_id"}
+
+
+def _require_nielsen_fields(
+    payload: Mapping[str, object],
+    expected: frozenset[str],
+    *,
+    record: str,
+) -> None:
+    actual = set(payload)
+    if actual != expected:
+        missing = sorted(expected - actual)
+        unexpected = sorted(str(key) for key in actual - expected)
+        raise CertificateVerificationError(
+            f"{record} has noncanonical fields (missing={missing}, unexpected={unexpected})"
+        )
+
+
+def _nielsen_mapping(value: object, *, field: str) -> Mapping[str, object]:
+    if not isinstance(value, Mapping) or any(not isinstance(key, str) for key in value):
+        raise CertificateVerificationError(f"{field} must be a string-keyed object")
+    return cast(Mapping[str, object], value)
+
+
+def _nielsen_sequence(value: object, *, field: str) -> Sequence[object]:
+    if not isinstance(value, (list, tuple)):
+        raise CertificateVerificationError(f"{field} must be an array")
+    return cast(Sequence[object], value)
+
+
+def _nielsen_integer(value: object, *, field: str, minimum: int = 0) -> int:
+    if isinstance(value, bool) or not isinstance(value, int):
+        raise CertificateVerificationError(f"{field} must be an integer")
+    if value < minimum:
+        raise CertificateVerificationError(f"{field} must be at least {minimum}")
+    return value
+
+
+def _nielsen_integer_tuple(value: object, *, field: str) -> tuple[int, ...]:
+    return tuple(
+        _nielsen_integer(entry, field=f"{field}[{index}]")
+        for index, entry in enumerate(_nielsen_sequence(value, field=field))
+    )
+
+
+def _nielsen_string(value: object, *, field: str) -> str:
+    if not isinstance(value, str) or not value:
+        raise CertificateVerificationError(f"{field} must be a nonempty string")
+    return value
+
+
+def _validate_nielsen_payload_shape(
+    payload: Mapping[str, object],
+    *,
+    include_certificate_id: bool,
+) -> None:
+    """Reject noncanonical transport before any finite mathematical replay."""
+
+    expected = _NIELSEN_TRANSPORT_FIELDS if include_certificate_id else _NIELSEN_CANONICAL_FIELDS
+    record = (
+        "transported Nielsen certificate"
+        if include_certificate_id
+        else "portable Nielsen certificate"
+    )
+    _require_nielsen_fields(payload, expected, record=record)
+    if payload["schema_version"] != NIELSEN_ENUMERATION_SCHEMA:
+        raise CertificateVerificationError("unsupported Nielsen certificate schema")
+    if payload["layer"] != "verification":
+        raise CertificateVerificationError("Nielsen certificate has the wrong layer")
+    _nielsen_string(payload["group_fingerprint"], field="group_fingerprint")
+    _nielsen_integer(payload["identity_index"], field="identity_index")
+    for row_index, row in enumerate(
+        _nielsen_sequence(payload["multiplication_table"], field="multiplication_table")
+    ):
+        _nielsen_integer_tuple(row, field=f"multiplication_table[{row_index}]")
+    for index, fingerprint in enumerate(
+        _nielsen_sequence(payload["class_fingerprints"], field="class_fingerprints")
+    ):
+        _nielsen_string(fingerprint, field=f"class_fingerprints[{index}]")
+    for index, members in enumerate(
+        _nielsen_sequence(payload["class_member_indices"], field="class_member_indices")
+    ):
+        _nielsen_integer_tuple(members, field=f"class_member_indices[{index}]")
+    if payload["inner_conjugacy_convention"] != INNER_CONJUGACY_CONVENTION:
+        raise CertificateVerificationError("inner-conjugacy convention mismatch")
+    for field in ("candidate_count", "product_one_count", "generating_count"):
+        _nielsen_integer(payload[field], field=field)
+    for index, key in enumerate(
+        _nielsen_sequence(payload["representative_keys"], field="representative_keys")
+    ):
+        _nielsen_integer_tuple(key, field=f"representative_keys[{index}]")
+    witness_fields = frozenset({"raw_key", "representative_key", "conjugator_index"})
+    for index, raw_witness in enumerate(
+        _nielsen_sequence(payload["orbit_witnesses"], field="orbit_witnesses")
+    ):
+        witness = _nielsen_mapping(raw_witness, field=f"orbit_witnesses[{index}]")
+        _require_nielsen_fields(
+            witness,
+            witness_fields,
+            record=f"orbit_witnesses[{index}]",
+        )
+        _nielsen_integer_tuple(witness["raw_key"], field=f"orbit_witnesses[{index}].raw_key")
+        _nielsen_integer_tuple(
+            witness["representative_key"],
+            field=f"orbit_witnesses[{index}].representative_key",
+        )
+        _nielsen_integer(
+            witness["conjugator_index"],
+            field=f"orbit_witnesses[{index}].conjugator_index",
+        )
+    if payload["claim"] != NIELSEN_ENUMERATION_CLAIM:
+        raise CertificateVerificationError("Nielsen certificate claim label mismatch")
+    if include_certificate_id:
+        _nielsen_string(payload["certificate_id"], field="certificate_id")
 
 
 @dataclass(frozen=True)
@@ -312,7 +448,7 @@ class NielsenEnumerationCertificate(ExactHurwitzCertificate):
     generating_count: int
     representative_keys: tuple[tuple[int, ...], ...]
     orbit_witnesses: tuple[InnerOrbitWitness, ...]
-    schema: str = "arbogast.hurwitz.nielsen-enumeration.v1"
+    schema: str = NIELSEN_ENUMERATION_SCHEMA
 
     def to_canonical(self) -> dict[str, object]:
         """Return the portable payload covered by :attr:`certificate_id`."""
@@ -352,7 +488,7 @@ class NielsenEnumerationCertificate(ExactHurwitzCertificate):
                 }
                 for witness in self.orbit_witnesses
             ),
-            "claim": "complete inner Nielsen class for the ordered explicit class vector",
+            "claim": NIELSEN_ENUMERATION_CLAIM,
         }
 
     @classmethod
@@ -373,8 +509,11 @@ class NielsenEnumerationCertificate(ExactHurwitzCertificate):
 
         context = ConcreteGroupContext.build(group)
         explicit = _explicit_classes(context, classes)
-        if payload.get("schema_version") != "arbogast.hurwitz.nielsen-enumeration.v1":
-            raise CertificateVerificationError("unsupported Nielsen certificate schema")
+        has_certificate_id = "certificate_id" in payload
+        _validate_nielsen_payload_shape(
+            payload,
+            include_certificate_id=has_certificate_id,
+        )
         identity_index = context.index(context.identity)
         multiplication_table = tuple(
             tuple(context.index(context.multiply(left, right)) for right in context.elements)
@@ -390,48 +529,73 @@ class NielsenEnumerationCertificate(ExactHurwitzCertificate):
         )
         if payload.get("group_fingerprint") != expected_group:
             raise CertificateVerificationError("transported portable group fingerprint mismatch")
-        raw_class_fingerprints = cast(Sequence[object], payload.get("class_fingerprints", ()))
+        raw_class_fingerprints = _nielsen_sequence(
+            payload["class_fingerprints"], field="class_fingerprints"
+        )
         if tuple(raw_class_fingerprints) != expected_classes:
             raise CertificateVerificationError(
                 "transported portable class-vector fingerprint mismatch"
             )
         if payload.get("inner_conjugacy_convention") != INNER_CONJUGACY_CONVENTION:
             raise CertificateVerificationError("inner-conjugacy convention mismatch")
+        raw_representative_keys = _nielsen_sequence(
+            payload["representative_keys"], field="representative_keys"
+        )
+        representative_keys = tuple(
+            _nielsen_integer_tuple(key, field=f"representative_keys[{index}]")
+            for index, key in enumerate(raw_representative_keys)
+        )
+        raw_witnesses = _nielsen_sequence(payload["orbit_witnesses"], field="orbit_witnesses")
+        witnesses = tuple(
+            InnerOrbitWitness(
+                _nielsen_integer_tuple(
+                    witness["raw_key"], field=f"orbit_witnesses[{index}].raw_key"
+                ),
+                _nielsen_integer_tuple(
+                    witness["representative_key"],
+                    field=f"orbit_witnesses[{index}].representative_key",
+                ),
+                _nielsen_integer(
+                    witness["conjugator_index"],
+                    field=f"orbit_witnesses[{index}].conjugator_index",
+                ),
+            )
+            for index, raw_witness in enumerate(raw_witnesses)
+            for witness in (_nielsen_mapping(raw_witness, field=f"orbit_witnesses[{index}]"),)
+        )
+        certificate = cls(
+            group,
+            context.fingerprint,
+            explicit,
+            _nielsen_integer(payload["candidate_count"], field="candidate_count"),
+            _nielsen_integer(payload["product_one_count"], field="product_one_count"),
+            _nielsen_integer(payload["generating_count"], field="generating_count"),
+            representative_keys,
+            witnesses,
+        )
+        transported_payload = dict(payload)
+        raw_id = transported_payload.pop("certificate_id", None)
         try:
-            raw_representative_keys = cast(
-                Sequence[Sequence[object]], payload["representative_keys"]
-            )
-            raw_witnesses = cast(Sequence[Mapping[str, Any]], payload["orbit_witnesses"])
-            representative_keys = tuple(
-                tuple(int(cast(Any, entry)) for entry in key) for key in raw_representative_keys
-            )
-            witnesses = tuple(
-                InnerOrbitWitness(
-                    tuple(int(entry) for entry in cast(Sequence[Any], witness["raw_key"])),
-                    tuple(
-                        int(entry) for entry in cast(Sequence[Any], witness["representative_key"])
-                    ),
-                    int(witness["conjugator_index"]),
+            reconstructed_payload = canonicalize(certificate.to_canonical())
+            if canonicalize(transported_payload) != reconstructed_payload:
+                raise CertificateVerificationError(
+                    "transported Nielsen certificate differs from its reconstructed "
+                    "canonical payload"
                 )
-                for witness in raw_witnesses
-            )
-            certificate = cls(
-                group,
-                context.fingerprint,
-                explicit,
-                int(cast(Any, payload["candidate_count"])),
-                int(cast(Any, payload["product_one_count"])),
-                int(cast(Any, payload["generating_count"])),
-                representative_keys,
-                witnesses,
-            )
-        except (KeyError, TypeError, ValueError) as exc:
+        except TypeError as exc:
             raise CertificateVerificationError(
                 "malformed transported Nielsen certificate payload"
             ) from exc
-        expected_id = payload.get("certificate_id")
-        if expected_id is not None:
-            certificate.verify_integrity(str(expected_id))
+        if has_certificate_id:
+            expected_id = _nielsen_string(raw_id, field="certificate_id")
+            try:
+                validate_content_address(expected_id, transported_payload)
+                if expected_id != certificate.certificate_id:
+                    raise ValueError("transported certificate ID is not canonical")
+            except ValueError as exc:
+                raise CertificateVerificationError(
+                    "transported Nielsen certificate content address mismatch"
+                ) from exc
         return certificate
 
     def verify(self) -> bool:
@@ -476,18 +640,18 @@ def verify_nielsen_certificate_payload(payload: Mapping[str, object]) -> bool:
     """Independently replay a portable Nielsen payload using only finite tables."""
 
     try:
-        if payload.get("schema_version") != "arbogast.hurwitz.nielsen-enumeration.v1":
-            raise CertificateVerificationError("unsupported Nielsen certificate schema")
-        if payload.get("inner_conjugacy_convention") != INNER_CONJUGACY_CONVENTION:
-            raise CertificateVerificationError("inner-conjugacy convention mismatch")
-        raw_table = cast(Sequence[Sequence[Any]], payload["multiplication_table"])
-        table = tuple(tuple(int(entry) for entry in row) for row in raw_table)
+        _validate_nielsen_payload_shape(payload, include_certificate_id=False)
+        raw_table = _nielsen_sequence(payload["multiplication_table"], field="multiplication_table")
+        table = tuple(
+            _nielsen_integer_tuple(row, field=f"multiplication_table[{index}]")
+            for index, row in enumerate(raw_table)
+        )
         size = len(table)
         if size == 0 or any(len(row) != size for row in table):
             raise CertificateVerificationError("multiplication table must be nonempty and square")
         if any(entry < 0 or entry >= size for row in table for entry in row):
             raise CertificateVerificationError("multiplication table entry is out of range")
-        identity = int(cast(Any, payload["identity_index"]))
+        identity = _nielsen_integer(payload["identity_index"], field="identity_index")
         if not 0 <= identity < size:
             raise CertificateVerificationError("identity index is out of range")
         if any(
@@ -512,8 +676,13 @@ def verify_nielsen_certificate_payload(payload: Mapping[str, object]) -> bool:
                 raise CertificateVerificationError("group element lacks a unique two-sided inverse")
             inverses.append(candidates[0])
 
-        raw_classes = cast(Sequence[Sequence[Any]], payload["class_member_indices"])
-        classes = tuple(tuple(int(entry) for entry in row) for row in raw_classes)
+        raw_classes = _nielsen_sequence(
+            payload["class_member_indices"], field="class_member_indices"
+        )
+        classes = tuple(
+            _nielsen_integer_tuple(row, field=f"class_member_indices[{index}]")
+            for index, row in enumerate(raw_classes)
+        )
         if not classes or any(not row for row in classes):
             raise CertificateVerificationError("ordered class vector must be nonempty")
         for members in classes:
@@ -594,26 +763,41 @@ def verify_nielsen_certificate_payload(payload: Mapping[str, object]) -> bool:
                 InnerOrbitWitness(entries, canonical_representative, conjugator)
             )
 
-        if int(cast(Any, payload["candidate_count"])) != candidate_count:
+        if _nielsen_integer(payload["candidate_count"], field="candidate_count") != candidate_count:
             raise CertificateVerificationError("portable candidate-count mismatch")
-        if int(cast(Any, payload["product_one_count"])) != product_one_count:
+        if (
+            _nielsen_integer(payload["product_one_count"], field="product_one_count")
+            != product_one_count
+        ):
             raise CertificateVerificationError("portable product-one count mismatch")
-        if int(cast(Any, payload["generating_count"])) != len(valid):
+        if _nielsen_integer(payload["generating_count"], field="generating_count") != len(valid):
             raise CertificateVerificationError("portable generating-tuple count mismatch")
-        raw_representatives = cast(Sequence[Sequence[Any]], payload["representative_keys"])
+        raw_representatives = _nielsen_sequence(
+            payload["representative_keys"], field="representative_keys"
+        )
         advertised_representatives = tuple(
-            tuple(int(entry) for entry in row) for row in raw_representatives
+            _nielsen_integer_tuple(row, field=f"representative_keys[{index}]")
+            for index, row in enumerate(raw_representatives)
         )
         if advertised_representatives != tuple(sorted(expected_representatives)):
             raise CertificateVerificationError("portable representative list mismatch")
-        raw_witnesses = cast(Sequence[Mapping[str, Any]], payload["orbit_witnesses"])
+        raw_witnesses = _nielsen_sequence(payload["orbit_witnesses"], field="orbit_witnesses")
         advertised_witnesses = tuple(
             InnerOrbitWitness(
-                tuple(int(entry) for entry in cast(Sequence[Any], witness["raw_key"])),
-                tuple(int(entry) for entry in cast(Sequence[Any], witness["representative_key"])),
-                int(witness["conjugator_index"]),
+                _nielsen_integer_tuple(
+                    witness["raw_key"], field=f"orbit_witnesses[{index}].raw_key"
+                ),
+                _nielsen_integer_tuple(
+                    witness["representative_key"],
+                    field=f"orbit_witnesses[{index}].representative_key",
+                ),
+                _nielsen_integer(
+                    witness["conjugator_index"],
+                    field=f"orbit_witnesses[{index}].conjugator_index",
+                ),
             )
-            for witness in raw_witnesses
+            for index, raw_witness in enumerate(raw_witnesses)
+            for witness in (_nielsen_mapping(raw_witness, field=f"orbit_witnesses[{index}]"),)
         )
         if advertised_witnesses != tuple(sorted(expected_witnesses, key=lambda item: item.raw_key)):
             raise CertificateVerificationError("portable inner-orbit witness mismatch")

@@ -6,7 +6,13 @@ from collections.abc import Mapping, Sequence
 from dataclasses import dataclass, field
 from typing import ClassVar
 
-from .base import CertificateError, CertificateLayer, CertificateRef, ContentAddressedCertificate
+from .base import (
+    CertificateError,
+    CertificateLayer,
+    CertificateRef,
+    ClaimBinding,
+    ContentAddressedCertificate,
+)
 from .canonical import FrozenMap, freeze_mapping, validate_content_address
 
 
@@ -18,6 +24,8 @@ class VerificationCertificate(ContentAddressedCertificate):
     verifier: str
     claim_id: str | None = None
     statement_hash: str | None = None
+    claim_boundary_hash: str | None = None
+    claim_dependencies: tuple[ClaimBinding, ...] = ()
     witness: FrozenMap = field(default_factory=FrozenMap)
     checks: tuple[str, ...] = ()
     dependencies: tuple[CertificateRef, ...] = ()
@@ -41,10 +49,24 @@ class VerificationCertificate(ContentAddressedCertificate):
             raise CertificateError("claim_id must be a non-blank string")
         if self.statement_hash is not None:
             validate_content_address(self.statement_hash)
-        if (self.claim_id is None) != (self.statement_hash is None):
+        if self.claim_boundary_hash is not None:
+            validate_content_address(self.claim_boundary_hash)
+        bound_fields = (self.claim_id, self.statement_hash, self.claim_boundary_hash)
+        if any(value is None for value in bound_fields) and any(
+            value is not None for value in bound_fields
+        ):
             raise CertificateError(
-                "claim_id and statement_hash must be supplied together for bound evidence"
+                "claim_id, statement_hash, and claim_boundary_hash must be supplied "
+                "together for bound evidence"
             )
+        object.__setattr__(self, "claim_dependencies", tuple(self.claim_dependencies))
+        if any(not isinstance(binding, ClaimBinding) for binding in self.claim_dependencies):
+            raise CertificateError("claim_dependencies must contain ClaimBinding values")
+        dependency_claim_ids = tuple(binding.claim_id for binding in self.claim_dependencies)
+        if len(set(dependency_claim_ids)) != len(dependency_claim_ids):
+            raise CertificateError("claim dependency bindings must have unique claim IDs")
+        if self.claim_id is None and self.claim_dependencies:
+            raise CertificateError("unbound evidence cannot carry claim dependency bindings")
         object.__setattr__(self, "witness", freeze_mapping(self.witness))
         object.__setattr__(self, "checks", tuple(self.checks))
         object.__setattr__(self, "guarantees", tuple(self.guarantees))
@@ -73,6 +95,8 @@ class VerificationCertificate(ContentAddressedCertificate):
         *,
         claim_id: str | None = None,
         statement_hash: str | None = None,
+        claim_boundary_hash: str | None = None,
+        claim_dependencies: Sequence[ClaimBinding] = (),
         witness: Mapping[str, object] | None = None,
         checks: Sequence[str] = (),
         dependencies: Sequence[CertificateRef] = (),
@@ -83,6 +107,8 @@ class VerificationCertificate(ContentAddressedCertificate):
             verifier=verifier,
             claim_id=claim_id,
             statement_hash=statement_hash,
+            claim_boundary_hash=claim_boundary_hash,
+            claim_dependencies=tuple(claim_dependencies),
             witness=freeze_mapping(witness),
             checks=tuple(checks),
             dependencies=tuple(dependencies),
@@ -97,6 +123,8 @@ class VerificationCertificate(ContentAddressedCertificate):
             "verifier": self.verifier,
             "claim_id": self.claim_id,
             "statement_hash": self.statement_hash,
+            "claim_boundary_hash": self.claim_boundary_hash,
+            "claim_dependencies": self.claim_dependencies,
             "witness": self.witness,
             "checks": self.checks,
             "dependencies": self.dependencies,
@@ -117,6 +145,8 @@ class VerificationCertificate(ContentAddressedCertificate):
                 "verifier",
                 "claim_id",
                 "statement_hash",
+                "claim_boundary_hash",
+                "claim_dependencies",
                 "witness",
                 "checks",
                 "dependencies",
@@ -140,22 +170,37 @@ class VerificationCertificate(ContentAddressedCertificate):
             dependencies.append(CertificateRef.from_dict(raw))
         raw_claim_id = value.get("claim_id")
         raw_statement_hash = value.get("statement_hash")
+        raw_claim_boundary_hash = value.get("claim_boundary_hash")
         if raw_claim_id is not None and not isinstance(raw_claim_id, str):
             raise CertificateError("claim_id must be a string or null")
         if raw_statement_hash is not None and not isinstance(raw_statement_hash, str):
             raise CertificateError("statement_hash must be a string or null")
+        if raw_claim_boundary_hash is not None and not isinstance(raw_claim_boundary_hash, str):
+            raise CertificateError("claim_boundary_hash must be a string or null")
+        raw_claim_dependencies = value.get("claim_dependencies", ())
+        if isinstance(raw_claim_dependencies, str) or not isinstance(
+            raw_claim_dependencies, Sequence
+        ):
+            raise CertificateError("claim_dependencies must be a sequence")
+        claim_dependencies: list[ClaimBinding] = []
+        for raw in raw_claim_dependencies:
+            if not isinstance(raw, Mapping):
+                raise CertificateError("claim dependency binding must be a mapping")
+            claim_dependencies.append(ClaimBinding.from_dict(raw))
         certificate = cls.create(
             subject=_required_string(value, "subject"),
             verifier=_required_string(value, "verifier"),
             claim_id=raw_claim_id,
             statement_hash=raw_statement_hash,
+            claim_boundary_hash=raw_claim_boundary_hash,
+            claim_dependencies=claim_dependencies,
             witness=_mapping(value.get("witness")),
             checks=_strings(value.get("checks")),
             dependencies=dependencies,
             guarantees=_strings(value.get("guarantees")),
         )
-        expected = value.get("certificate_id")
-        if expected is not None:
+        if "certificate_id" in value:
+            expected = value["certificate_id"]
             if not isinstance(expected, str):
                 raise CertificateError("certificate_id must be a string")
             certificate.verify_integrity(expected)

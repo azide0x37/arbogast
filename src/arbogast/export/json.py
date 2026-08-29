@@ -2,9 +2,8 @@
 
 from __future__ import annotations
 
-import json as _json
-
 from arbogast.cert.canonical import canonical_json, canonicalize
+from arbogast.core.canonical import pretty_canonical_json
 
 
 def export_json(value: object, *, pretty: bool = False) -> str:
@@ -18,16 +17,7 @@ def export_json(value: object, *, pretty: bool = False) -> str:
     transport = to_dict() if callable(to_dict) else value
     if not pretty:
         return canonical_json(transport)
-    return (
-        _json.dumps(
-            canonicalize(transport),
-            ensure_ascii=False,
-            allow_nan=False,
-            sort_keys=True,
-            indent=2,
-        )
-        + "\n"
-    )
+    return pretty_canonical_json(canonicalize(transport), indent=2) + "\n"
 
 
 __all__ = ["export_json"]

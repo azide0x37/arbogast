@@ -71,6 +71,7 @@ def test_self_contained_theorem_graph_replays_in_fresh_python_process() -> None:
         DerivationKind,
         EpistemicStatus,
         FormalStatement,
+        claim_boundary_hash,
     )
 
     premise_statement = FormalStatement("P")
@@ -79,6 +80,12 @@ def test_self_contained_theorem_graph_replays_in_fresh_python_process() -> None:
         "tests.fresh.premise",
         claim_id="claim.premise",
         statement_hash=premise_statement.statement_hash,
+        claim_boundary_hash=claim_boundary_hash(
+            "claim.premise",
+            premise_statement,
+            kind=ClaimKind.COMPUTED,
+            status=EpistemicStatus.EXACT,
+        ),
         witness={"valid": True},
     )
     premise = Claim(
@@ -94,8 +101,16 @@ def test_self_contained_theorem_graph_replays_in_fresh_python_process() -> None:
         "claim.conclusion",
         conclusion_statement.statement_hash,
         (CertificateRef.from_certificate(premise_certificate),),
+        claim_boundary_hash=claim_boundary_hash(
+            "claim.conclusion",
+            conclusion_statement,
+            kind=ClaimKind.DERIVED,
+            status=EpistemicStatus.EXACT,
+            dependency_ids=(premise.id,),
+        ),
         verifier="tests.fresh.inference",
         dependencies=(premise.id,),
+        claim_dependencies=(premise.binding,),
         conclusion={"text": "Q"},
     )
     conclusion = Claim(

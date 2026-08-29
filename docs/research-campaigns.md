@@ -49,17 +49,35 @@ Execution state is part of the research record, but **mathematical outcome** and
 state** are separate fields. The following negative and interrupted classifications have
 deliberately different meanings:
 
+### Outcome scope
+
+Every canonical `Observation` has a typed `outcome_scope`:
+
+- `TASK_LOCAL` means the exact conclusion applies to this planned task or construction/search
+  branch. It is useful mathematical evidence, but it does not close the target, suppress another
+  strategy, or create a terminal campaign claim.
+- `TARGET_GLOBAL` means the certificate verifies the complete target criterion. Only a verified
+  exact outcome with this scope can close the `TargetLedger`, cause the planner to stop alternate
+  work, and create a computed campaign claim.
+
+The scope is bound into the verification-certificate subject and into the observation's canonical
+content identity. It cannot be promoted by editing serialized JSON. Runtime result dictionaries
+that omit `outcome_scope` fail closed to `TASK_LOCAL`; an unrecognized scope rejects the asserted
+exact outcome. Operational states are always task-local.
+
 ### `PROVED_IMPOSSIBLE`
 
-A verifier accepted a certificate proving nonexistence under precisely stated hypotheses. The
-scope and dependencies of that impossibility result must be claim-ready. This is the only listed
-negative state that directly denotes a proved negative proposition.
+A verifier accepted a certificate proving nonexistence under precisely stated hypotheses. A
+task-local result may rule out one construction family while leaving another family plannable.
+Only an explicit target-global certificate closes the target. This is the only listed negative
+state that directly denotes a proved negative proposition.
 
 ### `SEARCH_EXHAUSTED`
 
 Every point in a declared finite search domain was checked, with a completeness witness. The
-result excludes that domain only. It becomes a global impossibility theorem only if a separate
-derivation proves that the search domain covers every admissible object.
+result excludes that domain only and is normally `TASK_LOCAL`. It becomes target-global only when
+the certificate also verifies that the declared domain is the complete target domain (possibly
+through a coverage theorem). Exhausting one branch never suppresses an alternate strategy.
 
 ### `BUDGET_EXHAUSTED`
 
@@ -89,11 +107,12 @@ supporting a claim. None silently substitutes for another.
 
 ### `FOUND`
 
-The target's stated success criterion has a witness whose embedded `VerificationCertificate`
-replays through its registered verifier. This closes the campaign target. As part of acceptance,
-the `Campaign` adds a `COMPUTED`, `CERTIFIED` claim envelope to its canonical
-`ClaimGraph` and records the observation-to-claim binding. The envelope replays the underlying
-closure certificate; it is not a second discovery claim assembled by the caller.
+A task found a witness whose embedded `VerificationCertificate` replays through its registered
+verifier. A `TASK_LOCAL` witness may be a candidate or branch result without satisfying the whole
+target. A `TARGET_GLOBAL` witness closes the campaign target. As part of target-global acceptance,
+the `Campaign` adds a `COMPUTED`, `CERTIFIED` claim envelope to its canonical `ClaimGraph` and
+records the observation-to-claim binding. The envelope replays the underlying outcome
+certificate; it is not a second discovery claim assembled by the caller.
 
 ## Derivation rules
 
@@ -102,15 +121,15 @@ same fail-closed rules everywhere:
 
 1. A task attempt can create a discovery receipt and observation-bound candidate artifacts.
 2. A named verifier can accept a sufficient finite certificate.
-3. Campaign closure creates a `COMPUTED` claim envelope binding the exact operation, canonical
-   task and observation, and nonempty replayable evidence.
+3. Only verified `TARGET_GLOBAL` campaign closure creates a `COMPUTED` claim envelope binding the
+   exact operation, canonical task and observation, and nonempty replayable evidence.
 4. A `DERIVED` claim names every dependency and the inference rule.
 5. Campaign target closure requires an embedded `VerificationCertificate` whose registered,
-   independent verifier replays successfully; a bare theorem-certificate reference is not a
-   replayable closure bundle.
+   independent verifier replays successfully and whose subject binds `TARGET_GLOBAL`; a bare
+   theorem-certificate reference or a task-local certificate is not a replayable closure bundle.
 6. Imported claims remain imported; integrity checks do not promote them.
-7. `SEARCH_EXHAUSTED` supports only its finite-domain negative unless a coverage theorem is a
-   dependency.
+7. `TASK_LOCAL SEARCH_EXHAUSTED` supports only its finite-domain negative. A target-global scope
+   additionally requires verified coverage of the complete target domain.
 8. `BUDGET_EXHAUSTED`, `PREEMPTED`, `FAILED`, and `UNKNOWN` do not support negative promotion.
 
 A rejected closure remains non-closing and its verification diagnostics remain available; a
@@ -189,20 +208,36 @@ The ledger is the accepted-state boundary for a campaign. In 0.1 it records:
 - canonical plan records and `TASK_PLANNED`, `TASK_STARTED`, observation, candidate, attempt, and
   claim-binding events;
 - first-class attempt histories, including running/terminal state, worker, progress, checkpoint,
-  and operation-reported integer resource use;
-- mathematical outcomes and operational states;
+  and operation-reported integer resource/spend use;
+- mathematical outcomes, canonical task-local/target-global scopes, and operational states;
 - canonical candidates and per-metric best-known records with explicit canonicalizers and
   equivalence scopes;
 - result, typed checkpoint, input, and source references;
-- embedded verification-certificate payloads for closing observations.
+- embedded verification-certificate payloads for exact observations, with scope in the bound
+  certificate subject.
 
 The surrounding campaign snapshot adds the objective, strategies, declared capabilities, and
-policy, and owns the canonical `ClaimGraph`. Closing observations are automatically associated
-with their computed claims; imported claims can be present in that same graph before work begins.
+policy, and owns the canonical `ClaimGraph`. Target-global closing observations are automatically
+associated with their computed claims; task-local exact observations remain planning evidence,
+and imported claims can be present in that same graph before work begins.
 
 Dispatch is not completion. Process exit is not verification. A file appearing in a worker
 directory is not ledger acceptance. Consumers derive campaign state from accepted ledger records,
 not from process tables or scratch paths.
+
+### Successful execution telemetry
+
+The 0.1 local executor receipt proves scheduler custody, assignments, and result identity, but it
+does not measure CPU time, memory use, money, or domain-specific progress. Arbogast therefore does
+not infer usage from a task's requested resources, timestamps, shard count, or worker count.
+
+An operation that has measurements may include a strict
+`arbogast.campaign.execution-telemetry.v1` object under `execution_telemetry` in its reduced result.
+The envelope accepts optional non-negative `progress_completed`/`progress_total` values and named
+non-negative integer `resources`/`spent` counters. Campaign acceptance copies that typed envelope
+into the canonical observation and terminal attempt; status and `explain(target)` expose the same
+values to later planning. Omitting the envelope means “not reported,” not zero. Reporting a literal
+`0` preserves an observed zero through save/load replay.
 
 The CLI can initialize, inspect, and project that portable state:
 

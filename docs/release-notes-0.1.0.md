@@ -60,6 +60,17 @@ capabilities and a value policy guide planning. It stores **mathematical outcome
 `PREEMPTED`, `FAILED`, and `UNKNOWN` remain distinct classifications with different mathematical
 meanings.
 
+Claim-bound verification and theorem certificates commit to the complete semantic boundary:
+the conclusion, claim kind, epistemic status, ordered hypotheses, and ordered dependency IDs.
+Dependencies are also bound by ID, statement hash, and boundary hash, so replay rejects both
+hypothesis mutation and same-ID dependency substitution.
+
+Exact observations additionally use the canonical `OutcomeScope` values `TASK_LOCAL` and
+`TARGET_GLOBAL`. Scope is certificate-bound and serialized deterministically. Task-local
+preflight obstructions and exhausted search branches remain reusable evidence while alternate
+strategies stay plannable; only verified target-global `FOUND`, `PROVED_IMPOSSIBLE`, or
+`SEARCH_EXHAUSTED` observations close a target and create a terminal campaign claim.
+
 Provenance is available to later planning as structured input, so bounded negatives and failures
 can sharpen the next algorithm. `Campaign` owns its canonical `ClaimGraph`; accepting a verified
 closing observation automatically adds its computed claim envelope and ledger binding. The CLI's
@@ -76,6 +87,12 @@ and an audited registry containing only `fleet.echo.v1`, which returns `UNKNOWN`
 callable named by campaign JSON. Remote execution protocols remain extension points, and 0.1.0
 does not bundle SSH deployment, Slurm orchestration, cloud provisioning, or remote license
 automation.
+
+Successful reducers can supply canonical `arbogast.campaign.execution-telemetry.v1` progress,
+resource, and spend counters. The campaign preserves them in observations, terminal attempts,
+status totals, target explanations, and replay. The envelope is explicitly operation-reported;
+executor receipts do not invent measurements from requested capacity. Missing data is serialized
+as absent/null and remains distinguishable from an explicitly reported zero.
 
 ### Honest optional backends
 

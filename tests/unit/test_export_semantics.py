@@ -12,6 +12,7 @@ from arbogast.claims import (
     Derivation,
     EpistemicStatus,
     FormalStatement,
+    claim_boundary_hash,
 )
 from arbogast.export import (
     export_agent_context,
@@ -20,6 +21,7 @@ from arbogast.export import (
     export_lean,
     export_markdown,
 )
+from arbogast.formats import loads
 from arbogast.proof import ObligationClass, ProofGap, ProofObligation
 
 
@@ -36,6 +38,12 @@ def _claim() -> Claim:
         "tests.dimension",
         claim_id="claim.dimension",
         statement_hash=statement.statement_hash,
+        claim_boundary_hash=claim_boundary_hash(
+            "claim.dimension",
+            statement,
+            kind=ClaimKind.COMPUTED,
+            status=EpistemicStatus.EXACT,
+        ),
         witness={"dimension": 1},
     )
     return Claim(
@@ -46,6 +54,19 @@ def _claim() -> Claim:
         how=Derivation.computation("cohom.h0"),
         certificate=certificate,
     )
+
+
+@pytest.mark.parametrize("sign", [1, -1])
+def test_pretty_json_preserves_arbitrarily_large_exact_integers(sign: int) -> None:
+    huge = sign * (10**5000 + 12345)
+    value = {"nested": [huge, {"again": huge}], "truth": True}
+
+    compact = export_json(value)
+    pretty = export_json(value, pretty=True)
+
+    assert pretty.endswith("\n")
+    assert loads(pretty) == value
+    assert export_json(loads(pretty)) == compact
 
 
 def test_claim_exports_preserve_boundaries_and_are_deterministic() -> None:
@@ -113,6 +134,13 @@ def test_lean_and_latex_exports_preserve_conditions_and_discharge_metadata() -> 
         "tests.conditional",
         claim_id="claim.conditional",
         statement_hash=conclusion.statement_hash,
+        claim_boundary_hash=claim_boundary_hash(
+            "claim.conditional",
+            conclusion,
+            kind=ClaimKind.COMPUTED,
+            status=EpistemicStatus.CONDITIONAL,
+            hypotheses=(hypothesis,),
+        ),
         witness={"under": "P"},
     )
     claim = Claim(

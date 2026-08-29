@@ -8,9 +8,12 @@ from pathlib import Path
 
 from arbogast.campaign import (
     Campaign,
+    CampaignSerializationError,
     CampaignSpec,
     CampaignTask,
+    ExecutionTelemetry,
     Outcome,
+    OutcomeScope,
     Strategy,
     TargetSpec,
     TaskProvenance,
@@ -32,6 +35,7 @@ from arbogast.claims import (
     ClaimKind,
     EpistemicStatus,
     FormalStatement,
+    claim_boundary_hash,
 )
 from arbogast.export import export_json
 from arbogast.fleet import FunctionalOperation, LocalExecutor, ShardSpec, TaskSpec
@@ -74,6 +78,7 @@ def verify_residue_scan(certificate: VerificationCertificate) -> VerificationRep
     target_id = require_string(witness.get("target_id"), "target_id")
     task_hash = require_string(witness.get("task_hash"), "task_hash")
     outcome = Outcome(require_string(witness.get("outcome"), "outcome"))
+    outcome_scope = OutcomeScope(require_string(witness.get("outcome_scope"), "outcome_scope"))
     modulus = require_integer(witness.get("modulus"), "modulus")
     target = require_integer(witness.get("target"), "target")
     rows = witness.get("rows")
@@ -98,8 +103,26 @@ def verify_residue_scan(certificate: VerificationCertificate) -> VerificationRep
         raise CertificateVerificationError("FOUND certificate contains no root")
     if outcome not in {Outcome.FOUND, Outcome.SEARCH_EXHAUSTED}:
         raise CertificateVerificationError("residue scan cannot certify this campaign outcome")
-    if certificate.subject != closure_subject(target_id, outcome):
-        raise CertificateVerificationError("certificate is not bound to its target and outcome")
+    if outcome_scope is not OutcomeScope.TARGET_GLOBAL:
+        raise CertificateVerificationError("residue scan claims only target-global closure")
+    if certificate.subject != closure_subject(target_id, outcome, outcome_scope):
+        raise CertificateVerificationError(
+            "certificate is not bound to its target, outcome, and scope"
+        )
+    if certificate.claim_id != CLOSURE_CLAIM_ID:
+        raise CertificateVerificationError("certificate is bound to another closure claim")
+    if certificate.statement_hash != RESULT_STATEMENT.statement_hash:
+        raise CertificateVerificationError("certificate is bound to another result statement")
+    expected_boundary_hash = claim_boundary_hash(
+        CLOSURE_CLAIM_ID,
+        RESULT_STATEMENT,
+        kind=ClaimKind.COMPUTED,
+        status=EpistemicStatus.EXACT,
+    )
+    if certificate.claim_boundary_hash != expected_boundary_hash:
+        raise CertificateVerificationError("certificate has the wrong semantic claim boundary")
+    if certificate.claim_dependencies:
+        raise CertificateVerificationError("closure certificate cannot bind claim dependencies")
     if len(task_hash) != 64 or any(character not in "0123456789abcdef" for character in task_hash):
         raise CertificateVerificationError("certificate has no canonical planned-task hash")
 
@@ -150,13 +173,20 @@ def reduce_residues(task: TaskSpec, partials: Sequence[JSONValue]) -> dict[str, 
     root_values: list[JSONValue] = list(roots)
     outcome = Outcome.FOUND if roots else Outcome.SEARCH_EXHAUSTED
     certificate = VerificationCertificate.create(
-        closure_subject(target_id, outcome),
+        closure_subject(target_id, outcome, OutcomeScope.TARGET_GLOBAL),
         VERIFIER,
         claim_id=CLOSURE_CLAIM_ID,
         statement_hash=RESULT_STATEMENT.statement_hash,
+        claim_boundary_hash=claim_boundary_hash(
+            CLOSURE_CLAIM_ID,
+            RESULT_STATEMENT,
+            kind=ClaimKind.COMPUTED,
+            status=EpistemicStatus.EXACT,
+        ),
         witness={
             "modulus": modulus,
             "outcome": outcome.value,
+            "outcome_scope": OutcomeScope.TARGET_GLOBAL.value,
             "rows": rows,
             "target": target,
             "target_id": target_id,
@@ -189,7 +219,12 @@ def reduce_residues(task: TaskSpec, partials: Sequence[JSONValue]) -> dict[str, 
         "candidates": candidates,
         "certificate": normalize_json(certificate.to_dict()),
         "checked": len(rows),
+        "execution_telemetry": ExecutionTelemetry(
+            progress_completed=len(rows),
+            progress_total=modulus,
+        ).to_dict(),
         "outcome": outcome.value,
+        "outcome_scope": OutcomeScope.TARGET_GLOBAL.value,
         "roots": root_values,
     }
 
@@ -206,13 +241,27 @@ def verify_reduced_result(task: TaskSpec, result: JSONValue) -> bool:
         certificate = certificate_from_dict(encoded_certificate)
         if not isinstance(certificate, VerificationCertificate):
             return False
+        telemetry_value = result.get("execution_telemetry")
+        if not isinstance(telemetry_value, Mapping):
+            return False
+        telemetry = ExecutionTelemetry.from_dict(telemetry_value)
         report = verify_certificate(certificate)
         return (
             report.valid
+            and telemetry.progress_completed == task.parameters["modulus"]
+            and telemetry.progress_total == task.parameters["modulus"]
             and result.get("outcome") == certificate.witness["outcome"]
+            and result.get("outcome_scope") == certificate.witness["outcome_scope"]
             and certificate.witness["target_id"] == task.parameters["target_id"]
         )
-    except (CertificateError, CertificateVerificationError, KeyError, LookupError, ValueError):
+    except (
+        CampaignSerializationError,
+        CertificateError,
+        CertificateVerificationError,
+        KeyError,
+        LookupError,
+        ValueError,
+    ):
         return False
 
 
@@ -394,6 +443,9 @@ def main() -> int:
     candidate = best_known.get("checked-residues")
     if candidate is None:
         raise RuntimeError("campaign did not retain the per-metric best-known candidate")
+    attempts = replayed.ledger.attempts_for_task(observation.task_id)
+    if not attempts or attempts[-1].progress_completed != MODULUS:
+        raise RuntimeError("campaign did not retain operation-reported successful progress")
 
     print(f"recommended strategy: {recommendation.task.strategy}")
     print(
@@ -415,6 +467,7 @@ def main() -> int:
     )
     print(
         f"plans/attempts: {status.recorded_plans}/{status.terminal_attempts}; "
+        f"progress={attempts[-1].progress_completed}/{attempts[-1].progress_total}; "
         f"resources={dict(status.resource_usage)}"
     )
     print(f"sink records: {len(sink.records())}")

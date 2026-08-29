@@ -8,7 +8,9 @@ The arithmetic target is only a finite teaching problem: determine whether 3 is 
 17. An imported prior-work claim says that a toy catalogue has no example, but absence from a
 catalogue proves nothing. A deterministic local strategy therefore checks all 17 residues and an
 independent verifier checks the resulting completeness witness before the campaign records
-`SEARCH_EXHAUSTED`.
+`TARGET_GLOBAL SEARCH_EXHAUSTED`. This target is exactly the complete residue domain, so the
+global scope is justified here; exhausting only one construction family in a larger campaign
+would be `TASK_LOCAL` and would leave alternate strategies open.
 
 That small run exercises the product boundary:
 
@@ -38,6 +40,11 @@ certificate. The example also invokes the registered residue verifier directly, 
 scheduler nor the campaign's closing state is treated as proof. The candidate declares
 `examples.modular-residue-table.v1` as its canonicalizer, target-local equivalence scope, and
 `checked-residues` quality metric; `best_known_by_metric()` never compares unlike metrics.
+The reducer's result and embedded certificate both carry `outcome_scope=TARGET_GLOBAL`, and the
+scope is part of the certificate subject and observation identity.
+It also supplies a typed successful-execution telemetry envelope reporting `17/17` domain points
+checked. It does not report CPU, memory, or monetary counters, so the empty resource status means
+“not measured,” not “measured zero.”
 The imported catalogue statement motivates the task but is not a mathematical dependency of the
 exhaustive residue claim.
 

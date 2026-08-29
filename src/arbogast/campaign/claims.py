@@ -14,11 +14,18 @@ from arbogast.cert import (
     certificate_from_dict,
     default_verifiers,
 )
-from arbogast.claims import Claim, ClaimKind, Derivation, EpistemicStatus, FormalStatement
+from arbogast.claims import (
+    Claim,
+    ClaimKind,
+    Derivation,
+    EpistemicStatus,
+    FormalStatement,
+    claim_boundary_hash,
+)
 from arbogast.formats import canonical_sha256, thaw_json
 
 from .errors import CampaignInvariantError
-from .events import CLOSING_OUTCOMES, Observation, Outcome
+from .events import CLOSING_OUTCOMES, Observation, Outcome, OutcomeScope
 from .planner import CampaignTask
 
 _CLAIM_VERIFIER = "campaign.claim-closure.v1"
@@ -111,8 +118,13 @@ def _verify_campaign_claim(
         raise CertificateVerificationError(
             "campaign claim task or observation failed strict replay"
         ) from error
-    if observation.outcome not in CLOSING_OUTCOMES:
-        raise CertificateVerificationError("campaign claim observation is not mathematical closure")
+    if (
+        observation.outcome not in CLOSING_OUTCOMES
+        or observation.outcome_scope is not OutcomeScope.TARGET_GLOBAL
+    ):
+        raise CertificateVerificationError(
+            "campaign claim observation is not target-global mathematical closure"
+        )
     if observation.task_id != task.campaign_task_id or observation.target_id != task.target_id:
         raise CertificateVerificationError(
             "campaign claim observation is bound to another task or target"
@@ -139,6 +151,18 @@ def _verify_campaign_claim(
         raise CertificateVerificationError(
             "campaign claim certificate has the wrong statement hash"
         )
+    expected_boundary_hash = claim_boundary_hash(
+        expected_claim_id,
+        statement,
+        kind=ClaimKind.COMPUTED,
+        status=EpistemicStatus.CERTIFIED,
+    )
+    if certificate.claim_boundary_hash != expected_boundary_hash:
+        raise CertificateVerificationError(
+            "campaign claim certificate has the wrong semantic boundary"
+        )
+    if certificate.claim_dependencies:
+        raise CertificateVerificationError("campaign closure claim cannot bind graph dependencies")
     if certificate.subject != statement.text:
         raise CertificateVerificationError("campaign claim certificate has the wrong subject")
     return VerificationReport(
@@ -209,6 +233,12 @@ def claim_for_observation(
         _CLAIM_VERIFIER,
         claim_id=claim_id,
         statement_hash=statement.statement_hash,
+        claim_boundary_hash=claim_boundary_hash(
+            claim_id,
+            statement,
+            kind=ClaimKind.COMPUTED,
+            status=EpistemicStatus.CERTIFIED,
+        ),
         witness={
             "campaign_id": campaign_id,
             "observation": observation.to_dict(),

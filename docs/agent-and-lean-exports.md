@@ -151,10 +151,12 @@ mathematical status. Foreign, untyped, or internally inconsistent gap data fails
 
 ## Stable and deliberately boring data
 
-Lean-facing claim and obligation records avoid backend internals. IDs are content-addressed and
-collections have canonical ordering. Any future permutation or matrix bridge must use stable
-finite tables and coefficient presentations; it must not serialize a GAP object number, Python
-memory address, or an unstated choice of group embedding.
+Lean-facing claim and obligation records avoid backend internals. `Claim.id` and
+`ProofObligation.id` are stable validated labels, not content addresses. Claim, graph, and proof
+gap digests, certificate references, and explicitly content-addressed artifact references are the
+content-addressed values; collections have canonical ordering. Any future permutation or matrix
+bridge must use stable finite tables and coefficient presentations; it must not serialize a GAP
+object number, Python memory address, or an unstated choice of group embedding.
 
 ## What export does not mean
 

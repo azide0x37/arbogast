@@ -18,6 +18,7 @@ from arbogast.claims import (
     Derivation,
     EpistemicStatus,
     FormalStatement,
+    claim_boundary_hash,
 )
 
 from .certificate import CohomologyCertificate
@@ -116,6 +117,20 @@ def _verify_semantic_certificate(certificate: VerificationCertificate) -> Verifi
         raise CertificateVerificationError(
             "semantic certificate statement hash is not bound to its cohomology payload"
         )
+    expected_boundary_hash = claim_boundary_hash(
+        expected_claim_id,
+        _statement(domain_certificate),
+        kind=ClaimKind.COMPUTED,
+        status=EpistemicStatus.EXACT,
+    )
+    if certificate.claim_boundary_hash != expected_boundary_hash:
+        raise CertificateVerificationError(
+            "semantic certificate claim boundary is not bound to its cohomology payload"
+        )
+    if certificate.claim_dependencies:
+        raise CertificateVerificationError(
+            "self-contained cohomology certificates cannot bind claim dependencies"
+        )
     if certificate.checks != VERIFICATION_CHECKS:
         raise CertificateVerificationError("cohomology certificate check manifest was altered")
     if certificate.guarantees != VERIFICATION_GUARANTEES:
@@ -168,6 +183,12 @@ def verification_certificate_for_result(result: CohomologyResult) -> Verificatio
         verifier=VERIFIER_NAME,
         claim_id=claim_id,
         statement_hash=statement.statement_hash,
+        claim_boundary_hash=claim_boundary_hash(
+            claim_id,
+            statement,
+            kind=ClaimKind.COMPUTED,
+            status=EpistemicStatus.EXACT,
+        ),
         witness={"cohomology_certificate": domain_certificate.to_dict()},
         checks=VERIFICATION_CHECKS,
         guarantees=VERIFICATION_GUARANTEES,

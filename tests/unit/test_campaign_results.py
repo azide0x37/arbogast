@@ -11,6 +11,7 @@ from arbogast.campaign.results import (
     CandidateEvidence,
     CandidateRecord,
     CandidateScope,
+    ExecutionTelemetry,
 )
 from arbogast.campaign.targets import TargetSpec
 from arbogast.fleet import TaskSpec
@@ -96,6 +97,51 @@ def test_verified_candidate_requires_certificate_and_progress_is_exact() -> None
             _ref("4"),
             canonicalizer="test.identity/v1",
             evidence=CandidateEvidence.VERIFIED,
+        )
+
+
+def test_execution_telemetry_and_attempts_distinguish_absent_from_zero() -> None:
+    telemetry = ExecutionTelemetry(
+        progress_completed=0,
+        progress_total=0,
+        resources={"cpu_seconds": 0},
+        spent={"credits": 0},
+    )
+    assert ExecutionTelemetry.from_dict(telemetry.to_dict()) == telemetry
+
+    absent = AttemptRecord(
+        _ref("1"),
+        _ref("2"),
+        1,
+        OperationalState.UNKNOWN,
+    )
+    measured_zero = AttemptRecord(
+        _ref("1"),
+        _ref("2"),
+        1,
+        OperationalState.UNKNOWN,
+        progress_completed=0,
+        progress_total=0,
+        resources={"cpu_seconds": 0},
+        spent={"credits": 0},
+    )
+    assert absent.progress_completed is None
+    assert measured_zero.progress_completed == 0
+    assert absent.record_id != measured_zero.record_id
+    assert AttemptRecord.from_dict(absent.to_dict()) == absent
+    assert AttemptRecord.from_dict(measured_zero.to_dict()) == measured_zero
+
+    with pytest.raises(CampaignInvariantError, match="at least one"):
+        ExecutionTelemetry()
+    with pytest.raises(CampaignInvariantError, match="non-negative"):
+        ExecutionTelemetry(resources={"cpu_seconds": True})
+    with pytest.raises(CampaignSerializationError, match="invalid"):
+        ExecutionTelemetry.from_dict(
+            {
+                **telemetry.to_dict(),
+                "progress_completed": 2,
+                "progress_total": 1,
+            }
         )
     with pytest.raises(CampaignInvariantError, match="progress_total"):
         AttemptRecord(

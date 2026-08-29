@@ -5,6 +5,7 @@ from .base import (
     CertificateError,
     CertificateLayer,
     CertificateRef,
+    ClaimBinding,
     ContentAddressedCertificate,
 )
 from .canonical import (
@@ -54,6 +55,7 @@ __all__ = [
     "CertificateLayer",
     "CertificateRef",
     "CertificateVerificationError",
+    "ClaimBinding",
     "ContentAddressError",
     "ContentAddressedCertificate",
     "DiscoveryReceipt",

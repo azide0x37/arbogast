@@ -20,6 +20,7 @@ from .events import (
     Observation,
     OperationalState,
     Outcome,
+    OutcomeScope,
     closure_certificate,
     closure_subject,
 )
@@ -31,7 +32,13 @@ from .planner import (
     RecommendationAction,
 )
 from .policy import PriorityPolicy, PriorityScore
-from .results import AttemptRecord, CandidateEvidence, CandidateRecord, CandidateScope
+from .results import (
+    AttemptRecord,
+    CandidateEvidence,
+    CandidateRecord,
+    CandidateScope,
+    ExecutionTelemetry,
+)
 from .spec import CampaignSpec, Objective
 from .strategy import (
     ExactGate,
@@ -64,6 +71,7 @@ __all__ = [
     "DerivationRule",
     "EventKind",
     "ExactGate",
+    "ExecutionTelemetry",
     "FunctionalGate",
     "GateDecision",
     "GateDisposition",
@@ -73,6 +81,7 @@ __all__ = [
     "Observation",
     "OperationalState",
     "Outcome",
+    "OutcomeScope",
     "PreflightDecision",
     "PreflightGate",
     "PriorityPolicy",

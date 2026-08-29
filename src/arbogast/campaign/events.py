@@ -51,6 +51,13 @@ class MathematicalOutcome(StrEnum):
     UNKNOWN = Outcome.UNKNOWN
 
 
+class OutcomeScope(StrEnum):
+    """The mathematical domain an exact outcome is allowed to close."""
+
+    TASK_LOCAL = "TASK_LOCAL"
+    TARGET_GLOBAL = "TARGET_GLOBAL"
+
+
 class OperationalState(StrEnum):
     """Execution state, kept separate from mathematical outcome."""
 
@@ -105,10 +112,14 @@ def _certificate_ref(value: Certificate | CertificateRef | None) -> CertificateR
     raise CampaignInvariantError("certificate must implement the Arbogast certificate protocol")
 
 
-def closure_subject(target_id: str, outcome: Outcome | str) -> str:
-    """Return the exact subject a closure certificate must bind."""
+def closure_subject(
+    target_id: str,
+    outcome: Outcome | str,
+    outcome_scope: OutcomeScope | str,
+) -> str:
+    """Return the exact subject an outcome certificate must bind."""
 
-    return f"campaign:{target_id}:{Outcome(outcome).value}"
+    return f"campaign:{target_id}:{OutcomeScope(outcome_scope).value}:{Outcome(outcome).value}"
 
 
 def closure_certificate(
@@ -116,14 +127,16 @@ def closure_certificate(
     outcome: Outcome | str,
     verifier: str,
     *,
+    outcome_scope: OutcomeScope | str,
     task_hash: str | None = None,
     witness: Mapping[str, object] | None = None,
     checks: Iterable[str] = (),
     guarantees: Iterable[str] = (),
 ) -> VerificationCertificate:
-    """Create a replayable verification certificate bound to one closure."""
+    """Create a replayable certificate bound to one exact outcome and scope."""
 
     resolved_outcome = Outcome(outcome)
+    resolved_scope = OutcomeScope(outcome_scope)
     if resolved_outcome not in CLOSING_OUTCOMES:
         raise CampaignInvariantError("closure certificates require a closing outcome")
     resolved_witness = dict(witness or {})
@@ -137,7 +150,7 @@ def closure_certificate(
             raise CampaignInvariantError("closure certificate witness has a conflicting task_hash")
         resolved_witness["task_hash"] = task_hash
     return VerificationCertificate.create(
-        closure_subject(target_id, resolved_outcome),
+        closure_subject(target_id, resolved_outcome, resolved_scope),
         verifier,
         witness=resolved_witness,
         checks=tuple(checks),
@@ -150,6 +163,7 @@ def _replay_certificate(
     *,
     target_id: str,
     outcome: Outcome,
+    outcome_scope: OutcomeScope,
 ) -> Certificate:
     schema = payload.get("schema_version")
     common = {"certificate_id", "layer", "schema_version"}
@@ -158,6 +172,8 @@ def _replay_certificate(
     if schema == "arbogast.cert.verification/v1":
         expected_keys = common | {
             "checks",
+            "claim_boundary_hash",
+            "claim_dependencies",
             "claim_id",
             "dependencies",
             "guarantees",
@@ -167,13 +183,21 @@ def _replay_certificate(
             "witness",
         }
         string_fields = ("certificate_id", "layer", "schema_version", "subject", "verifier")
-        sequence_fields = ("checks", "dependencies", "guarantees")
+        sequence_fields = (
+            "checks",
+            "claim_dependencies",
+            "dependencies",
+            "guarantees",
+        )
         claim_id = payload.get("claim_id")
         statement_hash = payload.get("statement_hash")
+        claim_boundary_hash = payload.get("claim_boundary_hash")
         if claim_id is not None and not isinstance(claim_id, str):
             raise CampaignInvariantError("certificate claim_id must be a string or null")
         if statement_hash is not None and not isinstance(statement_hash, str):
             raise CampaignInvariantError("certificate statement_hash must be a string or null")
+        if claim_boundary_hash is not None and not isinstance(claim_boundary_hash, str):
+            raise CampaignInvariantError("certificate claim_boundary_hash must be a string or null")
         if not isinstance(payload.get("witness"), Mapping):
             raise CampaignInvariantError("verification witness must be an object")
     else:
@@ -192,12 +216,14 @@ def _replay_certificate(
         raise CampaignInvariantError("closure certificate failed strict replay") from error
     if certificate.layer is not CertificateLayer.VERIFICATION:
         raise CampaignInvariantError("closure requires independently verified evidence")
-    expected_subject = closure_subject(target_id, outcome)
+    expected_subject = closure_subject(target_id, outcome, outcome_scope)
     actual_subject = getattr(certificate, "subject", None)
     if actual_subject is None:
         actual_subject = getattr(certificate, "claim_id", None)
     if actual_subject != expected_subject:
-        raise CampaignInvariantError("closure certificate is not bound to this target and outcome")
+        raise CampaignInvariantError(
+            "closure certificate is not bound to this target, outcome, and scope"
+        )
     return certificate
 
 
@@ -223,6 +249,7 @@ class Observation:
     target_id: str
     task_id: str
     outcome: Outcome
+    outcome_scope: OutcomeScope
     operational_state: OperationalState
     certificate_ref: CertificateRef | None
     certificate_payload: FrozenMapping | None
@@ -239,6 +266,7 @@ class Observation:
         task_id: str,
         outcome: Outcome | str = Outcome.UNKNOWN,
         *,
+        outcome_scope: OutcomeScope | str = OutcomeScope.TASK_LOCAL,
         operational_state: OperationalState | str | None = None,
         certificate: Certificate | CertificateRef | None = None,
         certificate_ref: CertificateRef | None = None,
@@ -253,6 +281,14 @@ class Observation:
         if not target_id.strip() or not task_id.strip():
             raise CampaignInvariantError("observation target_id and task_id cannot be blank")
         resolved_outcome = Outcome(outcome)
+        resolved_scope = OutcomeScope(outcome_scope)
+        if (
+            resolved_scope is OutcomeScope.TARGET_GLOBAL
+            and resolved_outcome not in CLOSING_OUTCOMES
+        ):
+            raise CampaignInvariantError(
+                "TARGET_GLOBAL scope requires an exact mathematical outcome"
+            )
         resolved_state = (
             _default_operational_state(resolved_outcome)
             if operational_state is None
@@ -286,6 +322,7 @@ class Observation:
                 replay_payload,
                 target_id=target_id,
                 outcome=resolved_outcome,
+                outcome_scope=resolved_scope,
             )
         resolved_certificate = (
             CertificateRef.from_certificate(replayed) if replayed is not None else supplied_ref
@@ -310,6 +347,7 @@ class Observation:
         object.__setattr__(self, "target_id", target_id)
         object.__setattr__(self, "task_id", task_id)
         object.__setattr__(self, "outcome", resolved_outcome)
+        object.__setattr__(self, "outcome_scope", resolved_scope)
         object.__setattr__(self, "operational_state", resolved_state)
         object.__setattr__(self, "certificate_ref", resolved_certificate)
         object.__setattr__(
@@ -350,6 +388,7 @@ class Observation:
                 raw_payload,
                 target_id=self.target_id,
                 outcome=self.outcome,
+                outcome_scope=self.outcome_scope,
             )
             report = verify_certificate(certificate)
         except (
@@ -362,7 +401,11 @@ class Observation:
 
     @property
     def closes_target(self) -> bool:
-        return self.outcome in CLOSING_OUTCOMES and self.verified
+        return (
+            self.outcome_scope is OutcomeScope.TARGET_GLOBAL
+            and self.outcome in CLOSING_OUTCOMES
+            and self.verified
+        )
 
     @property
     def observation_id(self) -> str:
@@ -387,6 +430,7 @@ class Observation:
             "input_refs": list(self.input_refs),
             "operational_state": self.operational_state.value,
             "outcome": self.outcome.value,
+            "outcome_scope": self.outcome_scope.value,
             "parameters": self.parameters.to_dict(),
             "result_ref": self.result_ref,
             "source_refs": list(self.source_refs),
@@ -408,6 +452,7 @@ class Observation:
             "observation_id",
             "operational_state",
             "outcome",
+            "outcome_scope",
             "parameters",
             "result_ref",
             "source_refs",
@@ -446,8 +491,12 @@ class Observation:
         target_id = value["target_id"]
         task_id = value["task_id"]
         raw_outcome = value["outcome"]
+        raw_scope = value["outcome_scope"]
         raw_state = value["operational_state"]
-        if not all(isinstance(item, str) for item in (target_id, task_id, raw_outcome, raw_state)):
+        if not all(
+            isinstance(item, str)
+            for item in (target_id, task_id, raw_outcome, raw_scope, raw_state)
+        ):
             raise CampaignSerializationError("observation identifiers and states must be strings")
         raw_inputs = value["input_refs"]
         raw_sources = value["source_refs"]
@@ -473,6 +522,7 @@ class Observation:
             target_id=target_id,
             task_id=task_id,
             outcome=Outcome(raw_outcome),
+            outcome_scope=OutcomeScope(raw_scope),
             operational_state=OperationalState(raw_state),
             certificate_ref=certificate_ref,
             certificate_payload=certificate_payload_value,
@@ -600,6 +650,7 @@ __all__ = [
     "Observation",
     "OperationalState",
     "Outcome",
+    "OutcomeScope",
     "closure_certificate",
     "closure_subject",
 ]

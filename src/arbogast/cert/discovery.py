@@ -129,8 +129,8 @@ class DiscoveryReceipt(ContentAddressedCertificate):
             backend_version=_optional_string(value.get("backend_version")),
             notes=_strings(value.get("notes")),
         )
-        expected = value.get("certificate_id")
-        if expected is not None:
+        if "certificate_id" in value:
+            expected = value["certificate_id"]
             if not isinstance(expected, str):
                 raise CertificateError("certificate_id must be a string")
             receipt.verify_integrity(expected)

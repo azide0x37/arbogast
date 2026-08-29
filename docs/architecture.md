@@ -31,7 +31,7 @@ Campaign
   │     └── Observation → candidates, result refs, certificate, terminal state
   └── campaign-owned ClaimGraph
           ├── imported/assumed starting claims
-          └── verified closure → computed Claim + ledger binding
+          └── verified TARGET_GLOBAL closure → computed Claim + ledger binding
 ```
 
 A **campaign** is the durable research program. A **task** is a canonical unit of intended work;
@@ -45,10 +45,11 @@ proves a claim.
 The campaign ledger is authoritative. Processes and worker directories are transient views. A
 ledger records targets, plans, planned tasks, starts, attempt transitions, observations,
 candidates, outcomes, result and typed-checkpoint references, resources, embedded closure
-certificates, and claim bindings so later planning does not infer state from stdout or a surviving
-scratch directory. The surrounding campaign owns a canonical `ClaimGraph`. Accepting a verified
-closing observation creates its narrowly scoped computed claim and records its ledger binding;
-`export claims` returns that graph directly.
+certificates, typed task-local/target-global outcome scopes, and claim bindings so later planning
+does not infer state from stdout or a surviving scratch directory. The surrounding campaign owns
+a canonical `ClaimGraph`. Exact task-local observations can exclude one branch without stopping
+another. Only accepting a replay-verified `TARGET_GLOBAL` closing observation creates its narrowly
+scoped computed claim and records its ledger binding; `export claims` returns that graph directly.
 
 Candidate identity is mathematical data supplied by an operation. A `CandidateRecord` names its
 canonical key, canonicalizer, and `TARGET` or `GLOBAL` equivalence scope. Preference is maintained
@@ -96,7 +97,7 @@ claim graph and cannot strengthen a claim's status.
 
 The central artifact is a directed acyclic graph of mathematical claims. A node records:
 
-- a stable identifier and formal statement;
+- a stable validated label and formal statement (the claim ID is not a content address);
 - a claim kind such as imported or computed, plus a separate epistemic status;
 - explicit dependencies;
 - the derivation kind and operation contract;
@@ -202,6 +203,12 @@ requirements. Shards have stable IDs and reducers verify compatibility before co
 Dispatch, process exit, receipt collection, successful verification, and theorem acceptance are
 separate states. Resuming a campaign does not turn an unverified partial shard into a completed
 claim.
+
+Successful resource and progress telemetry is also an explicit boundary. Fleet execution receipts
+record scheduler custody but do not claim to measure usage. A reducer may supply the strict
+`arbogast.campaign.execution-telemetry.v1` envelope; campaign observations and attempts preserve
+those operation-reported counters. Missing telemetry remains absent, while reported zero remains
+zero. Requested resources and scheduler timestamps are never substituted for measurements.
 
 The 0.1.0 executors are local and deterministic. `WorkerPoolExecutor` matches declared backend
 and resource requirements, records leases and attempts, and can replay typed cooperative

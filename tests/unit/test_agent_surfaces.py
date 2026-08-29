@@ -29,6 +29,57 @@ def test_describe_uses_central_semantic_registry_and_real_type_ports() -> None:
     assert description.guarantees
 
 
+@pytest.mark.parametrize("field", ("exact", "shardable"))
+@pytest.mark.parametrize("invalid", (0, 1, "false", "true"))
+def test_operation_description_semantic_projection_rejects_non_boolean_flags(
+    field: str, invalid: object
+) -> None:
+    raw: dict[str, object] = {
+        "name": "demo.strict-flags",
+        "inputs": ("Input",),
+        "outputs": ("Output",),
+        "exact": True,
+        "shardable": False,
+    }
+    raw[field] = invalid
+
+    with pytest.raises(ValueError, match=rf"semantic operation {field} must be a boolean"):
+        OperationDescription.from_semantic(raw)
+
+
+@pytest.mark.parametrize("field", ("exact", "shardable"))
+@pytest.mark.parametrize("invalid", (0, 1, "false", "true"))
+def test_operation_description_transport_rejects_non_boolean_flags(
+    field: str, invalid: object
+) -> None:
+    payload = OperationDescription(
+        "demo.strict-transport", ("Input",), ("Output",), exact=True
+    ).to_dict()
+    payload[field] = invalid  # type: ignore[assignment]
+
+    with pytest.raises(ValueError, match=rf"{field}.*boolean"):
+        OperationDescription.from_dict(payload)
+
+
+def test_operation_description_rejects_null_shardable_in_all_transports() -> None:
+    raw: dict[str, object] = {
+        "name": "demo.null-shardable",
+        "inputs": ("Input",),
+        "outputs": ("Output",),
+        "exact": True,
+        "shardable": None,
+    }
+    with pytest.raises(ValueError, match=r"shardable must be a boolean"):
+        OperationDescription.from_semantic(raw)
+
+    payload = OperationDescription(
+        "demo.null-shardable", ("Input",), ("Output",), exact=True
+    ).to_dict()
+    payload["shardable"] = None
+    with pytest.raises(ValueError, match=r"shardable must be a boolean"):
+        OperationDescription.from_dict(payload)
+
+
 def test_capability_graph_uses_deterministic_shortest_route() -> None:
     operations = (
         OperationDescription("z.slow", ("A",), ("B",)),

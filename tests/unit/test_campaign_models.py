@@ -20,6 +20,7 @@ from arbogast.campaign import (
     Observation,
     OperationalState,
     Outcome,
+    OutcomeScope,
     PriorityPolicy,
     Strategy,
     TargetLedger,
@@ -105,6 +106,7 @@ def test_unregistered_or_rejecting_verifier_cannot_close_target() -> None:
         target.target_id,
         Outcome.FOUND,
         "test.no-such-verifier",
+        outcome_scope=OutcomeScope.TARGET_GLOBAL,
         witness={"candidate": 1},
         checks=("candidate checked",),
     )
@@ -112,6 +114,7 @@ def test_unregistered_or_rejecting_verifier_cannot_close_target() -> None:
         target.target_id,
         task.campaign_task_id,
         Outcome.FOUND,
+        outcome_scope=OutcomeScope.TARGET_GLOBAL,
         certificate=certificate,
     )
     ledger.record(observation)
@@ -133,9 +136,11 @@ def test_exact_gate_can_close_only_with_bound_replayable_certificate() -> None:
                     candidate.target_id,
                     Outcome.PROVED_IMPOSSIBLE,
                     "test.parity",
+                    outcome_scope=OutcomeScope.TARGET_GLOBAL,
                     witness={"parity": 1},
                     checks=("parity is incompatible",),
                 ),
+                outcome_scope=OutcomeScope.TARGET_GLOBAL,
             ),
         ),
     )
@@ -150,6 +155,155 @@ def test_exact_gate_can_close_only_with_bound_replayable_certificate() -> None:
     state = campaign.ledger.status(target)
     assert state.closed
     assert state.mathematical_outcome.value == "PROVED_IMPOSSIBLE"
+
+
+def test_task_local_gate_obstruction_leaves_alternate_strategy_plannable() -> None:
+    target = TargetSpec("case:local-obstruction-with-alternate")
+    gated = Strategy(
+        "locally-obstructed",
+        "test.expensive-search",
+        "rule out only this construction branch",
+        gate=FunctionalGate(
+            "branch-parity-obstruction",
+            lambda candidate, _ledger: GateDecision.impossible(
+                "this construction has the wrong parity",
+                closure_certificate(
+                    candidate.target_id,
+                    Outcome.PROVED_IMPOSSIBLE,
+                    "test.parity",
+                    outcome_scope=OutcomeScope.TASK_LOCAL,
+                    witness={"parity": 1},
+                    checks=("branch parity is incompatible",),
+                ),
+            ),
+        ),
+    )
+    alternate = Strategy(
+        "alternate-construction",
+        "test.alternate-search",
+        "try a construction not covered by the local obstruction",
+    )
+    campaign = Campaign(
+        "local-gate-demo",
+        objective="Resolve the target using either construction",
+        targets=(target,),
+        strategies=(gated, alternate),
+    )
+
+    plan = campaign.recommend()
+
+    assert campaign.ledger.status(target).open
+    assert not campaign.claims.claims
+    assert {item.task.strategy for item in plan.recommendations} == {"alternate-construction"}
+    observations = campaign.ledger.observations_for(target)
+    assert len(observations) == 1
+    assert observations[0].verified
+    assert observations[0].mathematical_outcome.value == "PROVED_IMPOSSIBLE"
+    assert observations[0].outcome_scope is OutcomeScope.TASK_LOCAL
+    assert not observations[0].closes_target
+
+
+@pytest.mark.parametrize(
+    "outcome",
+    (Outcome.PROVED_IMPOSSIBLE, Outcome.SEARCH_EXHAUSTED),
+)
+def test_task_local_exact_outcome_does_not_suppress_another_strategy(
+    outcome: Outcome,
+) -> None:
+    target = TargetSpec(f"case:local-{outcome.value.lower()}")
+    first = Strategy("first-branch", "test.first", "search one declared branch")
+    alternate = Strategy("alternate-branch", "test.alternate", "search a disjoint branch")
+    campaign = Campaign(
+        "local-outcome-demo",
+        objective="Resolve the target across both branches",
+        targets=(target,),
+        strategies=(first, alternate),
+    )
+    initial = campaign.recommend()
+    first_task = next(
+        item.task for item in initial.recommendations if item.task.strategy == first.name
+    )
+    certificate = closure_certificate(
+        target.target_id,
+        outcome,
+        "test.exhaustion",
+        outcome_scope=OutcomeScope.TASK_LOCAL,
+        task_hash=first_task.task.task_hash,
+        witness={"branch": first.name},
+        checks=("declared branch checked exactly",),
+    )
+
+    observation = Observation(
+        target.target_id,
+        first_task.campaign_task_id,
+        outcome,
+        outcome_scope=OutcomeScope.TASK_LOCAL,
+        certificate=certificate,
+        input_refs=first_task.task.input_refs,
+        parameters=first_task.provenance.parameters.to_dict(),
+        source_refs=first_task.provenance.source_refs,
+    )
+    campaign.observe(observation)
+    replanned = campaign.recommend()
+
+    assert observation.verified
+    assert not observation.closes_target
+    assert campaign.ledger.status(target).open
+    assert not campaign.claims.claims
+    assert {item.task.strategy for item in replanned.recommendations} == {alternate.name}
+
+
+@pytest.mark.parametrize(
+    "outcome",
+    (Outcome.FOUND, Outcome.PROVED_IMPOSSIBLE, Outcome.SEARCH_EXHAUSTED),
+)
+def test_explicit_target_global_exact_outcomes_close_and_stop_alternates(
+    outcome: Outcome,
+) -> None:
+    target = TargetSpec(f"case:global-{outcome.value.lower()}")
+    first = Strategy("first-branch", "test.first", "resolve the complete target")
+    alternate = Strategy("alternate-branch", "test.alternate", "try another construction")
+    campaign = Campaign(
+        "target-global-outcome-demo",
+        objective="Resolve the complete target",
+        targets=(target,),
+        strategies=(first, alternate),
+    )
+    initial = campaign.recommend()
+    first_task = next(
+        item.task for item in initial.recommendations if item.task.strategy == first.name
+    )
+    certificate = closure_certificate(
+        target.target_id,
+        outcome,
+        "test.exhaustion",
+        outcome_scope=OutcomeScope.TARGET_GLOBAL,
+        task_hash=first_task.task.task_hash,
+        witness={"target": target.key},
+        checks=("target-global criterion checked exactly",),
+    )
+
+    observation = Observation(
+        target.target_id,
+        first_task.campaign_task_id,
+        outcome,
+        outcome_scope=OutcomeScope.TARGET_GLOBAL,
+        certificate=certificate,
+        input_refs=first_task.task.input_refs,
+        parameters=first_task.provenance.parameters.to_dict(),
+        source_refs=first_task.provenance.source_refs,
+    )
+    campaign.observe(observation)
+    replanned = campaign.recommend()
+
+    assert observation.closes_target
+    assert campaign.ledger.status(target).closed
+    assert len(campaign.claims.claims) == 1
+    assert not replanned.recommendations
+    assert any(
+        item.task.strategy == alternate.name and item.action.value == "STOP"
+        for item in replanned.advisories
+    )
 
 
 def test_deferred_gate_is_rechecked_instead_of_becoming_terminal() -> None:
@@ -388,6 +542,7 @@ def test_bound_certificate_and_event_ids_detect_tampering() -> None:
         target.target_id,
         Outcome.SEARCH_EXHAUSTED,
         "test.exhaustion",
+        outcome_scope=OutcomeScope.TARGET_GLOBAL,
         witness={"count": 4},
         checks=("all four cases checked",),
     )
@@ -396,6 +551,7 @@ def test_bound_certificate_and_event_ids_detect_tampering() -> None:
             target.target_id,
             task.campaign_task_id,
             Outcome.SEARCH_EXHAUSTED,
+            outcome_scope=OutcomeScope.TARGET_GLOBAL,
             certificate=certificate,
         )
     )
@@ -415,3 +571,19 @@ def test_bound_certificate_and_event_ids_detect_tampering() -> None:
         match=r"certificate|event_id|observation_id",
     ):
         TargetLedger.from_dict(document)
+
+    scope_document = ledger.to_dict()
+    scope_events = scope_document["events"]
+    assert isinstance(scope_events, list)
+    scope_event = scope_events[-1]
+    assert isinstance(scope_event, dict)
+    scope_payload = scope_event["payload"]
+    assert isinstance(scope_payload, dict)
+    scope_observation = scope_payload["observation"]
+    assert isinstance(scope_observation, dict)
+    scope_observation["outcome_scope"] = OutcomeScope.TASK_LOCAL.value
+    with pytest.raises(
+        (CampaignInvariantError, CampaignSerializationError),
+        match=r"certificate|event_id|observation_id|scope",
+    ):
+        TargetLedger.from_dict(scope_document)

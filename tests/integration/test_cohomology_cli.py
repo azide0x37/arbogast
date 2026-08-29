@@ -69,6 +69,8 @@ def test_fresh_cli_rejects_a_rehashed_wrapper_with_a_false_claim_binding(tmp_pat
         verifier=valid.verifier,
         claim_id="false",
         statement_hash=false_statement.statement_hash,
+        claim_boundary_hash=valid.claim_boundary_hash,
+        claim_dependencies=valid.claim_dependencies,
         witness=valid.witness.to_dict(),
         checks=valid.checks,
         guarantees=valid.guarantees,

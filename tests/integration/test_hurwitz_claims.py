@@ -129,6 +129,8 @@ def test_fresh_cli_rejects_relabelled_portable_group_with_recomputed_ids(
         good.verifier,
         claim_id=f"hurwitz.nielsen_class.{specialized_id.split(':', 1)[1]}",
         statement_hash=statement.statement_hash,
+        claim_boundary_hash=good.claim_boundary_hash,
+        claim_dependencies=good.claim_dependencies,
         witness={"hurwitz_certificate": forged_specialized},
         checks=good.checks,
         guarantees=good.guarantees,
@@ -149,6 +151,37 @@ def test_fresh_cli_rejects_relabelled_portable_group_with_recomputed_ids(
     assert "portable group fingerprint mismatch" in report["error"]
 
 
+def test_central_nielsen_verifier_rejects_readdressed_coercive_transport() -> None:
+    good = hurwitz.verification_certificate_for(_small_nielsen())
+    transport = good.to_dict()
+    witness = transport["witness"]
+    assert isinstance(witness, dict)
+    specialized = witness["hurwitz_certificate"]
+    assert isinstance(specialized, dict)
+    table = specialized["multiplication_table"]
+    assert isinstance(table, list)
+    row = table[0]
+    assert isinstance(row, list)
+    assert row[1] == 1
+    row[1] = True
+    specialized.pop("certificate_id")
+    specialized_id = content_address(specialized)
+    specialized["certificate_id"] = specialized_id
+
+    forged = VerificationCertificate.create(
+        good.subject,
+        good.verifier,
+        claim_id=f"hurwitz.nielsen_class.{specialized_id.split(':', 1)[1]}",
+        statement_hash=good.statement_hash,
+        claim_boundary_hash=good.claim_boundary_hash,
+        witness={"hurwitz_certificate": specialized},
+        checks=good.checks,
+        guarantees=good.guarantees,
+    )
+    with pytest.raises(CertificateVerificationError, match="must be an integer"):
+        verify_certificate(forged)
+
+
 def test_nielsen_receipt_cannot_certify_an_arbitrary_false_statement() -> None:
     nielsen = _small_nielsen()
     good = hurwitz.verification_certificate_for(nielsen)
@@ -161,6 +194,8 @@ def test_nielsen_receipt_cannot_certify_an_arbitrary_false_statement() -> None:
         verifier=good.verifier,
         claim_id=good.claim_id,
         statement_hash=false_statement.statement_hash,
+        claim_boundary_hash=good.claim_boundary_hash,
+        claim_dependencies=good.claim_dependencies,
         witness=good.witness,
         checks=good.checks,
         guarantees=good.guarantees,

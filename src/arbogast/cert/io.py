@@ -7,6 +7,8 @@ from collections.abc import Callable, Mapping
 from dataclasses import dataclass
 from typing import Any, cast
 
+from arbogast.core.canonical import _parse_decimal_integer
+
 from .base import Certificate, CertificateError, CertificateLayer
 from .discovery import DiscoveryReceipt
 from .theorem import TheoremCertificate
@@ -69,12 +71,15 @@ class CertificateDecoderRegistry:
         if not callable(integrity):
             raise CertificateError("certificate decoder returned non-content-addressed evidence")
         integrity()
-        expected = value.get("certificate_id")
-        if expected is not None and certificate.certificate_id != expected:
-            raise CertificateError(
-                f"certificate content address mismatch: expected {expected}, "
-                f"computed {certificate.certificate_id}"
-            )
+        if "certificate_id" in value:
+            expected = value["certificate_id"]
+            if not isinstance(expected, str):
+                raise CertificateError("certificate_id must be a string")
+            if certificate.certificate_id != expected:
+                raise CertificateError(
+                    f"certificate content address mismatch: expected {expected}, "
+                    f"computed {certificate.certificate_id}"
+                )
         return certificate
 
 
@@ -132,6 +137,7 @@ def certificate_from_json(
         decoded = json.loads(
             value,
             object_pairs_hook=_unique_object,
+            parse_int=_parse_decimal_integer,
             parse_float=_reject_float,
             parse_constant=_reject_float,
         )

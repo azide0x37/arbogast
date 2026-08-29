@@ -1,6 +1,7 @@
 """The semantic center: typed mathematical claims and theorem dependency graphs."""
 
 from .claim import (
+    CLAIM_BOUNDARY_SCHEMA_VERSION,
     Claim,
     ClaimError,
     ClaimKind,
@@ -9,6 +10,7 @@ from .claim import (
     ClaimVerificationReport,
     EvidenceKind,
     EvidenceRef,
+    claim_boundary_hash,
 )
 from .derivation import Computation, Derivation, DerivationKind
 from .graph import (
@@ -39,6 +41,7 @@ from .status import (
 )
 
 __all__ = [
+    "CLAIM_BOUNDARY_SCHEMA_VERSION",
     "AnyEpistemic",
     "Certified",
     "Claim",
@@ -74,6 +77,7 @@ __all__ = [
     "Numerical",
     "StatementError",
     "Unknown",
+    "claim_boundary_hash",
     "epistemic_from_dict",
     "require_certified",
     "require_exact",

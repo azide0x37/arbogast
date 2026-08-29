@@ -66,6 +66,21 @@ compare identifiers before checking witnesses.
 Content identity establishes that two consumers received the same bytes under the same schema.
 It does not by itself establish that the contents are mathematically true.
 
+Content addressing applies to digests, certificate references, and explicitly content-addressed
+artifact references. `Claim.id` and `ProofObligation.id` are validated stable labels chosen by
+the producer. They participate in the canonical payload, so changing one changes the enclosing
+digest, but the labels are not themselves content addresses.
+
+A claim-bound `VerificationCertificate` or `TheoremCertificate` commits separately to the
+claim label, conclusion `statement_hash`, and a versioned `claim_boundary_hash`. The boundary
+hash covers the claim kind, epistemic status, ordered hypotheses, and ordered claim dependency
+IDs; it deliberately excludes the evidence reference that would create a certificate/claim hash
+cycle. Claim-graph dependencies additionally travel as ordered `ClaimBinding` records containing
+the dependency ID, statement hash, and boundary hash. Replay recomputes all of these values from
+the current graph, so changing a hypothesis or substituting a different statement under the same
+dependency ID fails closed. Certificate-to-certificate dependencies remain typed
+`CertificateRef` values and are a distinct relation.
+
 ## What a verifier checks
 
 A verifier first checks the envelope:
