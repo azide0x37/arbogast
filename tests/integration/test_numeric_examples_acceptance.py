@@ -60,9 +60,10 @@ def test_numeric_journeys_run_without_an_optional_backend(
         capture_output=True,
         text=True,
         # The exact B2 journey's single claim-graph replay takes about 36 s on
-        # the reference host.  Allow bounded CI variance while remaining well
-        # below the artifact qualifier's 300 s packaged-example boundary.
-        timeout=60,
+        # the reference host but can exceed 60 s on shared CI runners.  Allow
+        # bounded variance while remaining below the artifact qualifier's
+        # 300 s packaged-example boundary.
+        timeout=180,
     )
 
     assert completed.returncode == 0, completed.stderr or completed.stdout
