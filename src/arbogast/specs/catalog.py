@@ -177,6 +177,41 @@ DEFORMATION_SEMANTIC_RESULT_TYPES = (
     "UnsupportedDeformation",
     "DeformationReceipt",
 )
+NUMERIC_SEMANTIC_RESULT_TYPES = (
+    "Dyadic",
+    "ComplexDyadic",
+    "RealBall",
+    "ComplexBall",
+    "ExactPolynomial",
+    "PolynomialSystem",
+    "PolynomialFamily",
+    "ParameterPath",
+    "NumericPoint",
+    "ExactCover",
+    "ContinuationStep",
+    "ContinuationTube",
+    "ContinuationResult",
+    "ConditionBound",
+    "RecognitionBounds",
+    "AlgebraicCandidate",
+    "ExactificationResult",
+    "RegularFiberWitness",
+    "GenericDegreeWitness",
+    "RegularFiberDegree",
+    "DegreeResult",
+    "BranchLoop",
+    "BranchTracking",
+    "NumericalCover",
+    "BranchCycleTuple",
+    "NielsenVertex",
+    "BraidContinuationWitness",
+    "QuadraticB2Homotopy",
+    "BraidContinuationResult",
+    "WeightedBraidPlan",
+    "NumericUnknown",
+    "UnsupportedNumeric",
+    "NumericReceipt",
+)
 IO_OR_SCHEMA = FailureMode(
     "dataset_io_or_schema",
     "the imported dataset cannot be read or does not match the strict typed schema",
@@ -250,6 +285,35 @@ DEFORMATION_CONTRACTION = FailureMode(
     "contraction_not_certified",
     "the supplied affine lift operator is not certified contracting on all lift differences",
     "DeformationError | DeformationVerificationError | LiftUnknown",
+)
+NUMERIC_UNSUPPORTED = FailureMode(
+    "unsupported_numeric_scope",
+    (
+        "the requested model, recognition bound, witness, or nontrivial cover deformation is "
+        "outside the bounded portable numeric slice"
+    ),
+    "UnsupportedNumeric | UnsupportedNumericOperation",
+)
+NUMERIC_PRESENTATION = FailureMode(
+    "invalid_numeric_presentation",
+    (
+        "an exact dyadic, ball, polynomial, path, cover, continuation, recognition, projection, "
+        "or braid witness fails canonical bounded validation"
+    ),
+    "NumericError | TypeError | ValueError",
+)
+NUMERIC_NONCONCLUSION = FailureMode(
+    "numeric_nonconclusion",
+    (
+        "missing witness data, insufficient isolation, or an unimplemented nontrivial cover "
+        "homotopy leaves the requested conclusion explicitly unknown"
+    ),
+    "NumericUnknown | UnsupportedNumeric",
+)
+NUMERIC_VERIFICATION = FailureMode(
+    "numeric_verification_failed",
+    "an exact-dyadic inequality, discrete binding, or numeric receipt fails portable replay",
+    "NumericVerificationError | CertificateVerificationError",
 )
 
 
@@ -2212,6 +2276,348 @@ DEFORMATION_VERIFICATION_OPERATION_SPECS: tuple[OperationSpec, ...] = (
 BUILTIN_OPERATION_SPECS += DEFORMATION_VERIFICATION_OPERATION_SPECS
 
 
+NUMERIC_OPERATION_SPECS: tuple[OperationSpec, ...] = (
+    _spec(
+        "numeric.continue_path",
+        "validated bounded path continuation",
+        (
+            "an exact one-parameter polynomial family, start point, and piecewise-dyadic path",
+            "an explicit dependency-closed contraction tube for every path segment",
+        ),
+        (
+            "returns only the endpoint enclosure certified by the supplied tube",
+            "keeps the conclusion NUMERICAL and never promotes a tube to an exact value",
+            "returns a typed non-conclusion when the tube or supported family is absent",
+        ),
+        "exact interval replay over every supplied bounded tube step",
+        "arbogast.numeric.NumericReceipt nested in arbogast.cert.VerificationCertificate",
+        "continue_path(family, point, path, tube=tube)",
+        exact=False,
+        failure_modes=(
+            INVALID_INPUT,
+            NUMERIC_PRESENTATION,
+            NUMERIC_NONCONCLUSION,
+            NUMERIC_UNSUPPORTED,
+            NUMERIC_VERIFICATION,
+        ),
+        input_types=(
+            "PolynomialFamily | PolynomialSystem",
+            "NumericPoint",
+            "ParameterPath",
+            "ContinuationTube | None",
+        ),
+        input_bundles=(
+            ("PolynomialFamily | PolynomialSystem", "NumericPoint", "ParameterPath"),
+            (
+                "PolynomialFamily | PolynomialSystem",
+                "NumericPoint",
+                "ParameterPath",
+                "ContinuationTube",
+            ),
+        ),
+        output_type="ContinuationResult | NumericUnknown | UnsupportedNumeric",
+    ),
+    _spec(
+        "numeric.condition_number",
+        "certified local numerical conditioning",
+        (
+            "a square exact polynomial system and a numerical point bound to that system",
+            "an exact inverse of the center Jacobian for a positive bound",
+        ),
+        (
+            "returns a RealBall carrying the exact row-sum condition upper bound",
+            "keeps the local conditioning conclusion NUMERICAL",
+            "does not infer global stability from the displayed local bound",
+        ),
+        "one exact Jacobian evaluation, inverse replay, and row-sum bound",
+        "arbogast.numeric.NumericReceipt nested in arbogast.cert.VerificationCertificate",
+        "condition_number(system, point, inverse_jacobian=inverse)",
+        exact=False,
+        failure_modes=(
+            INVALID_INPUT,
+            NUMERIC_PRESENTATION,
+            NUMERIC_NONCONCLUSION,
+            NUMERIC_UNSUPPORTED,
+            NUMERIC_VERIFICATION,
+        ),
+        input_types=("PolynomialSystem", "NumericPoint", "InverseJacobianMatrix | None"),
+        input_bundles=(
+            ("PolynomialSystem", "NumericPoint"),
+            ("PolynomialSystem", "NumericPoint", "InverseJacobianMatrix"),
+        ),
+        output_type="ConditionBound | NumericUnknown | UnsupportedNumeric",
+    ),
+    _spec(
+        "numeric.branch_cycles",
+        "validated quadratic-cover branch-cycle recovery",
+        (
+            "a certified monic quadratic NumericalCover with complete finite branch trackings",
+            "the exact infinity convention and inverse-product cycle when parity requires it",
+        ),
+        (
+            "returns a proof-bearing NielsenTuple subtype with exact concrete permutations",
+            "checks generation and the product-one relation",
+            (
+                "promotes only the unambiguous discrete tuple to EXACT after complete separated "
+                "continuation replay; the upstream cover and trackings remain NUMERICAL"
+            ),
+        ),
+        "complete replay of every sheet tube and exact finite permutation check",
+        "arbogast.numeric.NumericReceipt nested in arbogast.cert.VerificationCertificate",
+        "branch_cycles(cover)",
+        failure_modes=(
+            INVALID_INPUT,
+            NUMERIC_PRESENTATION,
+            NUMERIC_NONCONCLUSION,
+            NUMERIC_VERIFICATION,
+        ),
+        input_types=("NumericalCover",),
+        output_type="BranchCycleTuple | NumericUnknown",
+    ),
+    _spec(
+        "numeric.bind_vertex",
+        "validated numerical-to-Nielsen vertex binding",
+        (
+            "a complete NumericalCover and a computed-complete exact NielsenClass",
+            "a literal match between the tracked permutations and one canonical vertex",
+        ),
+        (
+            "returns the canonical NielsenVertex matching the recovered branch cycles",
+            "embeds and replays the complete exact Nielsen certificate as a dependency",
+            (
+                "promotes the literal complete vertex binding to EXACT only after the exact "
+                "BranchCycleTuple boundary has closed"
+            ),
+        ),
+        "complete Nielsen certificate replay plus one finite canonicalization lookup",
+        "arbogast.numeric.NumericReceipt nested in arbogast.cert.VerificationCertificate",
+        "bind_vertex(cover, nielsen_class)",
+        failure_modes=(
+            INVALID_INPUT,
+            NUMERIC_PRESENTATION,
+            NUMERIC_NONCONCLUSION,
+            NUMERIC_UNSUPPORTED,
+            NUMERIC_VERIFICATION,
+        ),
+        input_types=("NumericalCover", "NielsenClass", "NielsenTuple | int | None"),
+        input_bundles=(
+            ("NumericalCover", "NielsenClass"),
+            ("NumericalCover", "NielsenClass", "NielsenTuple | int"),
+        ),
+        output_type="NielsenVertex | NumericUnknown | UnsupportedNumeric",
+    ),
+    _spec(
+        "numeric.braid_continue",
+        "typed cover braid-continuation boundary",
+        (
+            "a certified NumericalCover and an exact BraidWord",
+            ("an explicit QuadraticB2Homotopy for the normalized degree-two generator or inverse"),
+        ),
+        (
+            "returns the input NumericalCover unchanged for the identity word",
+            (
+                "returns an exact BraidContinuationResult for the witnessed normalized "
+                "sigma_0 generator or inverse"
+            ),
+            "returns NumericUnknown or UnsupportedNumeric outside that exact bounded slice",
+            "rejects a witness bound to a different cover, word, endpoint, or action",
+            "never treats local sheet-loop evidence as a cover-coefficient homotopy",
+        ),
+        "constant identity replay or exact fixed-degree polynomial identity replay",
+        "arbogast.numeric.NumericReceipt nested in arbogast.cert.VerificationCertificate",
+        "braid_continue(cover, word)",
+        exact=False,
+        failure_modes=(
+            INVALID_INPUT,
+            NUMERIC_PRESENTATION,
+            NUMERIC_NONCONCLUSION,
+            NUMERIC_UNSUPPORTED,
+            NUMERIC_VERIFICATION,
+        ),
+        input_types=(
+            "NumericalCover",
+            "BraidWord",
+            "BraidContinuationWitness | QuadraticB2Homotopy | None",
+        ),
+        input_bundles=(
+            ("NumericalCover", "BraidWord"),
+            ("NumericalCover", "BraidWord", "BraidContinuationWitness"),
+            ("NumericalCover", "BraidWord", "QuadraticB2Homotopy"),
+        ),
+        output_type=(
+            "NumericalCover | BraidContinuationResult | NumericUnknown | UnsupportedNumeric"
+        ),
+    ),
+    _spec(
+        "numeric.recognize",
+        "bounded real algebraic recognition",
+        (
+            "a real-centered exact dyadic ball",
+            "automatic bounds of degree at most 2 and coefficient height at most 16",
+        ),
+        (
+            "exhausts the declared finite search and returns one isolated AlgebraicCandidate",
+            "keeps the compatible relation NUMERICAL rather than asserting an exact value",
+            (
+                "returns a typed unknown for zero or multiple matches and unsupported for "
+                "larger bounds"
+            ),
+        ),
+        "finite exhaustive degree-one/two coefficient search with exact Sturm replay",
+        "arbogast.numeric.NumericReceipt nested in arbogast.cert.VerificationCertificate",
+        "recognize(ball, RecognitionBounds(2, 16))",
+        exact=False,
+        failure_modes=(
+            INVALID_INPUT,
+            NUMERIC_PRESENTATION,
+            NUMERIC_NONCONCLUSION,
+            NUMERIC_UNSUPPORTED,
+            NUMERIC_VERIFICATION,
+        ),
+        input_types=("ComplexBall | RealBall", "RecognitionBounds | None"),
+        input_bundles=(
+            ("ComplexBall | RealBall",),
+            ("ComplexBall | RealBall", "RecognitionBounds"),
+        ),
+        output_type="AlgebraicCandidate | NumericUnknown | UnsupportedNumeric",
+    ),
+    _spec(
+        "numeric.exactify",
+        "bounded univariate algebraic exactification",
+        (
+            "a univariate NumericPoint bound to exact real dyadic polynomial equations",
+            "a uniquely isolated AlgebraicCandidate, supplied or found within supported bounds",
+            (
+                "candidate and bounds are mutually exclusive: supply the candidate directly "
+                "or omit it to request bounded recognition"
+            ),
+        ),
+        (
+            "proves exact divisibility of every system equation by the candidate polynomial",
+            "returns ExactificationResult only after exact substitution replay",
+            "keeps failed recognition or divisibility as a typed non-conclusion",
+        ),
+        "bounded recognition followed by exact univariate polynomial divisions",
+        "arbogast.numeric.NumericReceipt nested in arbogast.cert.VerificationCertificate",
+        "exactify(point, candidate=candidate)",
+        failure_modes=(
+            INVALID_INPUT,
+            NUMERIC_PRESENTATION,
+            NUMERIC_NONCONCLUSION,
+            NUMERIC_UNSUPPORTED,
+            NUMERIC_VERIFICATION,
+        ),
+        input_types=(
+            "NumericPoint",
+            "AlgebraicCandidate | None",
+            "RecognitionBounds | None",
+        ),
+        input_bundles=(
+            ("NumericPoint",),
+            ("NumericPoint", "AlgebraicCandidate"),
+            ("NumericPoint", "RecognitionBounds"),
+        ),
+        output_type="ExactificationResult | NumericUnknown | UnsupportedNumeric",
+    ),
+    _spec(
+        "numeric.projection_degree",
+        "scoped exact projection-degree witnesses",
+        (
+            "an exact polynomial, polynomial system, or bounded ExactCover and declared functions",
+            "either a complete square-free regular-fiber factorization or the supported exact "
+            "univariate generic witness",
+            "regular-fiber and generic witnesses are mutually exclusive",
+        ),
+        (
+            "returns RegularFiberDegree only for the one displayed regular fiber",
+            "returns DegreeResult only for the narrowly bound exact univariate polynomial map",
+            "never promotes a regular-fiber count or unbound functions to generic degree",
+        ),
+        "exact univariate factorization/divisibility and leading-term witness replay",
+        "arbogast.numeric.NumericReceipt nested in arbogast.cert.VerificationCertificate",
+        "projection_degree(polynomial, (polynomial,))",
+        failure_modes=(
+            INVALID_INPUT,
+            NUMERIC_PRESENTATION,
+            NUMERIC_NONCONCLUSION,
+            NUMERIC_UNSUPPORTED,
+            NUMERIC_VERIFICATION,
+        ),
+        input_types=(
+            "ExactPolynomial | PolynomialSystem | ExactCover",
+            "ProjectionFunctionSequence",
+            "RegularFiberWitness | None",
+            "GenericDegreeWitness | None",
+        ),
+        input_bundles=(
+            ("ExactPolynomial | PolynomialSystem | ExactCover", "ProjectionFunctionSequence"),
+            (
+                "ExactPolynomial | PolynomialSystem | ExactCover",
+                "ProjectionFunctionSequence",
+                "RegularFiberWitness",
+            ),
+            (
+                "ExactPolynomial | PolynomialSystem | ExactCover",
+                "ProjectionFunctionSequence",
+                "GenericDegreeWitness",
+            ),
+        ),
+        output_type="DegreeResult | RegularFiberDegree | NumericUnknown | UnsupportedNumeric",
+    ),
+    _spec(
+        "numeric.weighted_braid_plan",
+        "exact minimum-cost planning in a finite braid action",
+        (
+            (
+                "a complete finite BraidAction, source and target vertices, and exact "
+                "nonnegative costs"
+            ),
+            "one cost for each forward and inverse declared generator",
+        ),
+        (
+            "returns a realizing exact BraidWord and vertex path",
+            "proves global optimality inside the supplied finite action by a distance potential",
+            "does not claim an intrinsic geometric shortest path or perform numerical continuation",
+        ),
+        "Dijkstra over the bounded finite action plus complete edge-potential replay",
+        "arbogast.numeric.NumericReceipt nested in arbogast.cert.VerificationCertificate",
+        "weighted_braid_plan(action, source, target, costs)",
+        failure_modes=(
+            INVALID_INPUT,
+            NUMERIC_PRESENTATION,
+            NUMERIC_NONCONCLUSION,
+            NUMERIC_UNSUPPORTED,
+            NUMERIC_VERIFICATION,
+        ),
+        input_types=(
+            "BraidAction",
+            "NielsenTuple | int",
+            "NielsenTuple | int",
+            "GeneratorCostMap",
+        ),
+        output_type="WeightedBraidPlan | NumericUnknown | UnsupportedNumeric",
+    ),
+    _spec(
+        "numeric.verify_receipt",
+        "portable numeric receipt replay",
+        ("an independently versioned NumericReceipt with dependency-closed evidence",),
+        (
+            "replays exact dyadic inequalities and finite witnesses without a numerical backend",
+            "preserves NUMERICAL, EXACT, CONDITIONAL, and UNKNOWN conclusion boundaries",
+            "rejects backend-local handles and altered supporting certificates",
+        ),
+        "bounded by the canonical payload and embedded finite dependency closure",
+        None,
+        "verify_numeric_receipt(receipt)",
+        failure_modes=(INVALID_INPUT, NUMERIC_PRESENTATION, NUMERIC_VERIFICATION),
+        input_types=("NumericReceipt",),
+        output_type="tuple[str, ...]",
+    ),
+)
+
+BUILTIN_OPERATION_SPECS += NUMERIC_OPERATION_SPECS
+
+
 SEMANTIC_PROJECTION_OPERATION_SPECS: tuple[OperationSpec, ...] = (
     *(
         _spec(
@@ -2278,6 +2684,46 @@ SEMANTIC_PROJECTION_OPERATION_SPECS: tuple[OperationSpec, ...] = (
                 "claim_graph_for_result",
                 "ClaimGraph",
                 "returns the result claim with its exact proving-certificate dependencies",
+            ),
+        )
+    ),
+    *(
+        _spec(
+            f"numeric.{projection}",
+            "certified numeric-to-exact evidence projection",
+            ("a numeric semantic result or receipt carrying replayable bounded evidence",),
+            (guarantee,),
+            "linear in the bounded numeric receipt and embedded finite dependencies",
+            "arbogast.cert.VerificationCertificate",
+            f"{implementation_name}(numeric_result)",
+            failure_modes=(INVALID_INPUT, NUMERIC_PRESENTATION, NUMERIC_VERIFICATION),
+            # Keep the agent-facing port compact.  The concrete result union is
+            # enumerated once in ``NUMERIC_SEMANTIC_RESULT_TYPES`` for runtime
+            # registration, while routing uses this stable semantic alias.
+            input_types=("NumericSemanticResult | NumericReceipt",),
+            output_type=output_type,
+        )
+        for projection, implementation_name, output_type, guarantee in (
+            (
+                "verification_certificate",
+                "verification_certificate_for_result",
+                "VerificationCertificate",
+                (
+                    "returns the central certificate bound to the exact receipt while preserving "
+                    "NUMERICAL, EXACT, CONDITIONAL, or UNKNOWN status"
+                ),
+            ),
+            (
+                "claim",
+                "claim_for_result",
+                "Claim",
+                "returns only the scoped claim justified by the numeric receipt",
+            ),
+            (
+                "claim_graph",
+                "claim_graph_for_result",
+                "ClaimGraph",
+                "returns the scoped result claim with its exact finite certificate dependencies",
             ),
         )
     ),
@@ -2989,6 +3435,22 @@ BUILTIN_IMPLEMENTATIONS: dict[str, tuple[str, str]] = {
     "deform.claim": ("arbogast.deform.semantic", "claim_for_result"),
     "deform.claim_graph": ("arbogast.deform.semantic", "claim_graph_for_result"),
     "deform.verify_receipt": ("arbogast.deform", "verify_deformation_receipt"),
+    "numeric.continue_path": ("arbogast.numeric", "continue_path"),
+    "numeric.condition_number": ("arbogast.numeric", "condition_number"),
+    "numeric.branch_cycles": ("arbogast.numeric", "branch_cycles"),
+    "numeric.bind_vertex": ("arbogast.numeric", "bind_vertex"),
+    "numeric.braid_continue": ("arbogast.numeric", "braid_continue"),
+    "numeric.recognize": ("arbogast.numeric", "recognize"),
+    "numeric.exactify": ("arbogast.numeric", "exactify"),
+    "numeric.projection_degree": ("arbogast.numeric", "projection_degree"),
+    "numeric.weighted_braid_plan": ("arbogast.numeric", "weighted_braid_plan"),
+    "numeric.verification_certificate": (
+        "arbogast.numeric.semantic",
+        "verification_certificate_for_result",
+    ),
+    "numeric.claim": ("arbogast.numeric.semantic", "claim_for_result"),
+    "numeric.claim_graph": ("arbogast.numeric.semantic", "claim_graph_for_result"),
+    "numeric.verify_receipt": ("arbogast.numeric", "verify_numeric_receipt"),
     "export.json": ("arbogast.export", "export_json"),
     "fleet.plan_pari_arithmetic_task": (
         "arbogast.fleet",
@@ -3077,6 +3539,7 @@ OPERATION_CONTRACT_MODULES = (
     "arbogast.galois",
     "arbogast.arithmetic",
     "arbogast.deform",
+    "arbogast.numeric",
     "arbogast.fleet",
     "arbogast.hurwitz",
 )
@@ -3178,6 +3641,21 @@ PUBLIC_FUNCTION_OPERATIONS: dict[str, dict[str, str]] = {
         "unique_lift": "deform.unique_lift",
         "verification_certificate_for_result": "deform.verification_certificate",
         "verify_deformation_receipt": "deform.verify_receipt",
+    },
+    "arbogast.numeric": {
+        "bind_vertex": "numeric.bind_vertex",
+        "braid_continue": "numeric.braid_continue",
+        "branch_cycles": "numeric.branch_cycles",
+        "claim_for_result": "numeric.claim",
+        "claim_graph_for_result": "numeric.claim_graph",
+        "condition_number": "numeric.condition_number",
+        "continue_path": "numeric.continue_path",
+        "exactify": "numeric.exactify",
+        "projection_degree": "numeric.projection_degree",
+        "recognize": "numeric.recognize",
+        "verification_certificate_for_result": "numeric.verification_certificate",
+        "verify_numeric_receipt": "numeric.verify_receipt",
+        "weighted_braid_plan": "numeric.weighted_braid_plan",
     },
     "arbogast.fleet": {
         "plan_pari_arithmetic_task": "fleet.plan_pari_arithmetic_task",

@@ -24,6 +24,7 @@ import sys
 from pathlib import Path
 
 archive_root = Path(sys.argv[1]).resolve()
+snapshot_version = tuple(int(part) for part in sys.argv[2].split("."))
 source_root = archive_root / "src"
 sys.path.insert(0, str(source_root))
 
@@ -117,6 +118,28 @@ certificates = [
     certificate_record("arithmetic.aim-obstruction", obstruction),
 ]
 
+if snapshot_version >= (0, 3, 0):
+    from arbogast.deform import ArtinRing
+    from arbogast.deform.semantic import receipt_for_result
+
+    deformation_ring = ArtinRing(
+        PrimeField(3),
+        (((1,),),),
+        (1,),
+        (1,),
+        basis_names=("1",),
+    )
+    deformation_receipt = receipt_for_result(deformation_ring)
+    deformation_record = certificate_record("deform.artin-ring-f3", deformation_ring)
+    deformation_record.update(
+        {
+            "deformation_receipt": deformation_receipt.to_dict(),
+            "deformation_receipt_checks": list(deformation_receipt.verify()),
+            "deformation_receipt_id": deformation_receipt.certificate_id,
+        }
+    )
+    certificates.append(deformation_record)
+
 workflow = (archive_root / ".github/workflows/ci.yml").read_text(encoding="utf-8")
 anchor_pattern = re.compile(
     r'- pari-version: "(?P<version>[0-9]+\.[0-9]+\.[0-9]+)"\s+'
@@ -173,7 +196,14 @@ def snapshot(*, version: str, source_tag: str, source_commit: str) -> bytes:
         with tarfile.open(fileobj=BytesIO(archive), mode="r:") as stream:
             stream.extractall(archive_root, filter="data")
         completed = subprocess.run(
-            (sys.executable, "-I", "-c", _ISOLATED_SNAPSHOT, str(archive_root)),
+            (
+                sys.executable,
+                "-I",
+                "-c",
+                _ISOLATED_SNAPSHOT,
+                str(archive_root),
+                version,
+            ),
             cwd=archive_root,
             check=True,
             capture_output=True,

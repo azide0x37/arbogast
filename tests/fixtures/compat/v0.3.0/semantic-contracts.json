@@ -1,0 +1,4793 @@
+{
+  "central_certificates": [
+    {
+      "certificate": {
+        "certificate_id": "sha256:7fc9a8a70169714070587e7abaebb5700ff4515f4eae9f376b464cedb2055e2e",
+        "checks": [
+          "canonical-field-and-place-binding",
+          "prime-field-coordinates",
+          "finite-s-kummer-presentation",
+          "assumptions-verifier-completeness-axes"
+        ],
+        "claim_boundary_hash": "sha256:e3b3a4963178a3e44235f43d8ec60fdc03be10e00d7c8e6dee965e07ce50dca8",
+        "claim_dependencies": [],
+        "claim_id": "galois.kummer_space.b9ee80e07842d825894f6e8d2148ea766107745e9ad28949bbb7afa7da31866c",
+        "dependencies": [],
+        "guarantees": [
+          "The result is a finite S-Kummer presentation, never unrestricted K^*/K^{*p}.",
+          "Completeness and all mathematical assumptions remain explicit in the receipt."
+        ],
+        "layer": "verification",
+        "schema_version": "arbogast.cert.verification/v1",
+        "statement_hash": "sha256:cd9378dbe398a39e3b050698fbb41a0599cdae5fab4421bcca386038358034e1",
+        "subject": "galois.kummer_space:sha256:b9ee80e07842d825894f6e8d2148ea766107745e9ad28949bbb7afa7da31866c",
+        "verifier": "galois.kummer.v1",
+        "witness": {
+          "kummer_receipt": {
+            "completeness_witness": {
+              "class_group_p_torsion": [],
+              "method": "portable-rational-s-kummer-v1",
+              "place_ids": [
+                "sha256:66ce8d67ade87e0929e95346663fe96f6ec5f29341d990cf1781f486c4a5885b",
+                "sha256:93c9553670e7342524f5c52e1578874002ecf4bdc8b09b990254cc53f3f13900"
+              ],
+              "principalization_witnesses": [],
+              "relevant_place_set": {
+                "archimedean_place_ids": [
+                  "sha256:93c9553670e7342524f5c52e1578874002ecf4bdc8b09b990254cc53f3f13900"
+                ],
+                "complete": true,
+                "discriminant_place_ids": [],
+                "dyadic_place_ids": [
+                  "sha256:66ce8d67ade87e0929e95346663fe96f6ec5f29341d990cf1781f486c4a5885b"
+                ],
+                "evidence": null,
+                "method": "portable-rational-mu2-relevant-places-v1",
+                "place_ids": [
+                  "sha256:66ce8d67ade87e0929e95346663fe96f6ec5f29341d990cf1781f486c4a5885b",
+                  "sha256:93c9553670e7342524f5c52e1578874002ecf4bdc8b09b990254cc53f3f13900"
+                ],
+                "prime": 2,
+                "ramified_place_ids": [],
+                "schema": "arbogast.galois.relevant-place-set/v1"
+              },
+              "s_unit_generators": [
+                "sha256:7713a3b4b9aa4cdfc44af96bc0e898a93c9cbe88c05f8936ea56b57cbb493baa",
+                "sha256:377369b3e40c1ca2bc79b9f5cddd80ecd2bef5693004aaa882871edc77e91011"
+              ]
+            },
+            "coordinates": null,
+            "field": {
+              "defining_polynomial": [
+                0,
+                1
+              ],
+              "integral_basis": [
+                [
+                  [
+                    1,
+                    1
+                  ]
+                ]
+              ],
+              "irreducibility_requirement": null,
+              "irreducibility_witness": null,
+              "type": "arbogast.number_field"
+            },
+            "field_id": "sha256:439d93ac34e8d84f67c2023f3cbf43f37cf6404423a6645484dfebc4994e1688",
+            "generator_ids": [
+              "sha256:7713a3b4b9aa4cdfc44af96bc0e898a93c9cbe88c05f8936ea56b57cbb493baa",
+              "sha256:377369b3e40c1ca2bc79b9f5cddd80ecd2bef5693004aaa882871edc77e91011"
+            ],
+            "generators": [
+              {
+                "coefficients": [
+                  [
+                    -1,
+                    1
+                  ]
+                ],
+                "field_id": "sha256:439d93ac34e8d84f67c2023f3cbf43f37cf6404423a6645484dfebc4994e1688",
+                "type": "arbogast.number_field_element"
+              },
+              {
+                "coefficients": [
+                  [
+                    2,
+                    1
+                  ]
+                ],
+                "field_id": "sha256:439d93ac34e8d84f67c2023f3cbf43f37cf6404423a6645484dfebc4994e1688",
+                "type": "arbogast.number_field_element"
+              }
+            ],
+            "object_type": "space",
+            "place_ids": [
+              "sha256:66ce8d67ade87e0929e95346663fe96f6ec5f29341d990cf1781f486c4a5885b",
+              "sha256:93c9553670e7342524f5c52e1578874002ecf4bdc8b09b990254cc53f3f13900"
+            ],
+            "places": [
+              {
+                "field_id": "sha256:439d93ac34e8d84f67c2023f3cbf43f37cf6404423a6645484dfebc4994e1688",
+                "ideal_hnf": [
+                  [
+                    2
+                  ]
+                ],
+                "ramification_index": 1,
+                "rational_prime": 2,
+                "residue_degree": 1,
+                "residue_field_witness": {
+                  "cardinality": 2,
+                  "method": "prime-order-quotient",
+                  "one_representative": [
+                    1
+                  ]
+                },
+                "type": "arbogast.finite_place",
+                "verification_requirement": null
+              },
+              {
+                "embedding_index": 0,
+                "field_id": "sha256:439d93ac34e8d84f67c2023f3cbf43f37cf6404423a6645484dfebc4994e1688",
+                "isolation": [
+                  [
+                    -1,
+                    1
+                  ],
+                  [
+                    1,
+                    1
+                  ]
+                ],
+                "kind": "real",
+                "type": "arbogast.infinite_place",
+                "verification_requirement": null
+              }
+            ],
+            "prime": 2,
+            "proof_context": {
+              "assumptions": [],
+              "completeness": "complete",
+              "type": "arbogast.proof_context",
+              "verification_requirements": [
+                {
+                  "capabilities": [
+                    "finite-s-kummer-presentation",
+                    "rational-s-kummer"
+                  ],
+                  "trust": "portable-python",
+                  "type": "arbogast.verification_requirement",
+                  "verifier": "galois.kummer.v1",
+                  "version": null
+                }
+              ]
+            },
+            "proving_certificates": [],
+            "schema_version": "arbogast.galois.kummer/v1"
+          }
+        }
+      },
+      "certificate_id": "sha256:7fc9a8a70169714070587e7abaebb5700ff4515f4eae9f376b464cedb2055e2e",
+      "claim_id": "galois.kummer_space.b9ee80e07842d825894f6e8d2148ea766107745e9ad28949bbb7afa7da31866c",
+      "label": "galois.kummer-space-q-s2",
+      "result_type": "arbogast.galois.kummer.KummerSpace",
+      "verification_checks": [
+        "canonical-field-and-place-binding",
+        "prime-field-coordinates",
+        "finite-s-kummer-presentation",
+        "assumptions-verifier-completeness-axes"
+      ]
+    },
+    {
+      "certificate": {
+        "certificate_id": "sha256:6dfabd77769bd8b7b58692c53deadb0caffae30535d526aa487c1c7eebfcbbeb",
+        "checks": [
+          "arithmetic-receipt-integrity",
+          "portable-prime-field-replay",
+          "assumptions-and-completeness-axes"
+        ],
+        "claim_boundary_hash": "sha256:ab52e85ec45cc8400357d0696a74c4267590d869978fce9bf137ba355e659ab8",
+        "claim_dependencies": [],
+        "claim_id": "arithmetic.selmer_group.eb3a389bcccdefbb6b3b9c3aff7573149358702f62b72d4528e20b1c39b8fbd8",
+        "dependencies": [],
+        "guarantees": [
+          "The embedded arithmetic receipt is replayed using exact prime-field operations.",
+          "Nested input evidence, completeness, assumptions, and verifier trust remain explicit."
+        ],
+        "layer": "verification",
+        "schema_version": "arbogast.cert.verification/v1",
+        "statement_hash": "sha256:8e352cfbf51e20ae0a19f9a906cf1658e140ddb16de6fe815866ef24cb110283",
+        "subject": "arithmetic:selmer-group:sha256:eb3a389bcccdefbb6b3b9c3aff7573149358702f62b72d4528e20b1c39b8fbd8",
+        "verifier": "arithmetic.finite-linear.v1",
+        "witness": {
+          "arithmetic_receipt": {
+            "certificate_id": "sha256:eb3a389bcccdefbb6b3b9c3aff7573149358702f62b72d4528e20b1c39b8fbd8",
+            "evidence": [
+              {
+                "certificate_id": "sha256:7fc9a8a70169714070587e7abaebb5700ff4515f4eae9f376b464cedb2055e2e",
+                "checks": [
+                  "canonical-field-and-place-binding",
+                  "prime-field-coordinates",
+                  "finite-s-kummer-presentation",
+                  "assumptions-verifier-completeness-axes"
+                ],
+                "claim_boundary_hash": "sha256:e3b3a4963178a3e44235f43d8ec60fdc03be10e00d7c8e6dee965e07ce50dca8",
+                "claim_dependencies": [],
+                "claim_id": "galois.kummer_space.b9ee80e07842d825894f6e8d2148ea766107745e9ad28949bbb7afa7da31866c",
+                "dependencies": [],
+                "guarantees": [
+                  "The result is a finite S-Kummer presentation, never unrestricted K^*/K^{*p}.",
+                  "Completeness and all mathematical assumptions remain explicit in the receipt."
+                ],
+                "layer": "verification",
+                "schema_version": "arbogast.cert.verification/v1",
+                "statement_hash": "sha256:cd9378dbe398a39e3b050698fbb41a0599cdae5fab4421bcca386038358034e1",
+                "subject": "galois.kummer_space:sha256:b9ee80e07842d825894f6e8d2148ea766107745e9ad28949bbb7afa7da31866c",
+                "verifier": "galois.kummer.v1",
+                "witness": {
+                  "kummer_receipt": {
+                    "completeness_witness": {
+                      "class_group_p_torsion": [],
+                      "method": "portable-rational-s-kummer-v1",
+                      "place_ids": [
+                        "sha256:66ce8d67ade87e0929e95346663fe96f6ec5f29341d990cf1781f486c4a5885b",
+                        "sha256:93c9553670e7342524f5c52e1578874002ecf4bdc8b09b990254cc53f3f13900"
+                      ],
+                      "principalization_witnesses": [],
+                      "relevant_place_set": {
+                        "archimedean_place_ids": [
+                          "sha256:93c9553670e7342524f5c52e1578874002ecf4bdc8b09b990254cc53f3f13900"
+                        ],
+                        "complete": true,
+                        "discriminant_place_ids": [],
+                        "dyadic_place_ids": [
+                          "sha256:66ce8d67ade87e0929e95346663fe96f6ec5f29341d990cf1781f486c4a5885b"
+                        ],
+                        "evidence": null,
+                        "method": "portable-rational-mu2-relevant-places-v1",
+                        "place_ids": [
+                          "sha256:66ce8d67ade87e0929e95346663fe96f6ec5f29341d990cf1781f486c4a5885b",
+                          "sha256:93c9553670e7342524f5c52e1578874002ecf4bdc8b09b990254cc53f3f13900"
+                        ],
+                        "prime": 2,
+                        "ramified_place_ids": [],
+                        "schema": "arbogast.galois.relevant-place-set/v1"
+                      },
+                      "s_unit_generators": [
+                        "sha256:7713a3b4b9aa4cdfc44af96bc0e898a93c9cbe88c05f8936ea56b57cbb493baa",
+                        "sha256:377369b3e40c1ca2bc79b9f5cddd80ecd2bef5693004aaa882871edc77e91011"
+                      ]
+                    },
+                    "coordinates": null,
+                    "field": {
+                      "defining_polynomial": [
+                        0,
+                        1
+                      ],
+                      "integral_basis": [
+                        [
+                          [
+                            1,
+                            1
+                          ]
+                        ]
+                      ],
+                      "irreducibility_requirement": null,
+                      "irreducibility_witness": null,
+                      "type": "arbogast.number_field"
+                    },
+                    "field_id": "sha256:439d93ac34e8d84f67c2023f3cbf43f37cf6404423a6645484dfebc4994e1688",
+                    "generator_ids": [
+                      "sha256:7713a3b4b9aa4cdfc44af96bc0e898a93c9cbe88c05f8936ea56b57cbb493baa",
+                      "sha256:377369b3e40c1ca2bc79b9f5cddd80ecd2bef5693004aaa882871edc77e91011"
+                    ],
+                    "generators": [
+                      {
+                        "coefficients": [
+                          [
+                            -1,
+                            1
+                          ]
+                        ],
+                        "field_id": "sha256:439d93ac34e8d84f67c2023f3cbf43f37cf6404423a6645484dfebc4994e1688",
+                        "type": "arbogast.number_field_element"
+                      },
+                      {
+                        "coefficients": [
+                          [
+                            2,
+                            1
+                          ]
+                        ],
+                        "field_id": "sha256:439d93ac34e8d84f67c2023f3cbf43f37cf6404423a6645484dfebc4994e1688",
+                        "type": "arbogast.number_field_element"
+                      }
+                    ],
+                    "object_type": "space",
+                    "place_ids": [
+                      "sha256:66ce8d67ade87e0929e95346663fe96f6ec5f29341d990cf1781f486c4a5885b",
+                      "sha256:93c9553670e7342524f5c52e1578874002ecf4bdc8b09b990254cc53f3f13900"
+                    ],
+                    "places": [
+                      {
+                        "field_id": "sha256:439d93ac34e8d84f67c2023f3cbf43f37cf6404423a6645484dfebc4994e1688",
+                        "ideal_hnf": [
+                          [
+                            2
+                          ]
+                        ],
+                        "ramification_index": 1,
+                        "rational_prime": 2,
+                        "residue_degree": 1,
+                        "residue_field_witness": {
+                          "cardinality": 2,
+                          "method": "prime-order-quotient",
+                          "one_representative": [
+                            1
+                          ]
+                        },
+                        "type": "arbogast.finite_place",
+                        "verification_requirement": null
+                      },
+                      {
+                        "embedding_index": 0,
+                        "field_id": "sha256:439d93ac34e8d84f67c2023f3cbf43f37cf6404423a6645484dfebc4994e1688",
+                        "isolation": [
+                          [
+                            -1,
+                            1
+                          ],
+                          [
+                            1,
+                            1
+                          ]
+                        ],
+                        "kind": "real",
+                        "type": "arbogast.infinite_place",
+                        "verification_requirement": null
+                      }
+                    ],
+                    "prime": 2,
+                    "proof_context": {
+                      "assumptions": [],
+                      "completeness": "complete",
+                      "type": "arbogast.proof_context",
+                      "verification_requirements": [
+                        {
+                          "capabilities": [
+                            "finite-s-kummer-presentation",
+                            "rational-s-kummer"
+                          ],
+                          "trust": "portable-python",
+                          "type": "arbogast.verification_requirement",
+                          "verifier": "galois.kummer.v1",
+                          "version": null
+                        }
+                      ]
+                    },
+                    "proving_certificates": [],
+                    "schema_version": "arbogast.galois.kummer/v1"
+                  }
+                }
+              },
+              {
+                "certificate_id": "sha256:aaca2e8495428fb9e3002c555159d7ff657e9e932d5802e6fb79dfe3ea0f9fbe",
+                "checks": [
+                  "nested-endpoint-receipts",
+                  "declared-place-membership",
+                  "prime-field-linear-map",
+                  "localized-coordinate-replay"
+                ],
+                "claim_boundary_hash": "sha256:6f7ab0991c94e12814b39d61a581947a9973eab154970bd0ebaded84fa094838",
+                "claim_dependencies": [],
+                "claim_id": "galois.localize.add7e8fe16ca3b5ea0dbc70599eb6feb54aef9d5c333f6a1627613905b966fd0",
+                "dependencies": [],
+                "guarantees": [
+                  "The localization matrix is bound to its exact global basis, local basis, and place.",
+                  "Matrix application is replayed over the stated prime field."
+                ],
+                "layer": "verification",
+                "schema_version": "arbogast.cert.verification/v1",
+                "statement_hash": "sha256:cacb1577a125c95bfebf8945fb5c672284e23ec62cef35a2f1362f0873a921de",
+                "subject": "galois.localize:sha256:add7e8fe16ca3b5ea0dbc70599eb6feb54aef9d5c333f6a1627613905b966fd0",
+                "verifier": "galois.localization.v1",
+                "witness": {
+                  "localization_receipt": {
+                    "codomain": {
+                      "basis": [
+                        {
+                          "coefficients": [
+                            [
+                              -1,
+                              1
+                            ]
+                          ],
+                          "field_id": "sha256:439d93ac34e8d84f67c2023f3cbf43f37cf6404423a6645484dfebc4994e1688",
+                          "type": "arbogast.number_field_element"
+                        },
+                        {
+                          "coefficients": [
+                            [
+                              2,
+                              1
+                            ]
+                          ],
+                          "field_id": "sha256:439d93ac34e8d84f67c2023f3cbf43f37cf6404423a6645484dfebc4994e1688",
+                          "type": "arbogast.number_field_element"
+                        },
+                        {
+                          "coefficients": [
+                            [
+                              5,
+                              1
+                            ]
+                          ],
+                          "field_id": "sha256:439d93ac34e8d84f67c2023f3cbf43f37cf6404423a6645484dfebc4994e1688",
+                          "type": "arbogast.number_field_element"
+                        }
+                      ],
+                      "basis_ids": [
+                        "sha256:7713a3b4b9aa4cdfc44af96bc0e898a93c9cbe88c05f8936ea56b57cbb493baa",
+                        "sha256:377369b3e40c1ca2bc79b9f5cddd80ecd2bef5693004aaa882871edc77e91011",
+                        "sha256:09dc25a27de35e9ee2b8788caba9e2dcd54179ee07c817b9814989c23d7722ae"
+                      ],
+                      "coordinates": null,
+                      "object_type": "space",
+                      "place": {
+                        "field_id": "sha256:439d93ac34e8d84f67c2023f3cbf43f37cf6404423a6645484dfebc4994e1688",
+                        "ideal_hnf": [
+                          [
+                            2
+                          ]
+                        ],
+                        "ramification_index": 1,
+                        "rational_prime": 2,
+                        "residue_degree": 1,
+                        "residue_field_witness": {
+                          "cardinality": 2,
+                          "method": "prime-order-quotient",
+                          "one_representative": [
+                            1
+                          ]
+                        },
+                        "type": "arbogast.finite_place",
+                        "verification_requirement": null
+                      },
+                      "place_id": "sha256:66ce8d67ade87e0929e95346663fe96f6ec5f29341d990cf1781f486c4a5885b",
+                      "presentation": {
+                        "basis_ids": [
+                          "sha256:7713a3b4b9aa4cdfc44af96bc0e898a93c9cbe88c05f8936ea56b57cbb493baa",
+                          "sha256:377369b3e40c1ca2bc79b9f5cddd80ecd2bef5693004aaa882871edc77e91011",
+                          "sha256:09dc25a27de35e9ee2b8788caba9e2dcd54179ee07c817b9814989c23d7722ae"
+                        ],
+                        "method": "portable-q2-squareclasses-v1",
+                        "perfect_kummer_identification": true,
+                        "place_id": "sha256:66ce8d67ade87e0929e95346663fe96f6ec5f29341d990cf1781f486c4a5885b"
+                      },
+                      "prime": 2,
+                      "proof_context": {
+                        "assumptions": [],
+                        "completeness": "complete",
+                        "type": "arbogast.proof_context",
+                        "verification_requirements": [
+                          {
+                            "capabilities": [
+                              "local-mu2-squareclasses",
+                              "rational-local-squareclasses"
+                            ],
+                            "trust": "portable-python",
+                            "type": "arbogast.verification_requirement",
+                            "verifier": "galois.local_h1.v1",
+                            "version": null
+                          }
+                        ]
+                      },
+                      "proving_certificates": [],
+                      "schema_version": "arbogast.galois.local-h1/v1"
+                    },
+                    "domain": {
+                      "completeness_witness": {
+                        "class_group_p_torsion": [],
+                        "method": "portable-rational-s-kummer-v1",
+                        "place_ids": [
+                          "sha256:66ce8d67ade87e0929e95346663fe96f6ec5f29341d990cf1781f486c4a5885b",
+                          "sha256:93c9553670e7342524f5c52e1578874002ecf4bdc8b09b990254cc53f3f13900"
+                        ],
+                        "principalization_witnesses": [],
+                        "relevant_place_set": {
+                          "archimedean_place_ids": [
+                            "sha256:93c9553670e7342524f5c52e1578874002ecf4bdc8b09b990254cc53f3f13900"
+                          ],
+                          "complete": true,
+                          "discriminant_place_ids": [],
+                          "dyadic_place_ids": [
+                            "sha256:66ce8d67ade87e0929e95346663fe96f6ec5f29341d990cf1781f486c4a5885b"
+                          ],
+                          "evidence": null,
+                          "method": "portable-rational-mu2-relevant-places-v1",
+                          "place_ids": [
+                            "sha256:66ce8d67ade87e0929e95346663fe96f6ec5f29341d990cf1781f486c4a5885b",
+                            "sha256:93c9553670e7342524f5c52e1578874002ecf4bdc8b09b990254cc53f3f13900"
+                          ],
+                          "prime": 2,
+                          "ramified_place_ids": [],
+                          "schema": "arbogast.galois.relevant-place-set/v1"
+                        },
+                        "s_unit_generators": [
+                          "sha256:7713a3b4b9aa4cdfc44af96bc0e898a93c9cbe88c05f8936ea56b57cbb493baa",
+                          "sha256:377369b3e40c1ca2bc79b9f5cddd80ecd2bef5693004aaa882871edc77e91011"
+                        ]
+                      },
+                      "coordinates": null,
+                      "field": {
+                        "defining_polynomial": [
+                          0,
+                          1
+                        ],
+                        "integral_basis": [
+                          [
+                            [
+                              1,
+                              1
+                            ]
+                          ]
+                        ],
+                        "irreducibility_requirement": null,
+                        "irreducibility_witness": null,
+                        "type": "arbogast.number_field"
+                      },
+                      "field_id": "sha256:439d93ac34e8d84f67c2023f3cbf43f37cf6404423a6645484dfebc4994e1688",
+                      "generator_ids": [
+                        "sha256:7713a3b4b9aa4cdfc44af96bc0e898a93c9cbe88c05f8936ea56b57cbb493baa",
+                        "sha256:377369b3e40c1ca2bc79b9f5cddd80ecd2bef5693004aaa882871edc77e91011"
+                      ],
+                      "generators": [
+                        {
+                          "coefficients": [
+                            [
+                              -1,
+                              1
+                            ]
+                          ],
+                          "field_id": "sha256:439d93ac34e8d84f67c2023f3cbf43f37cf6404423a6645484dfebc4994e1688",
+                          "type": "arbogast.number_field_element"
+                        },
+                        {
+                          "coefficients": [
+                            [
+                              2,
+                              1
+                            ]
+                          ],
+                          "field_id": "sha256:439d93ac34e8d84f67c2023f3cbf43f37cf6404423a6645484dfebc4994e1688",
+                          "type": "arbogast.number_field_element"
+                        }
+                      ],
+                      "object_type": "space",
+                      "place_ids": [
+                        "sha256:66ce8d67ade87e0929e95346663fe96f6ec5f29341d990cf1781f486c4a5885b",
+                        "sha256:93c9553670e7342524f5c52e1578874002ecf4bdc8b09b990254cc53f3f13900"
+                      ],
+                      "places": [
+                        {
+                          "field_id": "sha256:439d93ac34e8d84f67c2023f3cbf43f37cf6404423a6645484dfebc4994e1688",
+                          "ideal_hnf": [
+                            [
+                              2
+                            ]
+                          ],
+                          "ramification_index": 1,
+                          "rational_prime": 2,
+                          "residue_degree": 1,
+                          "residue_field_witness": {
+                            "cardinality": 2,
+                            "method": "prime-order-quotient",
+                            "one_representative": [
+                              1
+                            ]
+                          },
+                          "type": "arbogast.finite_place",
+                          "verification_requirement": null
+                        },
+                        {
+                          "embedding_index": 0,
+                          "field_id": "sha256:439d93ac34e8d84f67c2023f3cbf43f37cf6404423a6645484dfebc4994e1688",
+                          "isolation": [
+                            [
+                              -1,
+                              1
+                            ],
+                            [
+                              1,
+                              1
+                            ]
+                          ],
+                          "kind": "real",
+                          "type": "arbogast.infinite_place",
+                          "verification_requirement": null
+                        }
+                      ],
+                      "prime": 2,
+                      "proof_context": {
+                        "assumptions": [],
+                        "completeness": "complete",
+                        "type": "arbogast.proof_context",
+                        "verification_requirements": [
+                          {
+                            "capabilities": [
+                              "finite-s-kummer-presentation",
+                              "rational-s-kummer"
+                            ],
+                            "trust": "portable-python",
+                            "type": "arbogast.verification_requirement",
+                            "verifier": "galois.kummer.v1",
+                            "version": null
+                          }
+                        ]
+                      },
+                      "proving_certificates": [],
+                      "schema_version": "arbogast.galois.kummer/v1"
+                    },
+                    "image_coordinates": null,
+                    "localization_witness": {
+                      "codomain_receipt": "sha256:47808c0e3f5961dce1982259a0f4eee7ea6148c7a3a98e946cd6be95d1787620",
+                      "domain_receipt": "sha256:b9ee80e07842d825894f6e8d2148ea766107745e9ad28949bbb7afa7da31866c",
+                      "method": "portable-rational-localization-v1"
+                    },
+                    "matrix": [
+                      [
+                        1,
+                        0
+                      ],
+                      [
+                        0,
+                        1
+                      ],
+                      [
+                        0,
+                        0
+                      ]
+                    ],
+                    "proof_context": {
+                      "assumptions": [],
+                      "completeness": "complete",
+                      "type": "arbogast.proof_context",
+                      "verification_requirements": [
+                        {
+                          "capabilities": [
+                            "complex-mu2-zero-localization",
+                            "rational-mu2-localization",
+                            "real-sign-mu2-localization"
+                          ],
+                          "trust": "portable-python",
+                          "type": "arbogast.verification_requirement",
+                          "verifier": "galois.localization.v1",
+                          "version": null
+                        }
+                      ]
+                    },
+                    "proving_certificates": [],
+                    "schema_version": "arbogast.galois.localization/v1",
+                    "source_coordinates": null
+                  }
+                }
+              },
+              {
+                "certificate_id": "sha256:bc9d6ad61e6d58caa1085c0cb9b1f040cdd58d7118c19dd55c6cdb198d81e34d",
+                "checks": [
+                  "nested-endpoint-receipts",
+                  "declared-place-membership",
+                  "prime-field-linear-map",
+                  "localized-coordinate-replay"
+                ],
+                "claim_boundary_hash": "sha256:74330b2bfe442a6838ba89ac0e51a3827a865387ffb3aa0f372b35a7b24fa82f",
+                "claim_dependencies": [],
+                "claim_id": "galois.localize.5d325473c856aecb218df0f208b4ea9beb4cd2a4fc43579a5c644ec75886fbbe",
+                "dependencies": [],
+                "guarantees": [
+                  "The localization matrix is bound to its exact global basis, local basis, and place.",
+                  "Matrix application is replayed over the stated prime field."
+                ],
+                "layer": "verification",
+                "schema_version": "arbogast.cert.verification/v1",
+                "statement_hash": "sha256:c0a7ff90bed7140c14165875eb9407fccb8a7b826ee4973707d8545a85f99fe6",
+                "subject": "galois.localize:sha256:5d325473c856aecb218df0f208b4ea9beb4cd2a4fc43579a5c644ec75886fbbe",
+                "verifier": "galois.localization.v1",
+                "witness": {
+                  "localization_receipt": {
+                    "codomain": {
+                      "basis": [
+                        {
+                          "coefficients": [
+                            [
+                              -1,
+                              1
+                            ]
+                          ],
+                          "field_id": "sha256:439d93ac34e8d84f67c2023f3cbf43f37cf6404423a6645484dfebc4994e1688",
+                          "type": "arbogast.number_field_element"
+                        }
+                      ],
+                      "basis_ids": [
+                        "sha256:7713a3b4b9aa4cdfc44af96bc0e898a93c9cbe88c05f8936ea56b57cbb493baa"
+                      ],
+                      "coordinates": null,
+                      "object_type": "space",
+                      "place": {
+                        "embedding_index": 0,
+                        "field_id": "sha256:439d93ac34e8d84f67c2023f3cbf43f37cf6404423a6645484dfebc4994e1688",
+                        "isolation": [
+                          [
+                            -1,
+                            1
+                          ],
+                          [
+                            1,
+                            1
+                          ]
+                        ],
+                        "kind": "real",
+                        "type": "arbogast.infinite_place",
+                        "verification_requirement": null
+                      },
+                      "place_id": "sha256:93c9553670e7342524f5c52e1578874002ecf4bdc8b09b990254cc53f3f13900",
+                      "presentation": {
+                        "basis_ids": [
+                          "sha256:7713a3b4b9aa4cdfc44af96bc0e898a93c9cbe88c05f8936ea56b57cbb493baa"
+                        ],
+                        "method": "portable-real-mu2-v1",
+                        "perfect_kummer_identification": true,
+                        "place_id": "sha256:93c9553670e7342524f5c52e1578874002ecf4bdc8b09b990254cc53f3f13900"
+                      },
+                      "prime": 2,
+                      "proof_context": {
+                        "assumptions": [],
+                        "completeness": "complete",
+                        "type": "arbogast.proof_context",
+                        "verification_requirements": [
+                          {
+                            "capabilities": [
+                              "local-mu2-squareclasses",
+                              "rational-local-squareclasses"
+                            ],
+                            "trust": "portable-python",
+                            "type": "arbogast.verification_requirement",
+                            "verifier": "galois.local_h1.v1",
+                            "version": null
+                          }
+                        ]
+                      },
+                      "proving_certificates": [],
+                      "schema_version": "arbogast.galois.local-h1/v1"
+                    },
+                    "domain": {
+                      "completeness_witness": {
+                        "class_group_p_torsion": [],
+                        "method": "portable-rational-s-kummer-v1",
+                        "place_ids": [
+                          "sha256:66ce8d67ade87e0929e95346663fe96f6ec5f29341d990cf1781f486c4a5885b",
+                          "sha256:93c9553670e7342524f5c52e1578874002ecf4bdc8b09b990254cc53f3f13900"
+                        ],
+                        "principalization_witnesses": [],
+                        "relevant_place_set": {
+                          "archimedean_place_ids": [
+                            "sha256:93c9553670e7342524f5c52e1578874002ecf4bdc8b09b990254cc53f3f13900"
+                          ],
+                          "complete": true,
+                          "discriminant_place_ids": [],
+                          "dyadic_place_ids": [
+                            "sha256:66ce8d67ade87e0929e95346663fe96f6ec5f29341d990cf1781f486c4a5885b"
+                          ],
+                          "evidence": null,
+                          "method": "portable-rational-mu2-relevant-places-v1",
+                          "place_ids": [
+                            "sha256:66ce8d67ade87e0929e95346663fe96f6ec5f29341d990cf1781f486c4a5885b",
+                            "sha256:93c9553670e7342524f5c52e1578874002ecf4bdc8b09b990254cc53f3f13900"
+                          ],
+                          "prime": 2,
+                          "ramified_place_ids": [],
+                          "schema": "arbogast.galois.relevant-place-set/v1"
+                        },
+                        "s_unit_generators": [
+                          "sha256:7713a3b4b9aa4cdfc44af96bc0e898a93c9cbe88c05f8936ea56b57cbb493baa",
+                          "sha256:377369b3e40c1ca2bc79b9f5cddd80ecd2bef5693004aaa882871edc77e91011"
+                        ]
+                      },
+                      "coordinates": null,
+                      "field": {
+                        "defining_polynomial": [
+                          0,
+                          1
+                        ],
+                        "integral_basis": [
+                          [
+                            [
+                              1,
+                              1
+                            ]
+                          ]
+                        ],
+                        "irreducibility_requirement": null,
+                        "irreducibility_witness": null,
+                        "type": "arbogast.number_field"
+                      },
+                      "field_id": "sha256:439d93ac34e8d84f67c2023f3cbf43f37cf6404423a6645484dfebc4994e1688",
+                      "generator_ids": [
+                        "sha256:7713a3b4b9aa4cdfc44af96bc0e898a93c9cbe88c05f8936ea56b57cbb493baa",
+                        "sha256:377369b3e40c1ca2bc79b9f5cddd80ecd2bef5693004aaa882871edc77e91011"
+                      ],
+                      "generators": [
+                        {
+                          "coefficients": [
+                            [
+                              -1,
+                              1
+                            ]
+                          ],
+                          "field_id": "sha256:439d93ac34e8d84f67c2023f3cbf43f37cf6404423a6645484dfebc4994e1688",
+                          "type": "arbogast.number_field_element"
+                        },
+                        {
+                          "coefficients": [
+                            [
+                              2,
+                              1
+                            ]
+                          ],
+                          "field_id": "sha256:439d93ac34e8d84f67c2023f3cbf43f37cf6404423a6645484dfebc4994e1688",
+                          "type": "arbogast.number_field_element"
+                        }
+                      ],
+                      "object_type": "space",
+                      "place_ids": [
+                        "sha256:66ce8d67ade87e0929e95346663fe96f6ec5f29341d990cf1781f486c4a5885b",
+                        "sha256:93c9553670e7342524f5c52e1578874002ecf4bdc8b09b990254cc53f3f13900"
+                      ],
+                      "places": [
+                        {
+                          "field_id": "sha256:439d93ac34e8d84f67c2023f3cbf43f37cf6404423a6645484dfebc4994e1688",
+                          "ideal_hnf": [
+                            [
+                              2
+                            ]
+                          ],
+                          "ramification_index": 1,
+                          "rational_prime": 2,
+                          "residue_degree": 1,
+                          "residue_field_witness": {
+                            "cardinality": 2,
+                            "method": "prime-order-quotient",
+                            "one_representative": [
+                              1
+                            ]
+                          },
+                          "type": "arbogast.finite_place",
+                          "verification_requirement": null
+                        },
+                        {
+                          "embedding_index": 0,
+                          "field_id": "sha256:439d93ac34e8d84f67c2023f3cbf43f37cf6404423a6645484dfebc4994e1688",
+                          "isolation": [
+                            [
+                              -1,
+                              1
+                            ],
+                            [
+                              1,
+                              1
+                            ]
+                          ],
+                          "kind": "real",
+                          "type": "arbogast.infinite_place",
+                          "verification_requirement": null
+                        }
+                      ],
+                      "prime": 2,
+                      "proof_context": {
+                        "assumptions": [],
+                        "completeness": "complete",
+                        "type": "arbogast.proof_context",
+                        "verification_requirements": [
+                          {
+                            "capabilities": [
+                              "finite-s-kummer-presentation",
+                              "rational-s-kummer"
+                            ],
+                            "trust": "portable-python",
+                            "type": "arbogast.verification_requirement",
+                            "verifier": "galois.kummer.v1",
+                            "version": null
+                          }
+                        ]
+                      },
+                      "proving_certificates": [],
+                      "schema_version": "arbogast.galois.kummer/v1"
+                    },
+                    "image_coordinates": null,
+                    "localization_witness": {
+                      "codomain_receipt": "sha256:36ccce52d67d9263d00490d5d8a323d8e172e86bd2227696fa50889d2e7c1a06",
+                      "domain_receipt": "sha256:b9ee80e07842d825894f6e8d2148ea766107745e9ad28949bbb7afa7da31866c",
+                      "method": "portable-rational-localization-v1"
+                    },
+                    "matrix": [
+                      [
+                        1,
+                        0
+                      ]
+                    ],
+                    "proof_context": {
+                      "assumptions": [],
+                      "completeness": "complete",
+                      "type": "arbogast.proof_context",
+                      "verification_requirements": [
+                        {
+                          "capabilities": [
+                            "complex-mu2-zero-localization",
+                            "rational-mu2-localization",
+                            "real-sign-mu2-localization"
+                          ],
+                          "trust": "portable-python",
+                          "type": "arbogast.verification_requirement",
+                          "verifier": "galois.localization.v1",
+                          "version": null
+                        }
+                      ]
+                    },
+                    "proving_certificates": [],
+                    "schema_version": "arbogast.galois.localization/v1",
+                    "source_coordinates": null
+                  }
+                }
+              },
+              {
+                "certificate_id": "sha256:c71d918f3d921b8a69d8cb10c3bb81455d40cac6a4748fe92a6fc1b03616705b",
+                "checks": [
+                  "arithmetic-receipt-integrity",
+                  "portable-prime-field-replay",
+                  "assumptions-and-completeness-axes"
+                ],
+                "claim_boundary_hash": "sha256:c7bd3ec6882dc89a5c569cea28bbf6ce4b50d178bb747f909c2cc8069ac7392a",
+                "claim_dependencies": [],
+                "claim_id": "arithmetic.local_condition.a6e0626399e4fcc18879d57cc5d1cb0fc601119a03b13a3c86752ebda40a73b7",
+                "dependencies": [],
+                "guarantees": [
+                  "The embedded arithmetic receipt is replayed using exact prime-field operations.",
+                  "Nested input evidence, completeness, assumptions, and verifier trust remain explicit."
+                ],
+                "layer": "verification",
+                "schema_version": "arbogast.cert.verification/v1",
+                "statement_hash": "sha256:1cc7d6a0f063a02dec424f73ef9f6bbd8503869fe39c01bfaf45f65511b73ee1",
+                "subject": "arithmetic:local-condition:sha256:a6e0626399e4fcc18879d57cc5d1cb0fc601119a03b13a3c86752ebda40a73b7",
+                "verifier": "arithmetic.finite-linear.v1",
+                "witness": {
+                  "arithmetic_receipt": {
+                    "certificate_id": "sha256:a6e0626399e4fcc18879d57cc5d1cb0fc601119a03b13a3c86752ebda40a73b7",
+                    "evidence": [
+                      {
+                        "certificate_id": "sha256:ad36231313ecc99ee017aceffbc41f01777ad9d22718ddbc4e596f6ec60950f0",
+                        "checks": [
+                          "canonical-place-binding",
+                          "genuine-local-kummer-presentation",
+                          "prime-field-coordinates",
+                          "assumptions-verifier-completeness-axes"
+                        ],
+                        "claim_boundary_hash": "sha256:c1610878031e282c0362f1d3903f810500e744db606bec1ac7794fc444130269",
+                        "claim_dependencies": [],
+                        "claim_id": "galois.local_h1.47808c0e3f5961dce1982259a0f4eee7ea6148c7a3a98e946cd6be95d1787620",
+                        "dependencies": [],
+                        "guarantees": [
+                          "The result is presented as genuine local H^1(K_v, mu_p).",
+                          "It is not identified with finite decomposition-quotient cohomology."
+                        ],
+                        "layer": "verification",
+                        "schema_version": "arbogast.cert.verification/v1",
+                        "statement_hash": "sha256:f98f0a6305a99ab40c1a58f6a7c37e0ff6bc55112d85e3522f5b06d5d6edc4e9",
+                        "subject": "galois.local_h1:sha256:47808c0e3f5961dce1982259a0f4eee7ea6148c7a3a98e946cd6be95d1787620",
+                        "verifier": "galois.local_h1.v1",
+                        "witness": {
+                          "local_h1_receipt": {
+                            "basis": [
+                              {
+                                "coefficients": [
+                                  [
+                                    -1,
+                                    1
+                                  ]
+                                ],
+                                "field_id": "sha256:439d93ac34e8d84f67c2023f3cbf43f37cf6404423a6645484dfebc4994e1688",
+                                "type": "arbogast.number_field_element"
+                              },
+                              {
+                                "coefficients": [
+                                  [
+                                    2,
+                                    1
+                                  ]
+                                ],
+                                "field_id": "sha256:439d93ac34e8d84f67c2023f3cbf43f37cf6404423a6645484dfebc4994e1688",
+                                "type": "arbogast.number_field_element"
+                              },
+                              {
+                                "coefficients": [
+                                  [
+                                    5,
+                                    1
+                                  ]
+                                ],
+                                "field_id": "sha256:439d93ac34e8d84f67c2023f3cbf43f37cf6404423a6645484dfebc4994e1688",
+                                "type": "arbogast.number_field_element"
+                              }
+                            ],
+                            "basis_ids": [
+                              "sha256:7713a3b4b9aa4cdfc44af96bc0e898a93c9cbe88c05f8936ea56b57cbb493baa",
+                              "sha256:377369b3e40c1ca2bc79b9f5cddd80ecd2bef5693004aaa882871edc77e91011",
+                              "sha256:09dc25a27de35e9ee2b8788caba9e2dcd54179ee07c817b9814989c23d7722ae"
+                            ],
+                            "coordinates": null,
+                            "object_type": "space",
+                            "place": {
+                              "field_id": "sha256:439d93ac34e8d84f67c2023f3cbf43f37cf6404423a6645484dfebc4994e1688",
+                              "ideal_hnf": [
+                                [
+                                  2
+                                ]
+                              ],
+                              "ramification_index": 1,
+                              "rational_prime": 2,
+                              "residue_degree": 1,
+                              "residue_field_witness": {
+                                "cardinality": 2,
+                                "method": "prime-order-quotient",
+                                "one_representative": [
+                                  1
+                                ]
+                              },
+                              "type": "arbogast.finite_place",
+                              "verification_requirement": null
+                            },
+                            "place_id": "sha256:66ce8d67ade87e0929e95346663fe96f6ec5f29341d990cf1781f486c4a5885b",
+                            "presentation": {
+                              "basis_ids": [
+                                "sha256:7713a3b4b9aa4cdfc44af96bc0e898a93c9cbe88c05f8936ea56b57cbb493baa",
+                                "sha256:377369b3e40c1ca2bc79b9f5cddd80ecd2bef5693004aaa882871edc77e91011",
+                                "sha256:09dc25a27de35e9ee2b8788caba9e2dcd54179ee07c817b9814989c23d7722ae"
+                              ],
+                              "method": "portable-q2-squareclasses-v1",
+                              "perfect_kummer_identification": true,
+                              "place_id": "sha256:66ce8d67ade87e0929e95346663fe96f6ec5f29341d990cf1781f486c4a5885b"
+                            },
+                            "prime": 2,
+                            "proof_context": {
+                              "assumptions": [],
+                              "completeness": "complete",
+                              "type": "arbogast.proof_context",
+                              "verification_requirements": [
+                                {
+                                  "capabilities": [
+                                    "local-mu2-squareclasses",
+                                    "rational-local-squareclasses"
+                                  ],
+                                  "trust": "portable-python",
+                                  "type": "arbogast.verification_requirement",
+                                  "verifier": "galois.local_h1.v1",
+                                  "version": null
+                                }
+                              ]
+                            },
+                            "proving_certificates": [],
+                            "schema_version": "arbogast.galois.local-h1/v1"
+                          }
+                        }
+                      }
+                    ],
+                    "kind": "local-condition",
+                    "layer": "verification",
+                    "payload": {
+                      "ambient_dimension": 3,
+                      "basis": [
+                        [
+                          1,
+                          0,
+                          0
+                        ],
+                        [
+                          0,
+                          1,
+                          0
+                        ],
+                        [
+                          0,
+                          0,
+                          1
+                        ]
+                      ],
+                      "input_evidence_ids": [
+                        "sha256:ad36231313ecc99ee017aceffbc41f01777ad9d22718ddbc4e596f6ec60950f0"
+                      ],
+                      "place_id": "sha256:66ce8d67ade87e0929e95346663fe96f6ec5f29341d990cf1781f486c4a5885b",
+                      "prime": 2,
+                      "space_id": "sha256:47808c0e3f5961dce1982259a0f4eee7ea6148c7a3a98e946cd6be95d1787620"
+                    },
+                    "proof_context": {
+                      "assumptions": [],
+                      "completeness": "complete",
+                      "type": "arbogast.proof_context",
+                      "verification_requirements": [
+                        {
+                          "capabilities": [
+                            "finite-linear-replay"
+                          ],
+                          "trust": "portable-python",
+                          "type": "arbogast.verification_requirement",
+                          "verifier": "arithmetic.finite-linear.v1",
+                          "version": null
+                        },
+                        {
+                          "capabilities": [
+                            "local-mu2-squareclasses",
+                            "rational-local-squareclasses"
+                          ],
+                          "trust": "portable-python",
+                          "type": "arbogast.verification_requirement",
+                          "verifier": "galois.local_h1.v1",
+                          "version": null
+                        }
+                      ]
+                    },
+                    "schema_version": "arbogast.local-condition/v1"
+                  }
+                }
+              },
+              {
+                "certificate_id": "sha256:ad36231313ecc99ee017aceffbc41f01777ad9d22718ddbc4e596f6ec60950f0",
+                "checks": [
+                  "canonical-place-binding",
+                  "genuine-local-kummer-presentation",
+                  "prime-field-coordinates",
+                  "assumptions-verifier-completeness-axes"
+                ],
+                "claim_boundary_hash": "sha256:c1610878031e282c0362f1d3903f810500e744db606bec1ac7794fc444130269",
+                "claim_dependencies": [],
+                "claim_id": "galois.local_h1.47808c0e3f5961dce1982259a0f4eee7ea6148c7a3a98e946cd6be95d1787620",
+                "dependencies": [],
+                "guarantees": [
+                  "The result is presented as genuine local H^1(K_v, mu_p).",
+                  "It is not identified with finite decomposition-quotient cohomology."
+                ],
+                "layer": "verification",
+                "schema_version": "arbogast.cert.verification/v1",
+                "statement_hash": "sha256:f98f0a6305a99ab40c1a58f6a7c37e0ff6bc55112d85e3522f5b06d5d6edc4e9",
+                "subject": "galois.local_h1:sha256:47808c0e3f5961dce1982259a0f4eee7ea6148c7a3a98e946cd6be95d1787620",
+                "verifier": "galois.local_h1.v1",
+                "witness": {
+                  "local_h1_receipt": {
+                    "basis": [
+                      {
+                        "coefficients": [
+                          [
+                            -1,
+                            1
+                          ]
+                        ],
+                        "field_id": "sha256:439d93ac34e8d84f67c2023f3cbf43f37cf6404423a6645484dfebc4994e1688",
+                        "type": "arbogast.number_field_element"
+                      },
+                      {
+                        "coefficients": [
+                          [
+                            2,
+                            1
+                          ]
+                        ],
+                        "field_id": "sha256:439d93ac34e8d84f67c2023f3cbf43f37cf6404423a6645484dfebc4994e1688",
+                        "type": "arbogast.number_field_element"
+                      },
+                      {
+                        "coefficients": [
+                          [
+                            5,
+                            1
+                          ]
+                        ],
+                        "field_id": "sha256:439d93ac34e8d84f67c2023f3cbf43f37cf6404423a6645484dfebc4994e1688",
+                        "type": "arbogast.number_field_element"
+                      }
+                    ],
+                    "basis_ids": [
+                      "sha256:7713a3b4b9aa4cdfc44af96bc0e898a93c9cbe88c05f8936ea56b57cbb493baa",
+                      "sha256:377369b3e40c1ca2bc79b9f5cddd80ecd2bef5693004aaa882871edc77e91011",
+                      "sha256:09dc25a27de35e9ee2b8788caba9e2dcd54179ee07c817b9814989c23d7722ae"
+                    ],
+                    "coordinates": null,
+                    "object_type": "space",
+                    "place": {
+                      "field_id": "sha256:439d93ac34e8d84f67c2023f3cbf43f37cf6404423a6645484dfebc4994e1688",
+                      "ideal_hnf": [
+                        [
+                          2
+                        ]
+                      ],
+                      "ramification_index": 1,
+                      "rational_prime": 2,
+                      "residue_degree": 1,
+                      "residue_field_witness": {
+                        "cardinality": 2,
+                        "method": "prime-order-quotient",
+                        "one_representative": [
+                          1
+                        ]
+                      },
+                      "type": "arbogast.finite_place",
+                      "verification_requirement": null
+                    },
+                    "place_id": "sha256:66ce8d67ade87e0929e95346663fe96f6ec5f29341d990cf1781f486c4a5885b",
+                    "presentation": {
+                      "basis_ids": [
+                        "sha256:7713a3b4b9aa4cdfc44af96bc0e898a93c9cbe88c05f8936ea56b57cbb493baa",
+                        "sha256:377369b3e40c1ca2bc79b9f5cddd80ecd2bef5693004aaa882871edc77e91011",
+                        "sha256:09dc25a27de35e9ee2b8788caba9e2dcd54179ee07c817b9814989c23d7722ae"
+                      ],
+                      "method": "portable-q2-squareclasses-v1",
+                      "perfect_kummer_identification": true,
+                      "place_id": "sha256:66ce8d67ade87e0929e95346663fe96f6ec5f29341d990cf1781f486c4a5885b"
+                    },
+                    "prime": 2,
+                    "proof_context": {
+                      "assumptions": [],
+                      "completeness": "complete",
+                      "type": "arbogast.proof_context",
+                      "verification_requirements": [
+                        {
+                          "capabilities": [
+                            "local-mu2-squareclasses",
+                            "rational-local-squareclasses"
+                          ],
+                          "trust": "portable-python",
+                          "type": "arbogast.verification_requirement",
+                          "verifier": "galois.local_h1.v1",
+                          "version": null
+                        }
+                      ]
+                    },
+                    "proving_certificates": [],
+                    "schema_version": "arbogast.galois.local-h1/v1"
+                  }
+                }
+              },
+              {
+                "certificate_id": "sha256:6e2c2bbaee2adb7d5600204b4a36bac195bde9c62ec795a77d225de57326fe96",
+                "checks": [
+                  "arithmetic-receipt-integrity",
+                  "portable-prime-field-replay",
+                  "assumptions-and-completeness-axes"
+                ],
+                "claim_boundary_hash": "sha256:c5953075474801e797218992e64c411084667e8bede07b2be1a7c5a2694a6cb2",
+                "claim_dependencies": [],
+                "claim_id": "arithmetic.local_condition.112d485466cb1c8bb2b0939b29a68fabda0c43f3f889d0cdb52add92b9ac1d03",
+                "dependencies": [],
+                "guarantees": [
+                  "The embedded arithmetic receipt is replayed using exact prime-field operations.",
+                  "Nested input evidence, completeness, assumptions, and verifier trust remain explicit."
+                ],
+                "layer": "verification",
+                "schema_version": "arbogast.cert.verification/v1",
+                "statement_hash": "sha256:842fc9f9990c678129faafbc71c310625e1efc539dc245f08f4239084eb7e868",
+                "subject": "arithmetic:local-condition:sha256:112d485466cb1c8bb2b0939b29a68fabda0c43f3f889d0cdb52add92b9ac1d03",
+                "verifier": "arithmetic.finite-linear.v1",
+                "witness": {
+                  "arithmetic_receipt": {
+                    "certificate_id": "sha256:112d485466cb1c8bb2b0939b29a68fabda0c43f3f889d0cdb52add92b9ac1d03",
+                    "evidence": [
+                      {
+                        "certificate_id": "sha256:3b3a995f8f8bb45108d824361a93adc91adca4e73b384149f0b8528ec5cb65d0",
+                        "checks": [
+                          "canonical-place-binding",
+                          "genuine-local-kummer-presentation",
+                          "prime-field-coordinates",
+                          "assumptions-verifier-completeness-axes"
+                        ],
+                        "claim_boundary_hash": "sha256:0c176f71b9e79b65b38a1c28a0c2ada317268e291693dc666cd982ac1772c0bb",
+                        "claim_dependencies": [],
+                        "claim_id": "galois.local_h1.36ccce52d67d9263d00490d5d8a323d8e172e86bd2227696fa50889d2e7c1a06",
+                        "dependencies": [],
+                        "guarantees": [
+                          "The result is presented as genuine local H^1(K_v, mu_p).",
+                          "It is not identified with finite decomposition-quotient cohomology."
+                        ],
+                        "layer": "verification",
+                        "schema_version": "arbogast.cert.verification/v1",
+                        "statement_hash": "sha256:2f1d050e0d0e6b104f935387fa8b06d3f39b60e01e9c5a7e54d595a0015cf98b",
+                        "subject": "galois.local_h1:sha256:36ccce52d67d9263d00490d5d8a323d8e172e86bd2227696fa50889d2e7c1a06",
+                        "verifier": "galois.local_h1.v1",
+                        "witness": {
+                          "local_h1_receipt": {
+                            "basis": [
+                              {
+                                "coefficients": [
+                                  [
+                                    -1,
+                                    1
+                                  ]
+                                ],
+                                "field_id": "sha256:439d93ac34e8d84f67c2023f3cbf43f37cf6404423a6645484dfebc4994e1688",
+                                "type": "arbogast.number_field_element"
+                              }
+                            ],
+                            "basis_ids": [
+                              "sha256:7713a3b4b9aa4cdfc44af96bc0e898a93c9cbe88c05f8936ea56b57cbb493baa"
+                            ],
+                            "coordinates": null,
+                            "object_type": "space",
+                            "place": {
+                              "embedding_index": 0,
+                              "field_id": "sha256:439d93ac34e8d84f67c2023f3cbf43f37cf6404423a6645484dfebc4994e1688",
+                              "isolation": [
+                                [
+                                  -1,
+                                  1
+                                ],
+                                [
+                                  1,
+                                  1
+                                ]
+                              ],
+                              "kind": "real",
+                              "type": "arbogast.infinite_place",
+                              "verification_requirement": null
+                            },
+                            "place_id": "sha256:93c9553670e7342524f5c52e1578874002ecf4bdc8b09b990254cc53f3f13900",
+                            "presentation": {
+                              "basis_ids": [
+                                "sha256:7713a3b4b9aa4cdfc44af96bc0e898a93c9cbe88c05f8936ea56b57cbb493baa"
+                              ],
+                              "method": "portable-real-mu2-v1",
+                              "perfect_kummer_identification": true,
+                              "place_id": "sha256:93c9553670e7342524f5c52e1578874002ecf4bdc8b09b990254cc53f3f13900"
+                            },
+                            "prime": 2,
+                            "proof_context": {
+                              "assumptions": [],
+                              "completeness": "complete",
+                              "type": "arbogast.proof_context",
+                              "verification_requirements": [
+                                {
+                                  "capabilities": [
+                                    "local-mu2-squareclasses",
+                                    "rational-local-squareclasses"
+                                  ],
+                                  "trust": "portable-python",
+                                  "type": "arbogast.verification_requirement",
+                                  "verifier": "galois.local_h1.v1",
+                                  "version": null
+                                }
+                              ]
+                            },
+                            "proving_certificates": [],
+                            "schema_version": "arbogast.galois.local-h1/v1"
+                          }
+                        }
+                      }
+                    ],
+                    "kind": "local-condition",
+                    "layer": "verification",
+                    "payload": {
+                      "ambient_dimension": 1,
+                      "basis": [],
+                      "input_evidence_ids": [
+                        "sha256:3b3a995f8f8bb45108d824361a93adc91adca4e73b384149f0b8528ec5cb65d0"
+                      ],
+                      "place_id": "sha256:93c9553670e7342524f5c52e1578874002ecf4bdc8b09b990254cc53f3f13900",
+                      "prime": 2,
+                      "space_id": "sha256:36ccce52d67d9263d00490d5d8a323d8e172e86bd2227696fa50889d2e7c1a06"
+                    },
+                    "proof_context": {
+                      "assumptions": [],
+                      "completeness": "complete",
+                      "type": "arbogast.proof_context",
+                      "verification_requirements": [
+                        {
+                          "capabilities": [
+                            "finite-linear-replay"
+                          ],
+                          "trust": "portable-python",
+                          "type": "arbogast.verification_requirement",
+                          "verifier": "arithmetic.finite-linear.v1",
+                          "version": null
+                        },
+                        {
+                          "capabilities": [
+                            "local-mu2-squareclasses",
+                            "rational-local-squareclasses"
+                          ],
+                          "trust": "portable-python",
+                          "type": "arbogast.verification_requirement",
+                          "verifier": "galois.local_h1.v1",
+                          "version": null
+                        }
+                      ]
+                    },
+                    "schema_version": "arbogast.local-condition/v1"
+                  }
+                }
+              },
+              {
+                "certificate_id": "sha256:3b3a995f8f8bb45108d824361a93adc91adca4e73b384149f0b8528ec5cb65d0",
+                "checks": [
+                  "canonical-place-binding",
+                  "genuine-local-kummer-presentation",
+                  "prime-field-coordinates",
+                  "assumptions-verifier-completeness-axes"
+                ],
+                "claim_boundary_hash": "sha256:0c176f71b9e79b65b38a1c28a0c2ada317268e291693dc666cd982ac1772c0bb",
+                "claim_dependencies": [],
+                "claim_id": "galois.local_h1.36ccce52d67d9263d00490d5d8a323d8e172e86bd2227696fa50889d2e7c1a06",
+                "dependencies": [],
+                "guarantees": [
+                  "The result is presented as genuine local H^1(K_v, mu_p).",
+                  "It is not identified with finite decomposition-quotient cohomology."
+                ],
+                "layer": "verification",
+                "schema_version": "arbogast.cert.verification/v1",
+                "statement_hash": "sha256:2f1d050e0d0e6b104f935387fa8b06d3f39b60e01e9c5a7e54d595a0015cf98b",
+                "subject": "galois.local_h1:sha256:36ccce52d67d9263d00490d5d8a323d8e172e86bd2227696fa50889d2e7c1a06",
+                "verifier": "galois.local_h1.v1",
+                "witness": {
+                  "local_h1_receipt": {
+                    "basis": [
+                      {
+                        "coefficients": [
+                          [
+                            -1,
+                            1
+                          ]
+                        ],
+                        "field_id": "sha256:439d93ac34e8d84f67c2023f3cbf43f37cf6404423a6645484dfebc4994e1688",
+                        "type": "arbogast.number_field_element"
+                      }
+                    ],
+                    "basis_ids": [
+                      "sha256:7713a3b4b9aa4cdfc44af96bc0e898a93c9cbe88c05f8936ea56b57cbb493baa"
+                    ],
+                    "coordinates": null,
+                    "object_type": "space",
+                    "place": {
+                      "embedding_index": 0,
+                      "field_id": "sha256:439d93ac34e8d84f67c2023f3cbf43f37cf6404423a6645484dfebc4994e1688",
+                      "isolation": [
+                        [
+                          -1,
+                          1
+                        ],
+                        [
+                          1,
+                          1
+                        ]
+                      ],
+                      "kind": "real",
+                      "type": "arbogast.infinite_place",
+                      "verification_requirement": null
+                    },
+                    "place_id": "sha256:93c9553670e7342524f5c52e1578874002ecf4bdc8b09b990254cc53f3f13900",
+                    "presentation": {
+                      "basis_ids": [
+                        "sha256:7713a3b4b9aa4cdfc44af96bc0e898a93c9cbe88c05f8936ea56b57cbb493baa"
+                      ],
+                      "method": "portable-real-mu2-v1",
+                      "perfect_kummer_identification": true,
+                      "place_id": "sha256:93c9553670e7342524f5c52e1578874002ecf4bdc8b09b990254cc53f3f13900"
+                    },
+                    "prime": 2,
+                    "proof_context": {
+                      "assumptions": [],
+                      "completeness": "complete",
+                      "type": "arbogast.proof_context",
+                      "verification_requirements": [
+                        {
+                          "capabilities": [
+                            "local-mu2-squareclasses",
+                            "rational-local-squareclasses"
+                          ],
+                          "trust": "portable-python",
+                          "type": "arbogast.verification_requirement",
+                          "verifier": "galois.local_h1.v1",
+                          "version": null
+                        }
+                      ]
+                    },
+                    "proving_certificates": [],
+                    "schema_version": "arbogast.galois.local-h1/v1"
+                  }
+                }
+              }
+            ],
+            "kind": "selmer-group",
+            "layer": "verification",
+            "payload": {
+              "dimension": 1,
+              "global_certificate_id": "sha256:7fc9a8a70169714070587e7abaebb5700ff4515f4eae9f376b464cedb2055e2e",
+              "global_space_id": "sha256:b9ee80e07842d825894f6e8d2148ea766107745e9ad28949bbb7afa7da31866c",
+              "input_evidence_ids": [
+                "sha256:7fc9a8a70169714070587e7abaebb5700ff4515f4eae9f376b464cedb2055e2e",
+                "sha256:aaca2e8495428fb9e3002c555159d7ff657e9e932d5802e6fb79dfe3ea0f9fbe",
+                "sha256:bc9d6ad61e6d58caa1085c0cb9b1f040cdd58d7118c19dd55c6cdb198d81e34d",
+                "sha256:c71d918f3d921b8a69d8cb10c3bb81455d40cac6a4748fe92a6fc1b03616705b",
+                "sha256:ad36231313ecc99ee017aceffbc41f01777ad9d22718ddbc4e596f6ec60950f0",
+                "sha256:6e2c2bbaee2adb7d5600204b4a36bac195bde9c62ec795a77d225de57326fe96",
+                "sha256:3b3a995f8f8bb45108d824361a93adc91adca4e73b384149f0b8528ec5cb65d0"
+              ],
+              "kernel_basis": [
+                [
+                  0,
+                  1
+                ]
+              ],
+              "local_blocks": [
+                {
+                  "condition_certificate_id": "sha256:c71d918f3d921b8a69d8cb10c3bb81455d40cac6a4748fe92a6fc1b03616705b",
+                  "localization_certificate_id": "sha256:aaca2e8495428fb9e3002c555159d7ff657e9e932d5802e6fb79dfe3ea0f9fbe",
+                  "place_id": "sha256:66ce8d67ade87e0929e95346663fe96f6ec5f29341d990cf1781f486c4a5885b"
+                },
+                {
+                  "condition_certificate_id": "sha256:6e2c2bbaee2adb7d5600204b4a36bac195bde9c62ec795a77d225de57326fe96",
+                  "localization_certificate_id": "sha256:bc9d6ad61e6d58caa1085c0cb9b1f040cdd58d7118c19dd55c6cdb198d81e34d",
+                  "place_id": "sha256:93c9553670e7342524f5c52e1578874002ecf4bdc8b09b990254cc53f3f13900"
+                }
+              ],
+              "matrix": [
+                [
+                  1,
+                  0
+                ]
+              ],
+              "matrix_ncols": 2,
+              "matrix_nrows": 1,
+              "place_ids": [
+                "sha256:66ce8d67ade87e0929e95346663fe96f6ec5f29341d990cf1781f486c4a5885b",
+                "sha256:93c9553670e7342524f5c52e1578874002ecf4bdc8b09b990254cc53f3f13900"
+              ],
+              "place_set_complete": true,
+              "prime": 2
+            },
+            "proof_context": {
+              "assumptions": [],
+              "completeness": "complete",
+              "type": "arbogast.proof_context",
+              "verification_requirements": [
+                {
+                  "capabilities": [
+                    "finite-linear-replay"
+                  ],
+                  "trust": "portable-python",
+                  "type": "arbogast.verification_requirement",
+                  "verifier": "arithmetic.finite-linear.v1",
+                  "version": null
+                },
+                {
+                  "capabilities": [
+                    "finite-s-kummer-presentation",
+                    "rational-s-kummer"
+                  ],
+                  "trust": "portable-python",
+                  "type": "arbogast.verification_requirement",
+                  "verifier": "galois.kummer.v1",
+                  "version": null
+                },
+                {
+                  "capabilities": [
+                    "local-mu2-squareclasses",
+                    "rational-local-squareclasses"
+                  ],
+                  "trust": "portable-python",
+                  "type": "arbogast.verification_requirement",
+                  "verifier": "galois.local_h1.v1",
+                  "version": null
+                },
+                {
+                  "capabilities": [
+                    "complex-mu2-zero-localization",
+                    "rational-mu2-localization",
+                    "real-sign-mu2-localization"
+                  ],
+                  "trust": "portable-python",
+                  "type": "arbogast.verification_requirement",
+                  "verifier": "galois.localization.v1",
+                  "version": null
+                }
+              ]
+            },
+            "schema_version": "arbogast.selmer/v1"
+          }
+        }
+      },
+      "certificate_id": "sha256:6dfabd77769bd8b7b58692c53deadb0caffae30535d526aa487c1c7eebfcbbeb",
+      "claim_id": "arithmetic.selmer_group.eb3a389bcccdefbb6b3b9c3aff7573149358702f62b72d4528e20b1c39b8fbd8",
+      "label": "arithmetic.selmer-group-q-s2",
+      "result_type": "arbogast.arithmetic.selmer.SelmerGroup",
+      "verification_checks": [
+        "prime-field",
+        "global-to-local-quotient-map",
+        "recomputed-kernel",
+        "dependency-closed-input-certificates",
+        "nested-input-certificates",
+        "verification-requirements-satisfied",
+        "assumptions-axis",
+        "completeness-axis"
+      ]
+    },
+    {
+      "certificate": {
+        "certificate_id": "sha256:2750040c28839e24955eadd6543e62d6a6495e2296a16908a2802516a17127a5",
+        "checks": [
+          "arithmetic-receipt-integrity",
+          "portable-prime-field-replay",
+          "assumptions-and-completeness-axes"
+        ],
+        "claim_boundary_hash": "sha256:421052bed10cd5541e98b4aee67df174b9e5e744061a58e0086b717f1acbaaf1",
+        "claim_dependencies": [],
+        "claim_id": "arithmetic.aim_obstruction.6d07dae2661855d4b15fbcae7fc7bc13e077e6240f486e576391d3e18af646c9",
+        "dependencies": [],
+        "guarantees": [
+          "The embedded arithmetic receipt is replayed using exact prime-field operations.",
+          "Nested input evidence, completeness, assumptions, and verifier trust remain explicit."
+        ],
+        "layer": "verification",
+        "schema_version": "arbogast.cert.verification/v1",
+        "statement_hash": "sha256:5b1b65a21774f14dbe9e8b3da5f9891b17604466c49070ab2db4f74034629f74",
+        "subject": "arithmetic:aim-obstruction:sha256:6d07dae2661855d4b15fbcae7fc7bc13e077e6240f486e576391d3e18af646c9",
+        "verifier": "arithmetic.finite-linear.v1",
+        "witness": {
+          "arithmetic_receipt": {
+            "certificate_id": "sha256:6d07dae2661855d4b15fbcae7fc7bc13e077e6240f486e576391d3e18af646c9",
+            "evidence": [],
+            "kind": "aim-obstruction",
+            "layer": "verification",
+            "payload": {
+              "kernel_basis": [
+                [
+                  0,
+                  1
+                ]
+              ],
+              "matrix": [
+                [
+                  1,
+                  0
+                ],
+                [
+                  0,
+                  0
+                ]
+              ],
+              "matrix_ncols": 2,
+              "matrix_nrows": 2,
+              "prime": 2,
+              "target": [
+                1,
+                1
+              ],
+              "witness": [
+                0,
+                1
+              ]
+            },
+            "proof_context": {
+              "assumptions": [],
+              "completeness": "candidate",
+              "type": "arbogast.proof_context",
+              "verification_requirements": [
+                {
+                  "capabilities": [
+                    "finite-linear-replay"
+                  ],
+                  "trust": "portable-python",
+                  "type": "arbogast.verification_requirement",
+                  "verifier": "arithmetic.finite-linear.v1",
+                  "version": null
+                }
+              ]
+            },
+            "schema_version": "arbogast.aim/v1"
+          }
+        }
+      },
+      "certificate_id": "sha256:2750040c28839e24955eadd6543e62d6a6495e2296a16908a2802516a17127a5",
+      "claim_id": "arithmetic.aim_obstruction.6d07dae2661855d4b15fbcae7fc7bc13e077e6240f486e576391d3e18af646c9",
+      "label": "arithmetic.aim-obstruction",
+      "result_type": "arbogast.arithmetic.aiming.LeftNullspaceObstruction",
+      "verification_checks": [
+        "linear-system",
+        "left-nullspace",
+        "separating-pairing",
+        "dependency-closed-input-certificates",
+        "nested-input-certificates",
+        "verification-requirements-satisfied",
+        "assumptions-axis",
+        "completeness-axis"
+      ]
+    },
+    {
+      "certificate": {
+        "certificate_id": "sha256:ad8e666111f5c89f81dc558cb763e189216515ee714b3ae6f29ee03434e1db4d",
+        "checks": [
+          "deformation-receipt-integrity",
+          "portable-prime-field-replay",
+          "dependency-closed-finite-evidence",
+          "assumptions-completeness-trust-axes"
+        ],
+        "claim_boundary_hash": "sha256:07f1533f64ac0bead1fa861a331b61d3e57cc7b8943df08b2a761cf2e913d4b0",
+        "claim_dependencies": [],
+        "claim_id": "deform.artin_ring.8ae82d5c09936609d5cd53d05de8cbb3cb7af3aa9b3133f10e3d2d722826e058",
+        "dependencies": [],
+        "guarantees": [
+          "The embedded deformation receipt is replayed using exact prime-field arithmetic.",
+          "Every referenced prerequisite is supplied as recursively replayable verification evidence.",
+          "Assumptions, completeness, and portable verifier trust are bound without promotion."
+        ],
+        "layer": "verification",
+        "schema_version": "arbogast.cert.verification/v1",
+        "statement_hash": "sha256:3fb736e7182ec9e267398bc0936a876e3186612d156263d0e29593dbf28e4be2",
+        "subject": "deform:artin-ring:sha256:8ae82d5c09936609d5cd53d05de8cbb3cb7af3aa9b3133f10e3d2d722826e058",
+        "verifier": "deform.finite-exact.v1",
+        "witness": {
+          "deformation_receipt": {
+            "assumptions": [],
+            "certificate_id": "sha256:8ae82d5c09936609d5cd53d05de8cbb3cb7af3aa9b3133f10e3d2d722826e058",
+            "completeness": "complete",
+            "dependencies": [],
+            "kind": "artin-ring",
+            "layer": "verification",
+            "payload": {
+              "basis_names": [
+                "1"
+              ],
+              "dimension": 1,
+              "field": {
+                "characteristic": 3,
+                "type": "arbogast.prime_field"
+              },
+              "maximal_ideal_powers": [
+                []
+              ],
+              "residue": [
+                1
+              ],
+              "structure_constants": [
+                [
+                  [
+                    1
+                  ]
+                ]
+              ],
+              "type": "arbogast.deform.artin_ring",
+              "unit": [
+                1
+              ]
+            },
+            "schema_version": "arbogast.deform.artin-ring-receipt/v1",
+            "verifier_trust": "portable-python"
+          }
+        }
+      },
+      "certificate_id": "sha256:ad8e666111f5c89f81dc558cb763e189216515ee714b3ae6f29ee03434e1db4d",
+      "claim_id": "deform.artin_ring.8ae82d5c09936609d5cd53d05de8cbb3cb7af3aa9b3133f10e3d2d722826e058",
+      "deformation_receipt": {
+        "assumptions": [],
+        "certificate_id": "sha256:8ae82d5c09936609d5cd53d05de8cbb3cb7af3aa9b3133f10e3d2d722826e058",
+        "completeness": "complete",
+        "dependencies": [],
+        "kind": "artin-ring",
+        "layer": "verification",
+        "payload": {
+          "basis_names": [
+            "1"
+          ],
+          "dimension": 1,
+          "field": {
+            "characteristic": 3,
+            "type": "arbogast.prime_field"
+          },
+          "maximal_ideal_powers": [
+            []
+          ],
+          "residue": [
+            1
+          ],
+          "structure_constants": [
+            [
+              [
+                1
+              ]
+            ]
+          ],
+          "type": "arbogast.deform.artin_ring",
+          "unit": [
+            1
+          ]
+        },
+        "schema_version": "arbogast.deform.artin-ring-receipt/v1",
+        "verifier_trust": "portable-python"
+      },
+      "deformation_receipt_checks": [
+        "prime-field-local-algebra",
+        "unit-commutativity-associativity",
+        "residue-homomorphism",
+        "nilpotent-maximal-ideal-powers",
+        "dependency-closed-portable-evidence",
+        "assumptions-axis",
+        "completeness-axis",
+        "portable-verifier-trust"
+      ],
+      "deformation_receipt_id": "sha256:8ae82d5c09936609d5cd53d05de8cbb3cb7af3aa9b3133f10e3d2d722826e058",
+      "label": "deform.artin-ring-f3",
+      "result_type": "arbogast.deform.rings.ArtinRing",
+      "verification_checks": [
+        "prime-field-local-algebra",
+        "unit-commutativity-associativity",
+        "residue-homomorphism",
+        "nilpotent-maximal-ideal-powers",
+        "dependency-closed-portable-evidence",
+        "assumptions-axis",
+        "completeness-axis",
+        "portable-verifier-trust"
+      ]
+    }
+  ],
+  "derivation": {
+    "command": "uv run --offline python scripts/snapshot_semantic_contracts.py --version 0.3.0 --source-tag v0.3.0 --source-commit 46aef45d7bb24893d552476aee2d9b17b3da7e43 --check tests/fixtures/compat/v0.3.0/semantic-contracts.json",
+    "import_isolation": "python -I with only git-archive/src explicitly prepended",
+    "python": "CPython 3.11",
+    "source": "git archive 46aef45d7bb24893d552476aee2d9b17b3da7e43"
+  },
+  "pari": {
+    "ci_anchors": [
+      {
+        "source_sha256": "0efdda7515d9d954f63324c34b34c560e60f73a81c3924a71260a2cc91d5f981",
+        "source_url": "https://pari.math.u-bordeaux.fr/pub/pari/OLD/2.15/pari-2.15.5.tar.gz",
+        "version": "2.15.5"
+      },
+      {
+        "source_sha256": "02651d99c391007d384b3fadbc20abc6916b77036f9e496c99e9ce8688ca4b53",
+        "source_url": "https://pari.math.u-bordeaux.fr/pub/pari/unix/pari-2.17.4.tar.gz",
+        "version": "2.17.4"
+      }
+    ],
+    "supported_range": ">=2.15.5,<2.18.0"
+  },
+  "schema_catalog": [
+    {
+      "document": {
+        "$id": "arbogast.agent.code-dependency-graph.v1",
+        "$schema": "https://json-schema.org/draft/2020-12/schema",
+        "additionalProperties": true,
+        "properties": {
+          "content_id": {},
+          "edges": {},
+          "nodes": {},
+          "schema": {
+            "const": "arbogast.agent.code-dependency-graph.v1",
+            "type": "string"
+          }
+        },
+        "required": [
+          "schema",
+          "nodes",
+          "edges",
+          "content_id"
+        ],
+        "title": "Declared code dependency graph",
+        "type": "object"
+      },
+      "document_sha256": "sha256:00c4fdde8ff2b980b7c43a7839100ca2b36afcc9222a5397c9f17b745ff9b491",
+      "identifier": "arbogast.agent.code-dependency-graph.v1"
+    },
+    {
+      "document": {
+        "$id": "arbogast.agent.context.v1",
+        "$schema": "https://json-schema.org/draft/2020-12/schema",
+        "additionalProperties": true,
+        "properties": {
+          "capability_frontier": {},
+          "capability_routes": {},
+          "code_dependency_graph": {},
+          "hazards": {},
+          "manifest": {},
+          "omitted": {},
+          "operations": {},
+          "schema": {
+            "const": "arbogast.agent.context.v1",
+            "type": "string"
+          },
+          "tasks": {},
+          "undeclared_code_dependencies": {}
+        },
+        "required": [
+          "schema",
+          "manifest",
+          "operations",
+          "hazards",
+          "capability_routes",
+          "capability_frontier",
+          "code_dependency_graph",
+          "tasks",
+          "undeclared_code_dependencies",
+          "omitted"
+        ],
+        "title": "Agent context",
+        "type": "object"
+      },
+      "document_sha256": "sha256:5d48ccfdd6666e2ab409e7fc58273efaa3be7211e4027f53d6bfdacd5ca448cd",
+      "identifier": "arbogast.agent.context.v1"
+    },
+    {
+      "document": {
+        "$id": "arbogast.agent.hazard.v1",
+        "$schema": "https://json-schema.org/draft/2020-12/schema",
+        "additionalProperties": true,
+        "properties": {
+          "id": {},
+          "message": {},
+          "schema": {
+            "const": "arbogast.agent.hazard.v1",
+            "type": "string"
+          },
+          "triggered_by": {}
+        },
+        "required": [
+          "schema",
+          "id",
+          "message",
+          "triggered_by"
+        ],
+        "title": "Agent hazard",
+        "type": "object"
+      },
+      "document_sha256": "sha256:ae679f5239df173e11526c7f780da33cf74be965f4e4ebd3d111b999a805c1de",
+      "identifier": "arbogast.agent.hazard.v1"
+    },
+    {
+      "document": {
+        "$id": "arbogast.agent.manifest.v1",
+        "$schema": "https://json-schema.org/draft/2020-12/schema",
+        "additionalProperties": true,
+        "properties": {
+          "code_dependencies": {},
+          "do_not": {},
+          "invariants": {},
+          "operations": {},
+          "package": {},
+          "primary_types": {},
+          "purpose": {},
+          "schema": {
+            "const": "arbogast.agent.manifest.v1",
+            "type": "string"
+          },
+          "scope": {},
+          "version": {}
+        },
+        "required": [
+          "schema",
+          "package",
+          "version",
+          "scope",
+          "purpose",
+          "operations",
+          "primary_types",
+          "invariants",
+          "do_not",
+          "code_dependencies"
+        ],
+        "title": "Agent manifest",
+        "type": "object"
+      },
+      "document_sha256": "sha256:71c34cec3cc6817cadf6d3a87623d1884521d9aaf1a9c1ffdd31fd9970011937",
+      "identifier": "arbogast.agent.manifest.v1"
+    },
+    {
+      "document": {
+        "$id": "arbogast.agent.operation-code-dependencies.v1",
+        "$schema": "https://json-schema.org/draft/2020-12/schema",
+        "additionalProperties": true,
+        "properties": {
+          "implementation_module": {},
+          "module_dependencies": {},
+          "operation": {},
+          "optional_backends": {},
+          "required_backends": {},
+          "schema": {
+            "const": "arbogast.agent.operation-code-dependencies.v1",
+            "type": "string"
+          }
+        },
+        "required": [
+          "schema",
+          "operation",
+          "implementation_module",
+          "module_dependencies",
+          "required_backends",
+          "optional_backends"
+        ],
+        "title": "Declared operation code dependencies",
+        "type": "object"
+      },
+      "document_sha256": "sha256:13ed2631f9fa79885e875b5cccc89d0eb2c1f8fbbbf9da76acb9f8cfb3bc0413",
+      "identifier": "arbogast.agent.operation-code-dependencies.v1"
+    },
+    {
+      "document": {
+        "$id": "arbogast.agent.operation-description.v1",
+        "$schema": "https://json-schema.org/draft/2020-12/schema",
+        "additionalProperties": true,
+        "properties": {
+          "input_bundles": {},
+          "inputs": {},
+          "mathematical_guarantees": {},
+          "name": {},
+          "outputs": {},
+          "preconditions": {},
+          "schema": {
+            "const": "arbogast.agent.operation-description.v1",
+            "type": "string"
+          }
+        },
+        "required": [
+          "schema",
+          "name",
+          "inputs",
+          "input_bundles",
+          "outputs",
+          "preconditions",
+          "mathematical_guarantees"
+        ],
+        "title": "Operation description",
+        "type": "object"
+      },
+      "document_sha256": "sha256:3675984357efd1659dc294f4c3aa091b7841b347fa87e75ed9a0da4f33633245",
+      "identifier": "arbogast.agent.operation-description.v1"
+    },
+    {
+      "document": {
+        "$id": "arbogast.agent.route.v1",
+        "$schema": "https://json-schema.org/draft/2020-12/schema",
+        "additionalProperties": true,
+        "properties": {
+          "schema": {
+            "const": "arbogast.agent.route.v1",
+            "type": "string"
+          },
+          "source": {},
+          "steps": {},
+          "target": {}
+        },
+        "required": [
+          "schema",
+          "source",
+          "target",
+          "steps"
+        ],
+        "title": "Capability route",
+        "type": "object"
+      },
+      "document_sha256": "sha256:6b3e1e7a925289312ee15be4c9b44b33001462274341ca839b3146646762b44c",
+      "identifier": "arbogast.agent.route.v1"
+    },
+    {
+      "document": {
+        "$id": "arbogast.agent.task.v1",
+        "$schema": "https://json-schema.org/draft/2020-12/schema",
+        "additionalProperties": true,
+        "properties": {
+          "expected_output": {},
+          "objective": {},
+          "schema": {
+            "const": "arbogast.agent.task.v1",
+            "type": "string"
+          }
+        },
+        "required": [
+          "schema",
+          "objective",
+          "expected_output"
+        ],
+        "title": "Agent task",
+        "type": "object"
+      },
+      "document_sha256": "sha256:5cdd74db75285f16c9ef28e32cbed47fac8ef471812dfaed29d64be1db07e56d",
+      "identifier": "arbogast.agent.task.v1"
+    },
+    {
+      "document": {
+        "$id": "arbogast.aim/v1",
+        "$schema": "https://json-schema.org/draft/2020-12/schema",
+        "additionalProperties": true,
+        "properties": {
+          "evidence": {},
+          "kind": {},
+          "layer": {},
+          "payload": {},
+          "proof_context": {},
+          "schema_version": {
+            "const": "arbogast.aim/v1",
+            "type": "string"
+          }
+        },
+        "required": [
+          "schema_version",
+          "layer",
+          "kind",
+          "payload",
+          "proof_context",
+          "evidence"
+        ],
+        "title": "Cocycle aiming receipt",
+        "type": "object"
+      },
+      "document_sha256": "sha256:292cca4551067f7250b77da713ae6463c77fab3250d25e3c7c65546115ab0e25",
+      "identifier": "arbogast.aim/v1"
+    },
+    {
+      "document": {
+        "$id": "arbogast.backend.status.v1",
+        "$schema": "https://json-schema.org/draft/2020-12/schema",
+        "additionalProperties": true,
+        "properties": {
+          "available": {},
+          "capabilities": {},
+          "name": {},
+          "schema": {
+            "const": "arbogast.backend.status.v1",
+            "type": "string"
+          }
+        },
+        "required": [
+          "schema",
+          "name",
+          "available",
+          "capabilities"
+        ],
+        "title": "Backend status",
+        "type": "object"
+      },
+      "document_sha256": "sha256:534afcba8e4fb016f559e273f9627df0fd598cd9f06e6d2d577671ee4748e88b",
+      "identifier": "arbogast.backend.status.v1"
+    },
+    {
+      "document": {
+        "$id": "arbogast.cartier-dual/v1",
+        "$schema": "https://json-schema.org/draft/2020-12/schema",
+        "additionalProperties": true,
+        "properties": {
+          "evidence": {},
+          "kind": {},
+          "layer": {},
+          "payload": {},
+          "proof_context": {},
+          "schema_version": {
+            "const": "arbogast.cartier-dual/v1",
+            "type": "string"
+          }
+        },
+        "required": [
+          "schema_version",
+          "layer",
+          "kind",
+          "payload",
+          "proof_context",
+          "evidence"
+        ],
+        "title": "Cartier dual receipt",
+        "type": "object"
+      },
+      "document_sha256": "sha256:3c60ee2d7b8027b0c942c56c0145be1caae488b7b2503ae62aac36f6469cbe1b",
+      "identifier": "arbogast.cartier-dual/v1"
+    },
+    {
+      "document": {
+        "$id": "arbogast.cli.backends.v1",
+        "$schema": "https://json-schema.org/draft/2020-12/schema",
+        "additionalProperties": true,
+        "properties": {
+          "backend": {},
+          "schema": {
+            "const": "arbogast.cli.backends.v1",
+            "type": "string"
+          }
+        },
+        "required": [
+          "schema",
+          "backend"
+        ],
+        "title": "CLI backend probe response",
+        "type": "object"
+      },
+      "document_sha256": "sha256:c7264ef4bdfe03d5f6bcc4c1e2e4032caa5777c3fd061c0b7efc4e10f8d0edbd",
+      "identifier": "arbogast.cli.backends.v1"
+    },
+    {
+      "document": {
+        "$id": "arbogast.cli.campaign.v1",
+        "$schema": "https://json-schema.org/draft/2020-12/schema",
+        "additionalProperties": true,
+        "properties": {
+          "command": {},
+          "result": {},
+          "schema": {
+            "const": "arbogast.cli.campaign.v1",
+            "type": "string"
+          }
+        },
+        "required": [
+          "schema",
+          "command",
+          "result"
+        ],
+        "title": "CLI campaign response",
+        "type": "object"
+      },
+      "document_sha256": "sha256:835a2ecc3e3b14729771a268d87ae40bfa6590623f4ef3b6a37c8f14f88e9509",
+      "identifier": "arbogast.cli.campaign.v1"
+    },
+    {
+      "document": {
+        "$id": "arbogast.cli.claims.v1",
+        "$schema": "https://json-schema.org/draft/2020-12/schema",
+        "additionalProperties": true,
+        "properties": {
+          "claims": {},
+          "count": {},
+          "schema": {
+            "const": "arbogast.cli.claims.v1",
+            "type": "string"
+          }
+        },
+        "required": [
+          "schema",
+          "claims",
+          "count"
+        ],
+        "title": "CLI claims response",
+        "type": "object"
+      },
+      "document_sha256": "sha256:f0824576fcbea8f103b420cbd3111189263764f808c50abbefa2015aab7c06c7",
+      "identifier": "arbogast.cli.claims.v1"
+    },
+    {
+      "document": {
+        "$id": "arbogast.cli.describe.v1",
+        "$schema": "https://json-schema.org/draft/2020-12/schema",
+        "additionalProperties": true,
+        "properties": {
+          "operation": {},
+          "schema": {
+            "const": "arbogast.cli.describe.v1",
+            "type": "string"
+          }
+        },
+        "required": [
+          "schema",
+          "operation"
+        ],
+        "title": "CLI describe response",
+        "type": "object"
+      },
+      "document_sha256": "sha256:42e7018c77992af0b5b77e64834b4bd581639dee4800bcc0ff7dcf10c5290b51",
+      "identifier": "arbogast.cli.describe.v1"
+    },
+    {
+      "document": {
+        "$id": "arbogast.cli.proof-gap.v1",
+        "$schema": "https://json-schema.org/draft/2020-12/schema",
+        "additionalProperties": true,
+        "properties": {
+          "obligations": {},
+          "schema": {
+            "const": "arbogast.cli.proof-gap.v1",
+            "type": "string"
+          },
+          "summary": {}
+        },
+        "required": [
+          "schema",
+          "summary",
+          "obligations"
+        ],
+        "title": "CLI proof-gap response",
+        "type": "object"
+      },
+      "document_sha256": "sha256:47d4a55d9cffefc62c30ff0d4469c8521015d5b0b2bbf03277b6541a53120c23",
+      "identifier": "arbogast.cli.proof-gap.v1"
+    },
+    {
+      "document": {
+        "$id": "arbogast.cli.route.v1",
+        "$schema": "https://json-schema.org/draft/2020-12/schema",
+        "additionalProperties": true,
+        "properties": {
+          "route": {},
+          "schema": {
+            "const": "arbogast.cli.route.v1",
+            "type": "string"
+          }
+        },
+        "required": [
+          "schema",
+          "route"
+        ],
+        "title": "CLI route response",
+        "type": "object"
+      },
+      "document_sha256": "sha256:e9598f6b7a881dfc869fce796712b67ca7c64ac1c2ec9b5fb21cdcbac0b67d28",
+      "identifier": "arbogast.cli.route.v1"
+    },
+    {
+      "document": {
+        "$id": "arbogast.cli.verify.v1",
+        "$schema": "https://json-schema.org/draft/2020-12/schema",
+        "additionalProperties": true,
+        "properties": {
+          "schema": {
+            "const": "arbogast.cli.verify.v1",
+            "type": "string"
+          },
+          "valid": {}
+        },
+        "required": [
+          "schema",
+          "valid"
+        ],
+        "title": "CLI verification response",
+        "type": "object"
+      },
+      "document_sha256": "sha256:c777af562db1efdaba83ad60c6e6413f7168ef1e643d6c6e613033f7996a8310",
+      "identifier": "arbogast.cli.verify.v1"
+    },
+    {
+      "document": {
+        "$id": "arbogast.cli.version.v1",
+        "$schema": "https://json-schema.org/draft/2020-12/schema",
+        "additionalProperties": true,
+        "properties": {
+          "schema": {
+            "const": "arbogast.cli.version.v1",
+            "type": "string"
+          },
+          "version": {}
+        },
+        "required": [
+          "schema",
+          "version"
+        ],
+        "title": "CLI version response",
+        "type": "object"
+      },
+      "document_sha256": "sha256:b762534bda6665dbc280500995d776bfb25b90158dd97020e3c34605096114ca",
+      "identifier": "arbogast.cli.version.v1"
+    },
+    {
+      "document": {
+        "$id": "arbogast.deform.action-receipt/v1",
+        "$schema": "https://json-schema.org/draft/2020-12/schema",
+        "additionalProperties": true,
+        "properties": {
+          "assumptions": {},
+          "completeness": {},
+          "dependencies": {},
+          "kind": {},
+          "layer": {},
+          "payload": {},
+          "schema_version": {
+            "const": "arbogast.deform.action-receipt/v1",
+            "type": "string"
+          },
+          "verifier_trust": {}
+        },
+        "required": [
+          "schema_version",
+          "assumptions",
+          "completeness",
+          "dependencies",
+          "kind",
+          "layer",
+          "payload",
+          "verifier_trust"
+        ],
+        "title": "Deformation-action receipt",
+        "type": "object"
+      },
+      "document_sha256": "sha256:3c94d40e46091444a32f20dde59d0dff36bb21b401a4815ac0a636cd11b2b618",
+      "identifier": "arbogast.deform.action-receipt/v1"
+    },
+    {
+      "document": {
+        "$id": "arbogast.deform.action/v1",
+        "$schema": "https://json-schema.org/draft/2020-12/schema",
+        "additionalProperties": true,
+        "properties": {
+          "complex_id": {},
+          "degree_matrices": {},
+          "group_order": {},
+          "identity_index": {},
+          "multiplication_table": {},
+          "schema": {
+            "const": "arbogast.deform.action/v1",
+            "type": "string"
+          },
+          "type": {}
+        },
+        "required": [
+          "schema",
+          "complex_id",
+          "degree_matrices",
+          "group_order",
+          "identity_index",
+          "multiplication_table",
+          "type"
+        ],
+        "title": "Exact finite chain action on a deformation complex",
+        "type": "object"
+      },
+      "document_sha256": "sha256:a9155af2c45b8ad619fcbaa455c1bf15bb2a7c7aace43b490e37e035f8f66c04",
+      "identifier": "arbogast.deform.action/v1"
+    },
+    {
+      "document": {
+        "$id": "arbogast.deform.artin-map-receipt/v1",
+        "$schema": "https://json-schema.org/draft/2020-12/schema",
+        "additionalProperties": true,
+        "properties": {
+          "assumptions": {},
+          "completeness": {},
+          "dependencies": {},
+          "kind": {},
+          "layer": {},
+          "payload": {},
+          "schema_version": {
+            "const": "arbogast.deform.artin-map-receipt/v1",
+            "type": "string"
+          },
+          "verifier_trust": {}
+        },
+        "required": [
+          "schema_version",
+          "assumptions",
+          "completeness",
+          "dependencies",
+          "kind",
+          "layer",
+          "payload",
+          "verifier_trust"
+        ],
+        "title": "Artin-map deformation receipt",
+        "type": "object"
+      },
+      "document_sha256": "sha256:43a46fedb3c19164c1f24fb2acf96ae8ffdf2605bd92a211d601ec4d7124b6b5",
+      "identifier": "arbogast.deform.artin-map-receipt/v1"
+    },
+    {
+      "document": {
+        "$id": "arbogast.deform.artin-ring-element/v1",
+        "$schema": "https://json-schema.org/draft/2020-12/schema",
+        "additionalProperties": true,
+        "properties": {
+          "coordinates": {},
+          "ring_id": {},
+          "schema": {
+            "const": "arbogast.deform.artin-ring-element/v1",
+            "type": "string"
+          },
+          "type": {}
+        },
+        "required": [
+          "schema",
+          "coordinates",
+          "ring_id",
+          "type"
+        ],
+        "title": "Pinned Artin-ring element",
+        "type": "object"
+      },
+      "document_sha256": "sha256:bf92fa9688c844481ac50967f5a0630455a933d80fc74c0ab4db51f50b2bc1da",
+      "identifier": "arbogast.deform.artin-ring-element/v1"
+    },
+    {
+      "document": {
+        "$id": "arbogast.deform.artin-ring-map/v1",
+        "$schema": "https://json-schema.org/draft/2020-12/schema",
+        "additionalProperties": true,
+        "properties": {
+          "codomain_id": {},
+          "domain_id": {},
+          "matrix": {},
+          "schema": {
+            "const": "arbogast.deform.artin-ring-map/v1",
+            "type": "string"
+          },
+          "type": {}
+        },
+        "required": [
+          "schema",
+          "codomain_id",
+          "domain_id",
+          "matrix",
+          "type"
+        ],
+        "title": "Explicit Artin-ring map",
+        "type": "object"
+      },
+      "document_sha256": "sha256:793cdd82fac28e067edb06d140caa0d2bcf196f66f6b78ba01fd535923915d14",
+      "identifier": "arbogast.deform.artin-ring-map/v1"
+    },
+    {
+      "document": {
+        "$id": "arbogast.deform.artin-ring-receipt/v1",
+        "$schema": "https://json-schema.org/draft/2020-12/schema",
+        "additionalProperties": true,
+        "properties": {
+          "assumptions": {},
+          "completeness": {},
+          "dependencies": {},
+          "kind": {},
+          "layer": {},
+          "payload": {},
+          "schema_version": {
+            "const": "arbogast.deform.artin-ring-receipt/v1",
+            "type": "string"
+          },
+          "verifier_trust": {}
+        },
+        "required": [
+          "schema_version",
+          "assumptions",
+          "completeness",
+          "dependencies",
+          "kind",
+          "layer",
+          "payload",
+          "verifier_trust"
+        ],
+        "title": "Artin-ring deformation receipt",
+        "type": "object"
+      },
+      "document_sha256": "sha256:0f141d8fe0f3b94b8d4f4278254de57cf020565b8b27e1f50740702c9413c0da",
+      "identifier": "arbogast.deform.artin-ring-receipt/v1"
+    },
+    {
+      "document": {
+        "$id": "arbogast.deform.artin-ring/v1",
+        "$schema": "https://json-schema.org/draft/2020-12/schema",
+        "additionalProperties": true,
+        "properties": {
+          "basis_names": {},
+          "dimension": {},
+          "field": {},
+          "maximal_ideal_powers": {},
+          "residue": {},
+          "schema": {
+            "const": "arbogast.deform.artin-ring/v1",
+            "type": "string"
+          },
+          "structure_constants": {},
+          "type": {},
+          "unit": {}
+        },
+        "required": [
+          "schema",
+          "basis_names",
+          "dimension",
+          "field",
+          "maximal_ideal_powers",
+          "residue",
+          "structure_constants",
+          "type",
+          "unit"
+        ],
+        "title": "Pinned finite local Artin ring",
+        "type": "object"
+      },
+      "document_sha256": "sha256:0f722036b2dbf6517825759e6045ce18813833a6e0db511976085d64ff807e38",
+      "identifier": "arbogast.deform.artin-ring/v1"
+    },
+    {
+      "document": {
+        "$id": "arbogast.deform.complex-receipt/v1",
+        "$schema": "https://json-schema.org/draft/2020-12/schema",
+        "additionalProperties": true,
+        "properties": {
+          "assumptions": {},
+          "completeness": {},
+          "dependencies": {},
+          "kind": {},
+          "layer": {},
+          "payload": {},
+          "schema_version": {
+            "const": "arbogast.deform.complex-receipt/v1",
+            "type": "string"
+          },
+          "verifier_trust": {}
+        },
+        "required": [
+          "schema_version",
+          "assumptions",
+          "completeness",
+          "dependencies",
+          "kind",
+          "layer",
+          "payload",
+          "verifier_trust"
+        ],
+        "title": "Deformation-complex receipt",
+        "type": "object"
+      },
+      "document_sha256": "sha256:0e4e7469ab821ed6e3b517933516cf1b3844fd21960a31ab21e138ac23c35cde",
+      "identifier": "arbogast.deform.complex-receipt/v1"
+    },
+    {
+      "document": {
+        "$id": "arbogast.deform.complex/v1",
+        "$schema": "https://json-schema.org/draft/2020-12/schema",
+        "additionalProperties": true,
+        "properties": {
+          "d0": {},
+          "d1": {},
+          "dimensions": {},
+          "field": {},
+          "name": {},
+          "schema": {
+            "const": "arbogast.deform.complex/v1",
+            "type": "string"
+          },
+          "type": {}
+        },
+        "required": [
+          "schema",
+          "d0",
+          "d1",
+          "dimensions",
+          "field",
+          "name",
+          "type"
+        ],
+        "title": "Three-term deformation complex",
+        "type": "object"
+      },
+      "document_sha256": "sha256:a2654c00328b48d042a181af61ad24e172c290eb0bdbd72f94f4c025f06b0664",
+      "identifier": "arbogast.deform.complex/v1"
+    },
+    {
+      "document": {
+        "$id": "arbogast.deform.contraction-certificate/v1",
+        "$schema": "https://json-schema.org/draft/2020-12/schema",
+        "additionalProperties": true,
+        "properties": {
+          "endomorphism_id": {},
+          "exponent": {},
+          "schema": {
+            "const": "arbogast.deform.contraction-certificate/v1",
+            "type": "string"
+          },
+          "type": {}
+        },
+        "required": [
+          "schema",
+          "endomorphism_id",
+          "exponent",
+          "type"
+        ],
+        "title": "Finite contraction certificate",
+        "type": "object"
+      },
+      "document_sha256": "sha256:0884632891876cc9e2874109a811ec322dc104429a782437b84f42fd472cddfe",
+      "identifier": "arbogast.deform.contraction-certificate/v1"
+    },
+    {
+      "document": {
+        "$id": "arbogast.deform.contraction-receipt/v1",
+        "$schema": "https://json-schema.org/draft/2020-12/schema",
+        "additionalProperties": true,
+        "properties": {
+          "assumptions": {},
+          "completeness": {},
+          "dependencies": {},
+          "kind": {},
+          "layer": {},
+          "payload": {},
+          "schema_version": {
+            "const": "arbogast.deform.contraction-receipt/v1",
+            "type": "string"
+          },
+          "verifier_trust": {}
+        },
+        "required": [
+          "schema_version",
+          "assumptions",
+          "completeness",
+          "dependencies",
+          "kind",
+          "layer",
+          "payload",
+          "verifier_trust"
+        ],
+        "title": "Lift-contraction receipt",
+        "type": "object"
+      },
+      "document_sha256": "sha256:10e541370576bd722034f02ce93dab9fe5fb1f0f5b5fb8fed1b9decab540dbe5",
+      "identifier": "arbogast.deform.contraction-receipt/v1"
+    },
+    {
+      "document": {
+        "$id": "arbogast.deform.decomposition-receipt/v1",
+        "$schema": "https://json-schema.org/draft/2020-12/schema",
+        "additionalProperties": true,
+        "properties": {
+          "assumptions": {},
+          "completeness": {},
+          "dependencies": {},
+          "kind": {},
+          "layer": {},
+          "payload": {},
+          "schema_version": {
+            "const": "arbogast.deform.decomposition-receipt/v1",
+            "type": "string"
+          },
+          "verifier_trust": {}
+        },
+        "required": [
+          "schema_version",
+          "assumptions",
+          "completeness",
+          "dependencies",
+          "kind",
+          "layer",
+          "payload",
+          "verifier_trust"
+        ],
+        "title": "Equivariant-decomposition receipt",
+        "type": "object"
+      },
+      "document_sha256": "sha256:b88e0102f9bd8ac8e79ff56601e030194a9ff0ce556edea0d1147b68485120ce",
+      "identifier": "arbogast.deform.decomposition-receipt/v1"
+    },
+    {
+      "document": {
+        "$id": "arbogast.deform.equivariant-component/v1",
+        "$schema": "https://json-schema.org/draft/2020-12/schema",
+        "additionalProperties": true,
+        "properties": {
+          "ambient_id": {},
+          "complex": {},
+          "label": {},
+          "projectors": {},
+          "schema": {
+            "const": "arbogast.deform.equivariant-component/v1",
+            "type": "string"
+          },
+          "subspaces": {},
+          "type": {}
+        },
+        "required": [
+          "schema",
+          "ambient_id",
+          "complex",
+          "label",
+          "projectors",
+          "subspaces",
+          "type"
+        ],
+        "title": "Equivariant deformation summand",
+        "type": "object"
+      },
+      "document_sha256": "sha256:2c21c85af57b845fabcd9fd985bbc60da3a1b30b87ed639467259bd84dcd0574",
+      "identifier": "arbogast.deform.equivariant-component/v1"
+    },
+    {
+      "document": {
+        "$id": "arbogast.deform.equivariant-decomposition/v1",
+        "$schema": "https://json-schema.org/draft/2020-12/schema",
+        "additionalProperties": true,
+        "properties": {
+          "complete": {},
+          "components": {},
+          "equivariant_id": {},
+          "schema": {
+            "const": "arbogast.deform.equivariant-decomposition/v1",
+            "type": "string"
+          },
+          "type": {}
+        },
+        "required": [
+          "schema",
+          "complete",
+          "components",
+          "equivariant_id",
+          "type"
+        ],
+        "title": "Complete equivariant deformation decomposition",
+        "type": "object"
+      },
+      "document_sha256": "sha256:083699df1e26e9cfbe8b53a5dd4a3c17757c3349d70b1a485f0f78d480eedf2b",
+      "identifier": "arbogast.deform.equivariant-decomposition/v1"
+    },
+    {
+      "document": {
+        "$id": "arbogast.deform.equivariant-receipt/v1",
+        "$schema": "https://json-schema.org/draft/2020-12/schema",
+        "additionalProperties": true,
+        "properties": {
+          "assumptions": {},
+          "completeness": {},
+          "dependencies": {},
+          "kind": {},
+          "layer": {},
+          "payload": {},
+          "schema_version": {
+            "const": "arbogast.deform.equivariant-receipt/v1",
+            "type": "string"
+          },
+          "verifier_trust": {}
+        },
+        "required": [
+          "schema_version",
+          "assumptions",
+          "completeness",
+          "dependencies",
+          "kind",
+          "layer",
+          "payload",
+          "verifier_trust"
+        ],
+        "title": "Equivariant deformation receipt",
+        "type": "object"
+      },
+      "document_sha256": "sha256:09c666e7cf00e8a783c72030eb2c44b033f648b5ecfb40a369954c4280ea2fe8",
+      "identifier": "arbogast.deform.equivariant-receipt/v1"
+    },
+    {
+      "document": {
+        "$id": "arbogast.deform.equivariant/v1",
+        "$schema": "https://json-schema.org/draft/2020-12/schema",
+        "additionalProperties": true,
+        "properties": {
+          "action": {},
+          "problem_id": {},
+          "schema": {
+            "const": "arbogast.deform.equivariant/v1",
+            "type": "string"
+          },
+          "type": {}
+        },
+        "required": [
+          "schema",
+          "action",
+          "problem_id",
+          "type"
+        ],
+        "title": "Equivariant deformation problem",
+        "type": "object"
+      },
+      "document_sha256": "sha256:b28973c80c64ec3a82ebbd50840343e0f4adf4f2b3dbe0f1d8b767b761752639",
+      "identifier": "arbogast.deform.equivariant/v1"
+    },
+    {
+      "document": {
+        "$id": "arbogast.deform.fixed-lift-receipt/v1",
+        "$schema": "https://json-schema.org/draft/2020-12/schema",
+        "additionalProperties": true,
+        "properties": {
+          "assumptions": {},
+          "completeness": {},
+          "dependencies": {},
+          "kind": {},
+          "layer": {},
+          "payload": {},
+          "schema_version": {
+            "const": "arbogast.deform.fixed-lift-receipt/v1",
+            "type": "string"
+          },
+          "verifier_trust": {}
+        },
+        "required": [
+          "schema_version",
+          "assumptions",
+          "completeness",
+          "dependencies",
+          "kind",
+          "layer",
+          "payload",
+          "verifier_trust"
+        ],
+        "title": "Fixed-lift receipt",
+        "type": "object"
+      },
+      "document_sha256": "sha256:c741fe75b47daf490190879241c4b37beb66c83f2411a10d4025440ca8deccdf",
+      "identifier": "arbogast.deform.fixed-lift-receipt/v1"
+    },
+    {
+      "document": {
+        "$id": "arbogast.deform.fixed-lift/v1",
+        "$schema": "https://json-schema.org/draft/2020-12/schema",
+        "additionalProperties": true,
+        "properties": {
+          "contraction_id": {},
+          "endomorphism_id": {},
+          "family_id": {},
+          "representative": {},
+          "schema": {
+            "const": "arbogast.deform.fixed-lift/v1",
+            "type": "string"
+          },
+          "type": {}
+        },
+        "required": [
+          "schema",
+          "contraction_id",
+          "endomorphism_id",
+          "family_id",
+          "representative",
+          "type"
+        ],
+        "title": "Distinguished fixed lift",
+        "type": "object"
+      },
+      "document_sha256": "sha256:40a69396e4c05079ee9af82a379c1a6cf77111397317df23930094bb2c3d7cc8",
+      "identifier": "arbogast.deform.fixed-lift/v1"
+    },
+    {
+      "document": {
+        "$id": "arbogast.deform.framing-receipt/v1",
+        "$schema": "https://json-schema.org/draft/2020-12/schema",
+        "additionalProperties": true,
+        "properties": {
+          "assumptions": {},
+          "completeness": {},
+          "dependencies": {},
+          "kind": {},
+          "layer": {},
+          "payload": {},
+          "schema_version": {
+            "const": "arbogast.deform.framing-receipt/v1",
+            "type": "string"
+          },
+          "verifier_trust": {}
+        },
+        "required": [
+          "schema_version",
+          "assumptions",
+          "completeness",
+          "dependencies",
+          "kind",
+          "layer",
+          "payload",
+          "verifier_trust"
+        ],
+        "title": "Deformation-framing receipt",
+        "type": "object"
+      },
+      "document_sha256": "sha256:8fcfae1bc363e0e59b8ac39b6efe606b1cfe276b09360e6421bda4ce241f6150",
+      "identifier": "arbogast.deform.framing-receipt/v1"
+    },
+    {
+      "document": {
+        "$id": "arbogast.deform.framing/v1",
+        "$schema": "https://json-schema.org/draft/2020-12/schema",
+        "additionalProperties": true,
+        "properties": {
+          "allowed_gauge": {},
+          "ambient_dimension": {},
+          "constraints": {},
+          "label": {},
+          "schema": {
+            "const": "arbogast.deform.framing/v1",
+            "type": "string"
+          },
+          "type": {}
+        },
+        "required": [
+          "schema",
+          "allowed_gauge",
+          "ambient_dimension",
+          "constraints",
+          "label",
+          "type"
+        ],
+        "title": "Exact deformation framing",
+        "type": "object"
+      },
+      "document_sha256": "sha256:63c214578f46d8726ac42c2406919ad7f10db6239a29e5bb9558b7c6ba5064fa",
+      "identifier": "arbogast.deform.framing/v1"
+    },
+    {
+      "document": {
+        "$id": "arbogast.deform.gauge-receipt/v1",
+        "$schema": "https://json-schema.org/draft/2020-12/schema",
+        "additionalProperties": true,
+        "properties": {
+          "assumptions": {},
+          "completeness": {},
+          "dependencies": {},
+          "kind": {},
+          "layer": {},
+          "payload": {},
+          "schema_version": {
+            "const": "arbogast.deform.gauge-receipt/v1",
+            "type": "string"
+          },
+          "verifier_trust": {}
+        },
+        "required": [
+          "schema_version",
+          "assumptions",
+          "completeness",
+          "dependencies",
+          "kind",
+          "layer",
+          "payload",
+          "verifier_trust"
+        ],
+        "title": "Gauge-space receipt",
+        "type": "object"
+      },
+      "document_sha256": "sha256:c6d51bcd3d51096471910731122b1696a5dac477ddbbe7c802e86bcb0c297266",
+      "identifier": "arbogast.deform.gauge-receipt/v1"
+    },
+    {
+      "document": {
+        "$id": "arbogast.deform.gauge-space/v1",
+        "$schema": "https://json-schema.org/draft/2020-12/schema",
+        "additionalProperties": true,
+        "properties": {
+          "complex_id": {},
+          "problem_id": {},
+          "schema": {
+            "const": "arbogast.deform.gauge-space/v1",
+            "type": "string"
+          },
+          "space": {},
+          "type": {}
+        },
+        "required": [
+          "schema",
+          "complex_id",
+          "problem_id",
+          "space",
+          "type"
+        ],
+        "title": "Infinitesimal gauge space",
+        "type": "object"
+      },
+      "document_sha256": "sha256:138aef39727ea9cd2835487a8b1d298c73877ebfabe4858bb38ee807f4babd16",
+      "identifier": "arbogast.deform.gauge-space/v1"
+    },
+    {
+      "document": {
+        "$id": "arbogast.deform.invariant-complex-receipt/v1",
+        "$schema": "https://json-schema.org/draft/2020-12/schema",
+        "additionalProperties": true,
+        "properties": {
+          "assumptions": {},
+          "completeness": {},
+          "dependencies": {},
+          "kind": {},
+          "layer": {},
+          "payload": {},
+          "schema_version": {
+            "const": "arbogast.deform.invariant-complex-receipt/v1",
+            "type": "string"
+          },
+          "verifier_trust": {}
+        },
+        "required": [
+          "schema_version",
+          "assumptions",
+          "completeness",
+          "dependencies",
+          "kind",
+          "layer",
+          "payload",
+          "verifier_trust"
+        ],
+        "title": "Invariant-complex deformation receipt",
+        "type": "object"
+      },
+      "document_sha256": "sha256:3746f64d0e5cf7e4d2f716cc3371eee7ba52dea3c1765e46f506f4a1009621e2",
+      "identifier": "arbogast.deform.invariant-complex-receipt/v1"
+    },
+    {
+      "document": {
+        "$id": "arbogast.deform.invariant-deformations/v1",
+        "$schema": "https://json-schema.org/draft/2020-12/schema",
+        "additionalProperties": true,
+        "properties": {
+          "equivariant_id": {},
+          "identifies_invariant_cohomology": {},
+          "problem": {},
+          "schema": {
+            "const": "arbogast.deform.invariant-deformations/v1",
+            "type": "string"
+          },
+          "type": {}
+        },
+        "required": [
+          "schema",
+          "equivariant_id",
+          "identifies_invariant_cohomology",
+          "problem",
+          "type"
+        ],
+        "title": "Invariant deformation subcomplex",
+        "type": "object"
+      },
+      "document_sha256": "sha256:e8400f170bc3b3a1f538fd121dfaac97e52d548f74ad6d2a6dac8452ac54b0ad",
+      "identifier": "arbogast.deform.invariant-deformations/v1"
+    },
+    {
+      "document": {
+        "$id": "arbogast.deform.lift-datum-receipt/v1",
+        "$schema": "https://json-schema.org/draft/2020-12/schema",
+        "additionalProperties": true,
+        "properties": {
+          "assumptions": {},
+          "completeness": {},
+          "dependencies": {},
+          "kind": {},
+          "layer": {},
+          "payload": {},
+          "schema_version": {
+            "const": "arbogast.deform.lift-datum-receipt/v1",
+            "type": "string"
+          },
+          "verifier_trust": {}
+        },
+        "required": [
+          "schema_version",
+          "assumptions",
+          "completeness",
+          "dependencies",
+          "kind",
+          "layer",
+          "payload",
+          "verifier_trust"
+        ],
+        "title": "Lift-datum receipt",
+        "type": "object"
+      },
+      "document_sha256": "sha256:41b2a31771623697b171396e2717a116c9d0a0c86ed6291a337cfc6ed0cc9099",
+      "identifier": "arbogast.deform.lift-datum-receipt/v1"
+    },
+    {
+      "document": {
+        "$id": "arbogast.deform.lift-datum/v1",
+        "$schema": "https://json-schema.org/draft/2020-12/schema",
+        "additionalProperties": true,
+        "properties": {
+          "base_point": {},
+          "correction_matrix": {},
+          "extension_id": {},
+          "gauge_matrix": {},
+          "label": {},
+          "problem_id": {},
+          "schema": {
+            "const": "arbogast.deform.lift-datum/v1",
+            "type": "string"
+          },
+          "target": {},
+          "type": {}
+        },
+        "required": [
+          "schema",
+          "base_point",
+          "correction_matrix",
+          "extension_id",
+          "gauge_matrix",
+          "label",
+          "problem_id",
+          "target",
+          "type"
+        ],
+        "title": "Finite Artin-ring lift datum",
+        "type": "object"
+      },
+      "document_sha256": "sha256:36e97059291c5a2f06f4f20e933898473003e306c85274b8256d9c6dc244305e",
+      "identifier": "arbogast.deform.lift-datum/v1"
+    },
+    {
+      "document": {
+        "$id": "arbogast.deform.lift-endomorphism-receipt/v1",
+        "$schema": "https://json-schema.org/draft/2020-12/schema",
+        "additionalProperties": true,
+        "properties": {
+          "assumptions": {},
+          "completeness": {},
+          "dependencies": {},
+          "kind": {},
+          "layer": {},
+          "payload": {},
+          "schema_version": {
+            "const": "arbogast.deform.lift-endomorphism-receipt/v1",
+            "type": "string"
+          },
+          "verifier_trust": {}
+        },
+        "required": [
+          "schema_version",
+          "assumptions",
+          "completeness",
+          "dependencies",
+          "kind",
+          "layer",
+          "payload",
+          "verifier_trust"
+        ],
+        "title": "Lift-endomorphism receipt",
+        "type": "object"
+      },
+      "document_sha256": "sha256:dc90dc3547943f6bed15104fb061de7ca388d97865d904a655e4106296b76b30",
+      "identifier": "arbogast.deform.lift-endomorphism-receipt/v1"
+    },
+    {
+      "document": {
+        "$id": "arbogast.deform.lift-endomorphism/v1",
+        "$schema": "https://json-schema.org/draft/2020-12/schema",
+        "additionalProperties": true,
+        "properties": {
+          "family_id": {},
+          "linear": {},
+          "schema": {
+            "const": "arbogast.deform.lift-endomorphism/v1",
+            "type": "string"
+          },
+          "translation": {},
+          "type": {}
+        },
+        "required": [
+          "schema",
+          "family_id",
+          "linear",
+          "translation",
+          "type"
+        ],
+        "title": "Lift-family endomorphism",
+        "type": "object"
+      },
+      "document_sha256": "sha256:9050c226117417bca45b5124a85f15cbb1fe82de25db555e3b7257131cde33c9",
+      "identifier": "arbogast.deform.lift-endomorphism/v1"
+    },
+    {
+      "document": {
+        "$id": "arbogast.deform.lift-family-receipt/v1",
+        "$schema": "https://json-schema.org/draft/2020-12/schema",
+        "additionalProperties": true,
+        "properties": {
+          "assumptions": {},
+          "completeness": {},
+          "dependencies": {},
+          "kind": {},
+          "layer": {},
+          "payload": {},
+          "schema_version": {
+            "const": "arbogast.deform.lift-family-receipt/v1",
+            "type": "string"
+          },
+          "verifier_trust": {}
+        },
+        "required": [
+          "schema_version",
+          "assumptions",
+          "completeness",
+          "dependencies",
+          "kind",
+          "layer",
+          "payload",
+          "verifier_trust"
+        ],
+        "title": "Lift-family receipt",
+        "type": "object"
+      },
+      "document_sha256": "sha256:a18f51ee507ffc2d4eede7e71fc9f54b282ccbb2bd5dbd19c698029e2254f26e",
+      "identifier": "arbogast.deform.lift-family-receipt/v1"
+    },
+    {
+      "document": {
+        "$id": "arbogast.deform.lift-family/v1",
+        "$schema": "https://json-schema.org/draft/2020-12/schema",
+        "additionalProperties": true,
+        "properties": {
+          "datum_id": {},
+          "directions": {},
+          "gauge_directions": {},
+          "mod_gauge": {},
+          "particular": {},
+          "representative": {},
+          "schema": {
+            "const": "arbogast.deform.lift-family/v1",
+            "type": "string"
+          },
+          "type": {}
+        },
+        "required": [
+          "schema",
+          "datum_id",
+          "directions",
+          "gauge_directions",
+          "mod_gauge",
+          "particular",
+          "representative",
+          "type"
+        ],
+        "title": "Complete affine lift family",
+        "type": "object"
+      },
+      "document_sha256": "sha256:d7883b1df90b3d61d8f07a9b67da23d2ed38bbc73916b7d80a692062c40a7963",
+      "identifier": "arbogast.deform.lift-family/v1"
+    },
+    {
+      "document": {
+        "$id": "arbogast.deform.lift-obstructed-receipt/v1",
+        "$schema": "https://json-schema.org/draft/2020-12/schema",
+        "additionalProperties": true,
+        "properties": {
+          "assumptions": {},
+          "completeness": {},
+          "dependencies": {},
+          "kind": {},
+          "layer": {},
+          "payload": {},
+          "schema_version": {
+            "const": "arbogast.deform.lift-obstructed-receipt/v1",
+            "type": "string"
+          },
+          "verifier_trust": {}
+        },
+        "required": [
+          "schema_version",
+          "assumptions",
+          "completeness",
+          "dependencies",
+          "kind",
+          "layer",
+          "payload",
+          "verifier_trust"
+        ],
+        "title": "Obstructed-lift receipt",
+        "type": "object"
+      },
+      "document_sha256": "sha256:0068e4eb6249e8677c7617b2d9df1825746a7d686f3c9e31f2f17fd3da059835",
+      "identifier": "arbogast.deform.lift-obstructed-receipt/v1"
+    },
+    {
+      "document": {
+        "$id": "arbogast.deform.lift-obstructed/v1",
+        "$schema": "https://json-schema.org/draft/2020-12/schema",
+        "additionalProperties": true,
+        "properties": {
+          "datum_id": {},
+          "obstruction_class": {},
+          "schema": {
+            "const": "arbogast.deform.lift-obstructed/v1",
+            "type": "string"
+          },
+          "separating_witness": {},
+          "type": {}
+        },
+        "required": [
+          "schema",
+          "datum_id",
+          "obstruction_class",
+          "separating_witness",
+          "type"
+        ],
+        "title": "Obstructed lift result",
+        "type": "object"
+      },
+      "document_sha256": "sha256:d111efa46133270a1fa8bcee211a0a07f1ac9fd19aaada46e9df96348f18075f",
+      "identifier": "arbogast.deform.lift-obstructed/v1"
+    },
+    {
+      "document": {
+        "$id": "arbogast.deform.lift-unknown-receipt/v1",
+        "$schema": "https://json-schema.org/draft/2020-12/schema",
+        "additionalProperties": true,
+        "properties": {
+          "assumptions": {},
+          "completeness": {},
+          "dependencies": {},
+          "kind": {},
+          "layer": {},
+          "payload": {},
+          "schema_version": {
+            "const": "arbogast.deform.lift-unknown-receipt/v1",
+            "type": "string"
+          },
+          "verifier_trust": {}
+        },
+        "required": [
+          "schema_version",
+          "assumptions",
+          "completeness",
+          "dependencies",
+          "kind",
+          "layer",
+          "payload",
+          "verifier_trust"
+        ],
+        "title": "Unknown-lift receipt",
+        "type": "object"
+      },
+      "document_sha256": "sha256:8be7e6c25ba6ddfa0bf073c6c6357b828d016cbcaa6da1f71d9e6739117255e4",
+      "identifier": "arbogast.deform.lift-unknown-receipt/v1"
+    },
+    {
+      "document": {
+        "$id": "arbogast.deform.lift-unknown/v1",
+        "$schema": "https://json-schema.org/draft/2020-12/schema",
+        "additionalProperties": true,
+        "properties": {
+          "datum_id": {},
+          "reason": {},
+          "schema": {
+            "const": "arbogast.deform.lift-unknown/v1",
+            "type": "string"
+          },
+          "type": {}
+        },
+        "required": [
+          "schema",
+          "datum_id",
+          "reason",
+          "type"
+        ],
+        "title": "Unknown lift result",
+        "type": "object"
+      },
+      "document_sha256": "sha256:2b746a8c25c6103e570989bde1b1dae28e55c82e211d96c05bd154b638be6915",
+      "identifier": "arbogast.deform.lift-unknown/v1"
+    },
+    {
+      "document": {
+        "$id": "arbogast.deform.nonrigid-receipt/v1",
+        "$schema": "https://json-schema.org/draft/2020-12/schema",
+        "additionalProperties": true,
+        "properties": {
+          "assumptions": {},
+          "completeness": {},
+          "dependencies": {},
+          "kind": {},
+          "layer": {},
+          "payload": {},
+          "schema_version": {
+            "const": "arbogast.deform.nonrigid-receipt/v1",
+            "type": "string"
+          },
+          "verifier_trust": {}
+        },
+        "required": [
+          "schema_version",
+          "assumptions",
+          "completeness",
+          "dependencies",
+          "kind",
+          "layer",
+          "payload",
+          "verifier_trust"
+        ],
+        "title": "Non-rigid-deformation receipt",
+        "type": "object"
+      },
+      "document_sha256": "sha256:9df5d12bc408e91e1a9fb39efa88c1ca774e16883639a6ee2d8612a9bb480ab5",
+      "identifier": "arbogast.deform.nonrigid-receipt/v1"
+    },
+    {
+      "document": {
+        "$id": "arbogast.deform.nonrigid/v1",
+        "$schema": "https://json-schema.org/draft/2020-12/schema",
+        "additionalProperties": true,
+        "properties": {
+          "problem_id": {},
+          "schema": {
+            "const": "arbogast.deform.nonrigid/v1",
+            "type": "string"
+          },
+          "tangent_id": {},
+          "type": {},
+          "witness": {}
+        },
+        "required": [
+          "schema",
+          "problem_id",
+          "tangent_id",
+          "type",
+          "witness"
+        ],
+        "title": "Non-rigid deformation result",
+        "type": "object"
+      },
+      "document_sha256": "sha256:3e195a5ecb98ed2e1b589ef4c4bf5ac18bacae2a89f74e6ab79dc8dc0cfd7a9f",
+      "identifier": "arbogast.deform.nonrigid/v1"
+    },
+    {
+      "document": {
+        "$id": "arbogast.deform.nonunique-lift-receipt/v1",
+        "$schema": "https://json-schema.org/draft/2020-12/schema",
+        "additionalProperties": true,
+        "properties": {
+          "assumptions": {},
+          "completeness": {},
+          "dependencies": {},
+          "kind": {},
+          "layer": {},
+          "payload": {},
+          "schema_version": {
+            "const": "arbogast.deform.nonunique-lift-receipt/v1",
+            "type": "string"
+          },
+          "verifier_trust": {}
+        },
+        "required": [
+          "schema_version",
+          "assumptions",
+          "completeness",
+          "dependencies",
+          "kind",
+          "layer",
+          "payload",
+          "verifier_trust"
+        ],
+        "title": "Non-unique-lift receipt",
+        "type": "object"
+      },
+      "document_sha256": "sha256:a0360951e9fc39902a01462974de0e6f1dbe956c1db730e6642c1be06a4c1e6a",
+      "identifier": "arbogast.deform.nonunique-lift-receipt/v1"
+    },
+    {
+      "document": {
+        "$id": "arbogast.deform.nonunique-lift/v1",
+        "$schema": "https://json-schema.org/draft/2020-12/schema",
+        "additionalProperties": true,
+        "properties": {
+          "family_id": {},
+          "first": {},
+          "schema": {
+            "const": "arbogast.deform.nonunique-lift/v1",
+            "type": "string"
+          },
+          "second": {},
+          "separating_class_coordinates": {},
+          "type": {}
+        },
+        "required": [
+          "schema",
+          "family_id",
+          "first",
+          "second",
+          "separating_class_coordinates",
+          "type"
+        ],
+        "title": "Non-unique lift result",
+        "type": "object"
+      },
+      "document_sha256": "sha256:0aa68bc2dc85f7725070652f6409f97d2e49c227580b8a4e8f957d146b14a165",
+      "identifier": "arbogast.deform.nonunique-lift/v1"
+    },
+    {
+      "document": {
+        "$id": "arbogast.deform.obstruction-class-receipt/v1",
+        "$schema": "https://json-schema.org/draft/2020-12/schema",
+        "additionalProperties": true,
+        "properties": {
+          "assumptions": {},
+          "completeness": {},
+          "dependencies": {},
+          "kind": {},
+          "layer": {},
+          "payload": {},
+          "schema_version": {
+            "const": "arbogast.deform.obstruction-class-receipt/v1",
+            "type": "string"
+          },
+          "verifier_trust": {}
+        },
+        "required": [
+          "schema_version",
+          "assumptions",
+          "completeness",
+          "dependencies",
+          "kind",
+          "layer",
+          "payload",
+          "verifier_trust"
+        ],
+        "title": "Obstruction-class receipt",
+        "type": "object"
+      },
+      "document_sha256": "sha256:30643c5546c91a9622c01e2e24e094766f0d86b9ff1c51be373179015d7a3104",
+      "identifier": "arbogast.deform.obstruction-class-receipt/v1"
+    },
+    {
+      "document": {
+        "$id": "arbogast.deform.obstruction-class/v1",
+        "$schema": "https://json-schema.org/draft/2020-12/schema",
+        "additionalProperties": true,
+        "properties": {
+          "ambient_vector": {},
+          "class_coordinates": {},
+          "is_zero": {},
+          "schema": {
+            "const": "arbogast.deform.obstruction-class/v1",
+            "type": "string"
+          },
+          "space_id": {},
+          "type": {}
+        },
+        "required": [
+          "schema",
+          "ambient_vector",
+          "class_coordinates",
+          "is_zero",
+          "space_id",
+          "type"
+        ],
+        "title": "Pinned obstruction class",
+        "type": "object"
+      },
+      "document_sha256": "sha256:8ea2c8eb0b33d9f8066186b151e7336549a1539466127525b1809bd52af90d18",
+      "identifier": "arbogast.deform.obstruction-class/v1"
+    },
+    {
+      "document": {
+        "$id": "arbogast.deform.obstruction-space-receipt/v1",
+        "$schema": "https://json-schema.org/draft/2020-12/schema",
+        "additionalProperties": true,
+        "properties": {
+          "assumptions": {},
+          "completeness": {},
+          "dependencies": {},
+          "kind": {},
+          "layer": {},
+          "payload": {},
+          "schema_version": {
+            "const": "arbogast.deform.obstruction-space-receipt/v1",
+            "type": "string"
+          },
+          "verifier_trust": {}
+        },
+        "required": [
+          "schema_version",
+          "assumptions",
+          "completeness",
+          "dependencies",
+          "kind",
+          "layer",
+          "payload",
+          "verifier_trust"
+        ],
+        "title": "Obstruction-space receipt",
+        "type": "object"
+      },
+      "document_sha256": "sha256:30bb6bbdf87983bbf2e41e5c34ea1d26f3b898242121ec46ac7e35f8059a672d",
+      "identifier": "arbogast.deform.obstruction-space-receipt/v1"
+    },
+    {
+      "document": {
+        "$id": "arbogast.deform.obstruction-space/v1",
+        "$schema": "https://json-schema.org/draft/2020-12/schema",
+        "additionalProperties": true,
+        "properties": {
+          "complex_id": {},
+          "problem_id": {},
+          "quotient": {},
+          "schema": {
+            "const": "arbogast.deform.obstruction-space/v1",
+            "type": "string"
+          },
+          "type": {}
+        },
+        "required": [
+          "schema",
+          "complex_id",
+          "problem_id",
+          "quotient",
+          "type"
+        ],
+        "title": "Deformation obstruction space",
+        "type": "object"
+      },
+      "document_sha256": "sha256:3c16b05ee5e8cb682a36423627d859d06533311f04768ab17fe1ba63a3143562",
+      "identifier": "arbogast.deform.obstruction-space/v1"
+    },
+    {
+      "document": {
+        "$id": "arbogast.deform.presentation/v1",
+        "$schema": "https://json-schema.org/draft/2020-12/schema",
+        "additionalProperties": true,
+        "properties": {
+          "complex": {},
+          "name": {},
+          "schema": {
+            "const": "arbogast.deform.presentation/v1",
+            "type": "string"
+          },
+          "source_id": {},
+          "type": {}
+        },
+        "required": [
+          "schema",
+          "complex",
+          "name",
+          "source_id",
+          "type"
+        ],
+        "title": "Pinned deformation presentation",
+        "type": "object"
+      },
+      "document_sha256": "sha256:8061587e2b2d57e076d2b2de975cef0012e8b55c20536c7952ae0f4d47d7be21",
+      "identifier": "arbogast.deform.presentation/v1"
+    },
+    {
+      "document": {
+        "$id": "arbogast.deform.problem-receipt/v1",
+        "$schema": "https://json-schema.org/draft/2020-12/schema",
+        "additionalProperties": true,
+        "properties": {
+          "assumptions": {},
+          "completeness": {},
+          "dependencies": {},
+          "kind": {},
+          "layer": {},
+          "payload": {},
+          "schema_version": {
+            "const": "arbogast.deform.problem-receipt/v1",
+            "type": "string"
+          },
+          "verifier_trust": {}
+        },
+        "required": [
+          "schema_version",
+          "assumptions",
+          "completeness",
+          "dependencies",
+          "kind",
+          "layer",
+          "payload",
+          "verifier_trust"
+        ],
+        "title": "Deformation-problem receipt",
+        "type": "object"
+      },
+      "document_sha256": "sha256:b38b98cb55477d8a8ee708416cf7be77e81bf30a206fcd28b7b935396f33ce8e",
+      "identifier": "arbogast.deform.problem-receipt/v1"
+    },
+    {
+      "document": {
+        "$id": "arbogast.deform.problem/v1",
+        "$schema": "https://json-schema.org/draft/2020-12/schema",
+        "additionalProperties": true,
+        "properties": {
+          "effective_complex": {},
+          "framing": {},
+          "presentation": {},
+          "schema": {
+            "const": "arbogast.deform.problem/v1",
+            "type": "string"
+          },
+          "type": {}
+        },
+        "required": [
+          "schema",
+          "effective_complex",
+          "framing",
+          "presentation",
+          "type"
+        ],
+        "title": "Finite deformation problem",
+        "type": "object"
+      },
+      "document_sha256": "sha256:808159f1138c08c727c593956f9bef0ddf2719cc0e6cf88a168ae9d420824e19",
+      "identifier": "arbogast.deform.problem/v1"
+    },
+    {
+      "document": {
+        "$id": "arbogast.deform.rigid-receipt/v1",
+        "$schema": "https://json-schema.org/draft/2020-12/schema",
+        "additionalProperties": true,
+        "properties": {
+          "assumptions": {},
+          "completeness": {},
+          "dependencies": {},
+          "kind": {},
+          "layer": {},
+          "payload": {},
+          "schema_version": {
+            "const": "arbogast.deform.rigid-receipt/v1",
+            "type": "string"
+          },
+          "verifier_trust": {}
+        },
+        "required": [
+          "schema_version",
+          "assumptions",
+          "completeness",
+          "dependencies",
+          "kind",
+          "layer",
+          "payload",
+          "verifier_trust"
+        ],
+        "title": "Rigid-deformation receipt",
+        "type": "object"
+      },
+      "document_sha256": "sha256:20d55b16c5238651b3135a02ce1a3b83b60313b1087587cc81f24694b47aeb6f",
+      "identifier": "arbogast.deform.rigid-receipt/v1"
+    },
+    {
+      "document": {
+        "$id": "arbogast.deform.rigid/v1",
+        "$schema": "https://json-schema.org/draft/2020-12/schema",
+        "additionalProperties": true,
+        "properties": {
+          "problem_id": {},
+          "schema": {
+            "const": "arbogast.deform.rigid/v1",
+            "type": "string"
+          },
+          "tangent_id": {},
+          "type": {}
+        },
+        "required": [
+          "schema",
+          "problem_id",
+          "tangent_id",
+          "type"
+        ],
+        "title": "Rigid deformation result",
+        "type": "object"
+      },
+      "document_sha256": "sha256:12985c044ceeb650be627184f57a6f48ae28365b7ea7272a96c526a730cbb37e",
+      "identifier": "arbogast.deform.rigid/v1"
+    },
+    {
+      "document": {
+        "$id": "arbogast.deform.small-extension-receipt/v1",
+        "$schema": "https://json-schema.org/draft/2020-12/schema",
+        "additionalProperties": true,
+        "properties": {
+          "assumptions": {},
+          "completeness": {},
+          "dependencies": {},
+          "kind": {},
+          "layer": {},
+          "payload": {},
+          "schema_version": {
+            "const": "arbogast.deform.small-extension-receipt/v1",
+            "type": "string"
+          },
+          "verifier_trust": {}
+        },
+        "required": [
+          "schema_version",
+          "assumptions",
+          "completeness",
+          "dependencies",
+          "kind",
+          "layer",
+          "payload",
+          "verifier_trust"
+        ],
+        "title": "Small-extension deformation receipt",
+        "type": "object"
+      },
+      "document_sha256": "sha256:2748d2c9dd65788bff6f2aa120b0bbde77719728b43b38232502632a04eac730",
+      "identifier": "arbogast.deform.small-extension-receipt/v1"
+    },
+    {
+      "document": {
+        "$id": "arbogast.deform.small-extension/v1",
+        "$schema": "https://json-schema.org/draft/2020-12/schema",
+        "additionalProperties": true,
+        "properties": {
+          "inclusion": {},
+          "kernel_basis": {},
+          "projection_id": {},
+          "schema": {
+            "const": "arbogast.deform.small-extension/v1",
+            "type": "string"
+          },
+          "type": {}
+        },
+        "required": [
+          "schema",
+          "inclusion",
+          "kernel_basis",
+          "projection_id",
+          "type"
+        ],
+        "title": "Pinned small extension",
+        "type": "object"
+      },
+      "document_sha256": "sha256:df2ba8e20a300307039ae60bf31c9f8c311b98d426e1b52bbad4d89ded612b83",
+      "identifier": "arbogast.deform.small-extension/v1"
+    },
+    {
+      "document": {
+        "$id": "arbogast.deform.tangent-receipt/v1",
+        "$schema": "https://json-schema.org/draft/2020-12/schema",
+        "additionalProperties": true,
+        "properties": {
+          "assumptions": {},
+          "completeness": {},
+          "dependencies": {},
+          "kind": {},
+          "layer": {},
+          "payload": {},
+          "schema_version": {
+            "const": "arbogast.deform.tangent-receipt/v1",
+            "type": "string"
+          },
+          "verifier_trust": {}
+        },
+        "required": [
+          "schema_version",
+          "assumptions",
+          "completeness",
+          "dependencies",
+          "kind",
+          "layer",
+          "payload",
+          "verifier_trust"
+        ],
+        "title": "Tangent-space receipt",
+        "type": "object"
+      },
+      "document_sha256": "sha256:cd048edf3ce66bc4dfd803e184a1dad4cb9b703451f8cca1582fb49d5f250c2a",
+      "identifier": "arbogast.deform.tangent-receipt/v1"
+    },
+    {
+      "document": {
+        "$id": "arbogast.deform.tangent-space/v1",
+        "$schema": "https://json-schema.org/draft/2020-12/schema",
+        "additionalProperties": true,
+        "properties": {
+          "complex_id": {},
+          "problem_id": {},
+          "quotient": {},
+          "schema": {
+            "const": "arbogast.deform.tangent-space/v1",
+            "type": "string"
+          },
+          "type": {}
+        },
+        "required": [
+          "schema",
+          "complex_id",
+          "problem_id",
+          "quotient",
+          "type"
+        ],
+        "title": "Deformation tangent space",
+        "type": "object"
+      },
+      "document_sha256": "sha256:5b0bc6a547c52a233a94b55b9ca6bc20bc6bae56a76d4901bfdc8fe97390d192",
+      "identifier": "arbogast.deform.tangent-space/v1"
+    },
+    {
+      "document": {
+        "$id": "arbogast.deform.unique-lift-receipt/v1",
+        "$schema": "https://json-schema.org/draft/2020-12/schema",
+        "additionalProperties": true,
+        "properties": {
+          "assumptions": {},
+          "completeness": {},
+          "dependencies": {},
+          "kind": {},
+          "layer": {},
+          "payload": {},
+          "schema_version": {
+            "const": "arbogast.deform.unique-lift-receipt/v1",
+            "type": "string"
+          },
+          "verifier_trust": {}
+        },
+        "required": [
+          "schema_version",
+          "assumptions",
+          "completeness",
+          "dependencies",
+          "kind",
+          "layer",
+          "payload",
+          "verifier_trust"
+        ],
+        "title": "Unique-lift receipt",
+        "type": "object"
+      },
+      "document_sha256": "sha256:2d3d55cc3553c1cff77f5085ebc7778a8b33b3ad2a53f861a918b3cf82c53e62",
+      "identifier": "arbogast.deform.unique-lift-receipt/v1"
+    },
+    {
+      "document": {
+        "$id": "arbogast.deform.unique-lift/v1",
+        "$schema": "https://json-schema.org/draft/2020-12/schema",
+        "additionalProperties": true,
+        "properties": {
+          "family_id": {},
+          "representative": {},
+          "schema": {
+            "const": "arbogast.deform.unique-lift/v1",
+            "type": "string"
+          },
+          "type": {}
+        },
+        "required": [
+          "schema",
+          "family_id",
+          "representative",
+          "type"
+        ],
+        "title": "Unique lift result",
+        "type": "object"
+      },
+      "document_sha256": "sha256:377f28cef99ddaac485c05b3b400078041071dbb361dfce8511902551800629d",
+      "identifier": "arbogast.deform.unique-lift/v1"
+    },
+    {
+      "document": {
+        "$id": "arbogast.deform.unsupported-receipt/v1",
+        "$schema": "https://json-schema.org/draft/2020-12/schema",
+        "additionalProperties": true,
+        "properties": {
+          "assumptions": {},
+          "completeness": {},
+          "dependencies": {},
+          "kind": {},
+          "layer": {},
+          "payload": {},
+          "schema_version": {
+            "const": "arbogast.deform.unsupported-receipt/v1",
+            "type": "string"
+          },
+          "verifier_trust": {}
+        },
+        "required": [
+          "schema_version",
+          "assumptions",
+          "completeness",
+          "dependencies",
+          "kind",
+          "layer",
+          "payload",
+          "verifier_trust"
+        ],
+        "title": "Unsupported-deformation receipt",
+        "type": "object"
+      },
+      "document_sha256": "sha256:49fc42d04a2fc55041b68ccb9651abb8e559c3f6a1a350dc34573f6d3b7b1adc",
+      "identifier": "arbogast.deform.unsupported-receipt/v1"
+    },
+    {
+      "document": {
+        "$id": "arbogast.deform.unsupported/v1",
+        "$schema": "https://json-schema.org/draft/2020-12/schema",
+        "additionalProperties": true,
+        "properties": {
+          "operation": {},
+          "reason": {},
+          "requested": {},
+          "schema": {
+            "const": "arbogast.deform.unsupported/v1",
+            "type": "string"
+          },
+          "supported": {},
+          "type": {}
+        },
+        "required": [
+          "schema",
+          "operation",
+          "reason",
+          "requested",
+          "supported",
+          "type"
+        ],
+        "title": "Unsupported deformation result",
+        "type": "object"
+      },
+      "document_sha256": "sha256:553d31c0c8ecd308174786fac4ec54ea0df28aefd13610ad1d9f9553d1d31c4b",
+      "identifier": "arbogast.deform.unsupported/v1"
+    },
+    {
+      "document": {
+        "$id": "arbogast.descent/v1",
+        "$schema": "https://json-schema.org/draft/2020-12/schema",
+        "additionalProperties": true,
+        "properties": {
+          "evidence": {},
+          "kind": {},
+          "layer": {},
+          "payload": {},
+          "proof_context": {},
+          "schema_version": {
+            "const": "arbogast.descent/v1",
+            "type": "string"
+          }
+        },
+        "required": [
+          "schema_version",
+          "layer",
+          "kind",
+          "payload",
+          "proof_context",
+          "evidence"
+        ],
+        "title": "Elementary descent receipt",
+        "type": "object"
+      },
+      "document_sha256": "sha256:ec460b905ae72a5eb67915951d2ce56a8c91563c50718d2f878157e753a78b84",
+      "identifier": "arbogast.descent/v1"
+    },
+    {
+      "document": {
+        "$id": "arbogast.dual-selmer/v1",
+        "$schema": "https://json-schema.org/draft/2020-12/schema",
+        "additionalProperties": true,
+        "properties": {
+          "evidence": {},
+          "kind": {},
+          "layer": {},
+          "payload": {},
+          "proof_context": {},
+          "schema_version": {
+            "const": "arbogast.dual-selmer/v1",
+            "type": "string"
+          }
+        },
+        "required": [
+          "schema_version",
+          "layer",
+          "kind",
+          "payload",
+          "proof_context",
+          "evidence"
+        ],
+        "title": "Dual Selmer receipt",
+        "type": "object"
+      },
+      "document_sha256": "sha256:4ee56a70b8bb81aef5caec9bba0cbce9e95cff226ebcd4987870f2c6028d2e38",
+      "identifier": "arbogast.dual-selmer/v1"
+    },
+    {
+      "document": {
+        "$id": "arbogast.fleet.artifact.v1",
+        "$schema": "https://json-schema.org/draft/2020-12/schema",
+        "additionalProperties": true,
+        "properties": {
+          "algorithm": {},
+          "digest": {},
+          "schema": {
+            "const": "arbogast.fleet.artifact.v1",
+            "type": "string"
+          },
+          "size": {}
+        },
+        "required": [
+          "schema",
+          "algorithm",
+          "digest",
+          "size"
+        ],
+        "title": "Artifact reference",
+        "type": "object"
+      },
+      "document_sha256": "sha256:d47972ebf762299bbed983c8a4f7d8a582b6ecf8b38404843968880ed7b54bf5",
+      "identifier": "arbogast.fleet.artifact.v1"
+    },
+    {
+      "document": {
+        "$id": "arbogast.fleet.plan.v1",
+        "$schema": "https://json-schema.org/draft/2020-12/schema",
+        "additionalProperties": true,
+        "properties": {
+          "schema": {
+            "const": "arbogast.fleet.plan.v1",
+            "type": "string"
+          },
+          "shards": {},
+          "task": {}
+        },
+        "required": [
+          "schema",
+          "task",
+          "shards"
+        ],
+        "title": "Fleet plan",
+        "type": "object"
+      },
+      "document_sha256": "sha256:2ba2e5a60a8c1c5b9300a39a18c0fdf8ed2fd068a6816b722838a00b09a1aa19",
+      "identifier": "arbogast.fleet.plan.v1"
+    },
+    {
+      "document": {
+        "$id": "arbogast.fleet.run.v1",
+        "$schema": "https://json-schema.org/draft/2020-12/schema",
+        "additionalProperties": true,
+        "properties": {
+          "result": {},
+          "schema": {
+            "const": "arbogast.fleet.run.v1",
+            "type": "string"
+          },
+          "shards": {},
+          "state": {},
+          "task": {}
+        },
+        "required": [
+          "schema",
+          "task",
+          "shards",
+          "result",
+          "state"
+        ],
+        "title": "Fleet run",
+        "type": "object"
+      },
+      "document_sha256": "sha256:cf14c52151aaacfc4979751979e9d5526313a611451b7b59e369a61d94e53ab5",
+      "identifier": "arbogast.fleet.run.v1"
+    },
+    {
+      "document": {
+        "$id": "arbogast.fleet.shard.v1",
+        "$schema": "https://json-schema.org/draft/2020-12/schema",
+        "additionalProperties": true,
+        "properties": {
+          "key": {},
+          "payload": {},
+          "schema": {
+            "const": "arbogast.fleet.shard.v1",
+            "type": "string"
+          },
+          "task_hash": {}
+        },
+        "required": [
+          "schema",
+          "task_hash",
+          "key",
+          "payload"
+        ],
+        "title": "Shard",
+        "type": "object"
+      },
+      "document_sha256": "sha256:956483d28586e6fad186545458fda200bb04aa81cf844ceb4857f70a0d69a438",
+      "identifier": "arbogast.fleet.shard.v1"
+    },
+    {
+      "document": {
+        "$id": "arbogast.fleet.task.v1",
+        "$schema": "https://json-schema.org/draft/2020-12/schema",
+        "additionalProperties": true,
+        "properties": {
+          "backend": {},
+          "input_refs": {},
+          "operation": {},
+          "parameters": {},
+          "schema": {
+            "const": "arbogast.fleet.task.v1",
+            "type": "string"
+          }
+        },
+        "required": [
+          "schema",
+          "operation",
+          "input_refs",
+          "parameters",
+          "backend"
+        ],
+        "title": "Task",
+        "type": "object"
+      },
+      "document_sha256": "sha256:e9cbbeb0d55b07fb1ef1edbb335f95d33e965e336d3064afbb890079dcb49b04",
+      "identifier": "arbogast.fleet.task.v1"
+    },
+    {
+      "document": {
+        "$id": "arbogast.galois.field-embedding/v1",
+        "$schema": "https://json-schema.org/draft/2020-12/schema",
+        "additionalProperties": true,
+        "properties": {
+          "codomain_id": {},
+          "domain_id": {},
+          "generator_image": {},
+          "schema": {
+            "const": "arbogast.galois.field-embedding/v1",
+            "type": "string"
+          },
+          "type": {}
+        },
+        "required": [
+          "schema",
+          "codomain_id",
+          "domain_id",
+          "generator_image",
+          "type"
+        ],
+        "title": "Explicit number-field embedding",
+        "type": "object"
+      },
+      "document_sha256": "sha256:d172d2db96a9284388676abfffe165fdb5fd6c7b4d06cd1e1da35b431040e5fa",
+      "identifier": "arbogast.galois.field-embedding/v1"
+    },
+    {
+      "document": {
+        "$id": "arbogast.galois.finite-place/v1",
+        "$schema": "https://json-schema.org/draft/2020-12/schema",
+        "additionalProperties": true,
+        "properties": {
+          "field_id": {},
+          "ideal_hnf": {},
+          "ramification_index": {},
+          "rational_prime": {},
+          "residue_degree": {},
+          "residue_field_witness": {},
+          "schema": {
+            "const": "arbogast.galois.finite-place/v1",
+            "type": "string"
+          },
+          "type": {},
+          "verification_requirement": {}
+        },
+        "required": [
+          "schema",
+          "field_id",
+          "ideal_hnf",
+          "ramification_index",
+          "rational_prime",
+          "residue_degree",
+          "residue_field_witness",
+          "type",
+          "verification_requirement"
+        ],
+        "title": "Canonical finite place",
+        "type": "object"
+      },
+      "document_sha256": "sha256:f3ca9abceec4880cd03d7e2b3643283afeb91b9fcb9b6eb6b55f4018f8aaebf0",
+      "identifier": "arbogast.galois.finite-place/v1"
+    },
+    {
+      "document": {
+        "$id": "arbogast.galois.finite-quotient-receipt/v1",
+        "$schema": "https://json-schema.org/draft/2020-12/schema",
+        "additionalProperties": true,
+        "properties": {
+          "arithmetic_witness": {},
+          "base_field": {},
+          "base_field_id": {},
+          "group": {},
+          "label": {},
+          "presentation": {},
+          "schema_version": {
+            "const": "arbogast.galois.finite-quotient-receipt/v1",
+            "type": "string"
+          },
+          "type": {}
+        },
+        "required": [
+          "schema_version",
+          "arithmetic_witness",
+          "base_field",
+          "base_field_id",
+          "group",
+          "label",
+          "presentation",
+          "type"
+        ],
+        "title": "Finite Galois quotient receipt",
+        "type": "object"
+      },
+      "document_sha256": "sha256:7b2e0eb0e93b3a961774cd2be1f74550be353182ca7c1491cf4638241a107f9d",
+      "identifier": "arbogast.galois.finite-quotient-receipt/v1"
+    },
+    {
+      "document": {
+        "$id": "arbogast.galois.ideal/v1",
+        "$schema": "https://json-schema.org/draft/2020-12/schema",
+        "additionalProperties": true,
+        "properties": {
+          "field_id": {},
+          "ideal_hnf": {},
+          "integral_basis": {},
+          "schema": {
+            "const": "arbogast.galois.ideal/v1",
+            "type": "string"
+          },
+          "type": {}
+        },
+        "required": [
+          "schema",
+          "field_id",
+          "integral_basis",
+          "ideal_hnf",
+          "type"
+        ],
+        "title": "Canonical nonzero integral ideal",
+        "type": "object"
+      },
+      "document_sha256": "sha256:e11ac0acb64b56fcfa2b9e64e70829f895e8dce9b5a54bafcae1be93fd5d76ed",
+      "identifier": "arbogast.galois.ideal/v1"
+    },
+    {
+      "document": {
+        "$id": "arbogast.galois.infinite-place/v1",
+        "$schema": "https://json-schema.org/draft/2020-12/schema",
+        "additionalProperties": true,
+        "properties": {
+          "embedding_index": {},
+          "field_id": {},
+          "isolation": {},
+          "kind": {},
+          "schema": {
+            "const": "arbogast.galois.infinite-place/v1",
+            "type": "string"
+          },
+          "type": {},
+          "verification_requirement": {}
+        },
+        "required": [
+          "schema",
+          "embedding_index",
+          "field_id",
+          "isolation",
+          "kind",
+          "type",
+          "verification_requirement"
+        ],
+        "title": "Canonical infinite place",
+        "type": "object"
+      },
+      "document_sha256": "sha256:d93c67c0d6b5907a4e97cb220fbb65ffb15d8dfc0b7b11c60a25f9fc5cc67767",
+      "identifier": "arbogast.galois.infinite-place/v1"
+    },
+    {
+      "document": {
+        "$id": "arbogast.galois.kummer/v1",
+        "$schema": "https://json-schema.org/draft/2020-12/schema",
+        "additionalProperties": true,
+        "properties": {
+          "completeness_witness": {},
+          "coordinates": {},
+          "field": {},
+          "field_id": {},
+          "generator_ids": {},
+          "generators": {},
+          "object_type": {},
+          "place_ids": {},
+          "places": {},
+          "prime": {},
+          "proof_context": {},
+          "proving_certificates": {},
+          "schema_version": {
+            "const": "arbogast.galois.kummer/v1",
+            "type": "string"
+          }
+        },
+        "required": [
+          "schema_version",
+          "object_type",
+          "field",
+          "field_id",
+          "prime",
+          "places",
+          "place_ids",
+          "generators",
+          "generator_ids",
+          "coordinates",
+          "proof_context",
+          "completeness_witness",
+          "proving_certificates"
+        ],
+        "title": "Kummer receipt",
+        "type": "object"
+      },
+      "document_sha256": "sha256:40ac168f30e755924e6fe5dea1adf55ffe875d5cf4986fc1e5105f7296617647",
+      "identifier": "arbogast.galois.kummer/v1"
+    },
+    {
+      "document": {
+        "$id": "arbogast.galois.local-h1/v1",
+        "$schema": "https://json-schema.org/draft/2020-12/schema",
+        "additionalProperties": true,
+        "properties": {
+          "basis": {},
+          "basis_ids": {},
+          "coordinates": {},
+          "object_type": {},
+          "place": {},
+          "place_id": {},
+          "presentation": {},
+          "prime": {},
+          "proof_context": {},
+          "proving_certificates": {},
+          "schema_version": {
+            "const": "arbogast.galois.local-h1/v1",
+            "type": "string"
+          }
+        },
+        "required": [
+          "schema_version",
+          "object_type",
+          "place",
+          "place_id",
+          "prime",
+          "basis",
+          "basis_ids",
+          "coordinates",
+          "proof_context",
+          "presentation",
+          "proving_certificates"
+        ],
+        "title": "Local H1 receipt",
+        "type": "object"
+      },
+      "document_sha256": "sha256:ddf0b064a25f869afc43b6eeaf06ab11531072c1ed9cf49ebd4cadf28c3daf5d",
+      "identifier": "arbogast.galois.local-h1/v1"
+    },
+    {
+      "document": {
+        "$id": "arbogast.galois.localization/v1",
+        "$schema": "https://json-schema.org/draft/2020-12/schema",
+        "additionalProperties": true,
+        "properties": {
+          "codomain": {},
+          "domain": {},
+          "image_coordinates": {},
+          "localization_witness": {},
+          "matrix": {},
+          "proof_context": {},
+          "proving_certificates": {},
+          "schema_version": {
+            "const": "arbogast.galois.localization/v1",
+            "type": "string"
+          },
+          "source_coordinates": {}
+        },
+        "required": [
+          "schema_version",
+          "domain",
+          "codomain",
+          "matrix",
+          "proof_context",
+          "localization_witness",
+          "proving_certificates",
+          "source_coordinates",
+          "image_coordinates"
+        ],
+        "title": "Localization receipt",
+        "type": "object"
+      },
+      "document_sha256": "sha256:8b007d8e40dabd9433e987fe23ec41c6b694be4af3c60c69c53db8e774b3b883",
+      "identifier": "arbogast.galois.localization/v1"
+    },
+    {
+      "document": {
+        "$id": "arbogast.galois.module-receipt/v1",
+        "$schema": "https://json-schema.org/draft/2020-12/schema",
+        "additionalProperties": true,
+        "properties": {
+          "module": {},
+          "module_id": {},
+          "quotient": {},
+          "quotient_certificate_id": {},
+          "quotient_id": {},
+          "schema_version": {
+            "const": "arbogast.galois.module-receipt/v1",
+            "type": "string"
+          },
+          "type": {}
+        },
+        "required": [
+          "schema_version",
+          "module",
+          "module_id",
+          "quotient",
+          "quotient_certificate_id",
+          "quotient_id",
+          "type"
+        ],
+        "title": "Galois module receipt",
+        "type": "object"
+      },
+      "document_sha256": "sha256:945b47f20241fb8c46b54e654616c85503bff23296d8af349540c778f209f652",
+      "identifier": "arbogast.galois.module-receipt/v1"
+    },
+    {
+      "document": {
+        "$id": "arbogast.galois.number-field-element/v1",
+        "$schema": "https://json-schema.org/draft/2020-12/schema",
+        "additionalProperties": true,
+        "properties": {
+          "coefficients": {},
+          "field_id": {},
+          "schema": {
+            "const": "arbogast.galois.number-field-element/v1",
+            "type": "string"
+          },
+          "type": {}
+        },
+        "required": [
+          "schema",
+          "coefficients",
+          "field_id",
+          "type"
+        ],
+        "title": "Pinned number-field element",
+        "type": "object"
+      },
+      "document_sha256": "sha256:be1ed4f079aee71d3182de3d5d71ab88100fa6835deaaee27737f561a5ec930b",
+      "identifier": "arbogast.galois.number-field-element/v1"
+    },
+    {
+      "document": {
+        "$id": "arbogast.galois.number-field/v1",
+        "$schema": "https://json-schema.org/draft/2020-12/schema",
+        "additionalProperties": true,
+        "properties": {
+          "defining_polynomial": {},
+          "integral_basis": {},
+          "irreducibility_requirement": {},
+          "irreducibility_witness": {},
+          "schema": {
+            "const": "arbogast.galois.number-field/v1",
+            "type": "string"
+          },
+          "type": {}
+        },
+        "required": [
+          "schema",
+          "defining_polynomial",
+          "integral_basis",
+          "irreducibility_requirement",
+          "irreducibility_witness",
+          "type"
+        ],
+        "title": "Pinned number field",
+        "type": "object"
+      },
+      "document_sha256": "sha256:ba1b15db44b9014ad31309bd3645e0f99b62d2dd3deb13bcceb1bdd0b6137f67",
+      "identifier": "arbogast.galois.number-field/v1"
+    },
+    {
+      "document": {
+        "$id": "arbogast.galois.twists/v1",
+        "$schema": "https://json-schema.org/draft/2020-12/schema",
+        "additionalProperties": true,
+        "properties": {
+          "acting_elements": {},
+          "acting_identity": {},
+          "acting_inverses": {},
+          "acting_table": {},
+          "action_table": {},
+          "assumptions": {},
+          "cocycles": {},
+          "coefficient_elements": {},
+          "coefficient_identity": {},
+          "coefficient_inverses": {},
+          "coefficient_table": {},
+          "orbits": {},
+          "representatives": {},
+          "schema_version": {
+            "const": "arbogast.galois.twists/v1",
+            "type": "string"
+          }
+        },
+        "required": [
+          "schema_version",
+          "acting_elements",
+          "acting_table",
+          "acting_identity",
+          "acting_inverses",
+          "coefficient_elements",
+          "coefficient_table",
+          "coefficient_identity",
+          "coefficient_inverses",
+          "action_table",
+          "cocycles",
+          "orbits",
+          "representatives",
+          "assumptions"
+        ],
+        "title": "Nonabelian twist receipt",
+        "type": "object"
+      },
+      "document_sha256": "sha256:7444ea67e6b35ae2b714d556b9b1fa2c68aa0e9ec7e6258bdaa93b3d1926cd82",
+      "identifier": "arbogast.galois.twists/v1"
+    },
+    {
+      "document": {
+        "$id": "arbogast.local-condition/v1",
+        "$schema": "https://json-schema.org/draft/2020-12/schema",
+        "additionalProperties": true,
+        "properties": {
+          "evidence": {},
+          "kind": {},
+          "layer": {},
+          "payload": {},
+          "proof_context": {},
+          "schema_version": {
+            "const": "arbogast.local-condition/v1",
+            "type": "string"
+          }
+        },
+        "required": [
+          "schema_version",
+          "layer",
+          "kind",
+          "payload",
+          "proof_context",
+          "evidence"
+        ],
+        "title": "Local condition receipt",
+        "type": "object"
+      },
+      "document_sha256": "sha256:94acefc686dfc970411b11c28beae0265b7db72447cd4b809fe0cf271f49e16c",
+      "identifier": "arbogast.local-condition/v1"
+    },
+    {
+      "document": {
+        "$id": "arbogast.local-pairing/v1",
+        "$schema": "https://json-schema.org/draft/2020-12/schema",
+        "additionalProperties": true,
+        "properties": {
+          "evidence": {},
+          "kind": {},
+          "layer": {},
+          "payload": {},
+          "proof_context": {},
+          "schema_version": {
+            "const": "arbogast.local-pairing/v1",
+            "type": "string"
+          }
+        },
+        "required": [
+          "schema_version",
+          "layer",
+          "kind",
+          "payload",
+          "proof_context",
+          "evidence"
+        ],
+        "title": "Local pairing receipt",
+        "type": "object"
+      },
+      "document_sha256": "sha256:25e26bab72d7b77267760a0a3eb375ef2acf856d97b8f5d42a9a45036701146a",
+      "identifier": "arbogast.local-pairing/v1"
+    },
+    {
+      "document": {
+        "$id": "arbogast.selmer/v1",
+        "$schema": "https://json-schema.org/draft/2020-12/schema",
+        "additionalProperties": true,
+        "properties": {
+          "evidence": {},
+          "kind": {},
+          "layer": {},
+          "payload": {},
+          "proof_context": {},
+          "schema_version": {
+            "const": "arbogast.selmer/v1",
+            "type": "string"
+          }
+        },
+        "required": [
+          "schema_version",
+          "layer",
+          "kind",
+          "payload",
+          "proof_context",
+          "evidence"
+        ],
+        "title": "Selmer receipt",
+        "type": "object"
+      },
+      "document_sha256": "sha256:ebc053b1e5fb34f49516ed3d33ab2dc0586e43692548dd5e94f81a96e62ea987",
+      "identifier": "arbogast.selmer/v1"
+    }
+  ],
+  "schema_version": "arbogast.compatibility-semantic-contracts/v1",
+  "source_commit": "46aef45d7bb24893d552476aee2d9b17b3da7e43",
+  "source_tag": "v0.3.0",
+  "version": "0.3.0"
+}

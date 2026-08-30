@@ -24,6 +24,10 @@ deformation_required_paths = cast(
     tuple[str, ...],
     CHECKER["DEFORMATION_REQUIRED_PATHS"],
 )
+numeric_required_paths = cast(
+    tuple[str, ...],
+    CHECKER["NUMERIC_REQUIRED_PATHS"],
+)
 release_required_paths = cast(Callable[[str], tuple[str, ...]], CHECKER["required_paths"])
 
 
@@ -110,6 +114,31 @@ def test_release_surface_requires_ci_campaign_and_exact_m23_inputs() -> None:
     assert "docs/release-notes-0.1.0.md" in release_required_paths("0.3.0")
     assert "docs/release-notes-0.2.0.md" in release_required_paths("0.3.0")
     assert "tests/integration/test_v010_compatibility.py" in required_paths
+    assert "tests/fixtures/compat/v0.3.0/release.json" in release_required_paths("0.4.0")
+    assert "tests/fixtures/compat/v0.3.0/api-cli-contracts.json" in release_required_paths("0.4.0")
+    assert "tests/fixtures/compat/v0.3.0/semantic-contracts.json" in release_required_paths("0.4.0")
+    assert "docs/release-notes-0.3.0.md" in release_required_paths("0.4.0")
+
+
+def test_numeric_release_surface_is_additive_from_v040() -> None:
+    legacy = set(release_required_paths("0.3.0"))
+    v040 = set(release_required_paths("0.4.0"))
+    future = set(release_required_paths("0.5.0"))
+
+    assert len(numeric_required_paths) == 30
+    assert legacy.isdisjoint(numeric_required_paths)
+    assert set(numeric_required_paths).issubset(v040)
+    assert set(numeric_required_paths).issubset(future)
+    assert (
+        len([path for path in numeric_required_paths if path.startswith("src/arbogast/numeric/")])
+        == 12
+    )
+    assert len([path for path in numeric_required_paths if path.endswith("_acceptance.py")]) == 4
+    assert "tests/unit/test_numeric_b2_homotopy.py" in numeric_required_paths
+    assert "tests/unit/test_numeric_core.py" in numeric_required_paths
+    assert "tests/unit/test_numeric_cover.py" in numeric_required_paths
+    assert "tests/unit/test_numeric_weighted_braid.py" in numeric_required_paths
+    assert "examples/numeric/two_sheet_cover/fixture.py" in numeric_required_paths
 
 
 def test_deformation_release_surface_is_additive_from_v030() -> None:
@@ -157,6 +186,36 @@ def test_every_deformation_release_path_fails_closed_when_deleted(tmp_path: Path
     assert all(
         f"missing required path: {relative}" not in failures
         for relative in deformation_required_paths
+    )
+
+
+def test_every_numeric_release_path_fails_closed_when_deleted(tmp_path: Path) -> None:
+    for relative in numeric_required_paths:
+        _write(tmp_path / relative, "release-boundary fixture\n")
+
+    failures: list[str] = []
+    check_required_paths(tmp_path, failures, "0.4.0")
+    numeric_failures = [
+        failure
+        for failure in failures
+        if any(relative in failure for relative in numeric_required_paths)
+    ]
+    assert numeric_failures == []
+
+    for relative in numeric_required_paths:
+        path = tmp_path / relative
+        path.unlink()
+        failures = []
+        check_required_paths(tmp_path, failures, "0.4.0")
+        assert f"missing required path: {relative}" in failures
+        _write(path, "release-boundary fixture\n")
+
+    failures = []
+    for relative in numeric_required_paths:
+        (tmp_path / relative).unlink()
+    check_required_paths(tmp_path, failures, "0.3.0")
+    assert all(
+        f"missing required path: {relative}" not in failures for relative in numeric_required_paths
     )
 
 
@@ -217,7 +276,10 @@ def test_release_gate_validates_every_indexed_compatibility_release(tmp_path: Pa
         PROJECT_ROOT / "tests/fixtures/compat",
         tmp_path / "tests/fixtures/compat",
     )
-    for version in ("0.1.0", "0.2.0"):
+    index = json.loads(
+        (PROJECT_ROOT / "tests/fixtures/compat/index.json").read_text(encoding="utf-8")
+    )
+    for version in (release["version"] for release in index["releases"]):
         notes = tmp_path / f"docs/release-notes-{version}.md"
         notes.parent.mkdir(parents=True, exist_ok=True)
         shutil.copyfile(PROJECT_ROOT / f"docs/release-notes-{version}.md", notes)

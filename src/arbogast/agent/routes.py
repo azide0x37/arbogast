@@ -428,6 +428,88 @@ _DEPENDENT_OUTPUTS_BY_INPUTS: dict[str, dict[tuple[str, ...], tuple[str, ...]]] 
         ): ("UnsupportedDeformation",),
         ("UnsupportedDeformation", "LiftEndomorphism", "int"): ("UnsupportedDeformation",),
     },
+    "numeric.continue_path": {
+        ("PolynomialFamily", "NumericPoint", "ParameterPath"): ("NumericUnknown",),
+        ("PolynomialSystem", "NumericPoint", "ParameterPath"): ("UnsupportedNumeric",),
+        (
+            "PolynomialFamily",
+            "NumericPoint",
+            "ParameterPath",
+            "ContinuationTube",
+        ): ("ContinuationResult",),
+        (
+            "PolynomialSystem",
+            "NumericPoint",
+            "ParameterPath",
+            "ContinuationTube",
+        ): ("UnsupportedNumeric",),
+    },
+    "numeric.condition_number": {
+        ("PolynomialSystem", "NumericPoint"): ("NumericUnknown", "UnsupportedNumeric"),
+        (
+            "PolynomialSystem",
+            "NumericPoint",
+            "InverseJacobianMatrix",
+        ): ("ConditionBound",),
+    },
+    "numeric.bind_vertex": {
+        ("NumericalCover", "NielsenClass"): ("NielsenVertex", "NumericUnknown"),
+        ("NumericalCover", "NielsenClass", "NielsenTuple"): (
+            "NielsenVertex",
+            "NumericUnknown",
+        ),
+        ("NumericalCover", "NielsenClass", "int"): ("NielsenVertex", "NumericUnknown"),
+    },
+    "numeric.braid_continue": {
+        ("NumericalCover", "BraidWord"): (
+            "NumericalCover",
+            "NumericUnknown",
+            "UnsupportedNumeric",
+        ),
+        ("NumericalCover", "BraidWord", "BraidContinuationWitness"): ("NumericUnknown",),
+        ("NumericalCover", "BraidWord", "QuadraticB2Homotopy"): ("BraidContinuationResult",),
+    },
+    "numeric.projection_degree": {
+        ("ExactPolynomial", "ProjectionFunctionSequence"): (
+            "DegreeResult",
+            "UnsupportedNumeric",
+        ),
+        ("PolynomialSystem", "ProjectionFunctionSequence"): (
+            "NumericUnknown",
+            "UnsupportedNumeric",
+        ),
+        ("ExactCover", "ProjectionFunctionSequence"): ("UnsupportedNumeric",),
+        (
+            "ExactPolynomial",
+            "ProjectionFunctionSequence",
+            "RegularFiberWitness",
+        ): ("DegreeResult", "UnsupportedNumeric"),
+        (
+            "PolynomialSystem",
+            "ProjectionFunctionSequence",
+            "RegularFiberWitness",
+        ): ("RegularFiberDegree", "UnsupportedNumeric"),
+        (
+            "ExactCover",
+            "ProjectionFunctionSequence",
+            "RegularFiberWitness",
+        ): ("UnsupportedNumeric",),
+        (
+            "ExactPolynomial",
+            "ProjectionFunctionSequence",
+            "GenericDegreeWitness",
+        ): ("DegreeResult", "UnsupportedNumeric"),
+        (
+            "PolynomialSystem",
+            "ProjectionFunctionSequence",
+            "GenericDegreeWitness",
+        ): ("UnsupportedNumeric",),
+        (
+            "ExactCover",
+            "ProjectionFunctionSequence",
+            "GenericDegreeWitness",
+        ): ("UnsupportedNumeric",),
+    },
 }
 
 

@@ -193,6 +193,7 @@ _BUILTIN_VERIFIER_MODULES = {
     "hurwitz.reduced": "arbogast.hurwitz.claims",
     "hurwitz.cusps": "arbogast.hurwitz.claims",
     "hurwitz.boundary": "arbogast.hurwitz.claims",
+    "numeric.exact-bridge.v1": "arbogast.numeric.semantic",
 }
 
 

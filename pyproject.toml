@@ -4,8 +4,8 @@ build-backend = "hatchling.build"
 
 [project]
 name = "arbogast"
-version = "0.3.0"
-description = "Certificate-first exact arithmetic, cohomology, symmetry, and Hurwitz computation"
+version = "0.4.0"
+description = "Certificate-first exact and validated numerical computational mathematics"
 readme = "README.md"
 requires-python = ">=3.11"
 authors = [{ name = "azide0x37" }]
@@ -15,6 +15,7 @@ keywords = [
   "finite-groups",
   "hurwitz-spaces",
   "number-theory",
+  "numerical-algebraic-geometry",
   "selmer-groups",
   "certificates",
 ]

@@ -28,6 +28,7 @@ H1_PATH = FIXTURE_ROOT / "h1-c2-f2.json"
 PUBLIC_CONTRACTS_PATH = FIXTURE_ROOT / "public-contracts.json"
 API_CLI_CONTRACTS_PATH = FIXTURE_ROOT / "api-cli-contracts.json"
 V020_API_CLI_CONTRACTS_PATH = PROJECT_ROOT / "tests/fixtures/compat/v0.2.0/api-cli-contracts.json"
+V030_API_CLI_CONTRACTS_PATH = PROJECT_ROOT / "tests/fixtures/compat/v0.3.0/api-cli-contracts.json"
 V010_CERTIFICATE_ID = "sha256:52b76eed5ad4ab3ee16fa7b34920c680cdb68e82470c72cefadf06a3d9439377"
 V010_CLAIM_ID = "cohom.h1.1574520bfd2136329bd615926e159f6fc568faedbf6cce2a988058c8904d562c"
 V010_H1_FIXTURE_SHA256 = "9768c82cb12a7d04f8850244c0b686ce33ba2bb633ffc777c4d72a9aba433743"
@@ -256,8 +257,14 @@ def _assert_additive_signature(expected: dict[str, object], value: object) -> No
             19,
             424,
         ),
+        (
+            V030_API_CLI_CONTRACTS_PATH,
+            "46aef45d7bb24893d552476aee2d9b17b3da7e43",
+            20,
+            467,
+        ),
     ),
-    ids=("v0.1.0", "v0.2.0"),
+    ids=("v0.1.0", "v0.2.0", "v0.3.0"),
 )
 def test_every_published_exported_type_identity_and_constructor_remains_additive(
     path: Path,
@@ -282,11 +289,23 @@ def test_every_published_exported_type_identity_and_constructor_remains_additive
             _assert_additive_signature(expected, value)
 
 
-def test_every_v020_exported_function_identity_and_signature_remains_additive() -> None:
-    inventory = _json(V020_API_CLI_CONTRACTS_PATH)
+@pytest.mark.parametrize(
+    ("path", "module_count", "function_count"),
+    (
+        (V020_API_CLI_CONTRACTS_PATH, 17, 176),
+        (V030_API_CLI_CONTRACTS_PATH, 18, 192),
+    ),
+    ids=("v0.2.0", "v0.3.0"),
+)
+def test_every_published_exported_function_identity_and_signature_remains_additive(
+    path: Path,
+    module_count: int,
+    function_count: int,
+) -> None:
+    inventory = _json(path)
     modules = cast(dict[str, list[dict[str, object]]], inventory["exported_functions"])
-    assert len(modules) == 17
-    assert sum(len(records) for records in modules.values()) == 176
+    assert len(modules) == module_count
+    assert sum(len(records) for records in modules.values()) == function_count
     for module_name, records in modules.items():
         module = import_module(module_name)
         exports = cast(Any, module).__all__
@@ -355,8 +374,12 @@ def _current_cli_contracts() -> dict[tuple[str, ...], dict[str, object]]:
 
 @pytest.mark.parametrize(
     ("path", "parser_count"),
-    ((API_CLI_CONTRACTS_PATH, 15), (V020_API_CLI_CONTRACTS_PATH, 16)),
-    ids=("v0.1.0", "v0.2.0"),
+    (
+        (API_CLI_CONTRACTS_PATH, 15),
+        (V020_API_CLI_CONTRACTS_PATH, 16),
+        (V030_API_CLI_CONTRACTS_PATH, 16),
+    ),
+    ids=("v0.1.0", "v0.2.0", "v0.3.0"),
 )
 def test_every_published_cli_option_and_positional_contract_remains_additive(
     path: Path,

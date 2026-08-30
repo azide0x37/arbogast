@@ -6,6 +6,47 @@ All notable changes to Arbogast are documented here. The project follows
 
 ## [Unreleased]
 
+## [0.4.0] - 2026-08-30
+
+### Added
+
+- Canonical exact dyadics and closed real and complex balls, together with bounded exact
+  polynomial systems, numerical points, parameter paths, continuation tubes, and numerical
+  covers.
+- Automatic cover certification restricted to monic quadratic degree-two families with complete
+  discriminant branch data, and automatic real-centered recognition restricted to degree at most
+  2 and height at most 16; broader wire-format caps do not advertise broader algorithms.
+- Validated path continuation and condition bounds; exact discrete branch-cycle recovery only
+  from complete separated continuation and exact Nielsen-vertex binding only from a literal
+  computed-complete class match, plus a typed `braid_continue` boundary with identity passthrough
+  and an exact normalized quadratic (B_2) generator/inverse coefficient homotopy. Missing,
+  local-sheet-only, unwitnessed unsupported-cover, and general-word cases remain typed
+  non-conclusions; mismatched supplied witnesses are rejected as invalid inputs.
+- Bounded algebraic recognition followed by a separate exactification step that replays the
+  candidate polynomial against the exact system.
+- Projection-degree results that separately record a supplied regular-fiber count and an exact
+  generic-degree witness, plus exact weighted braid planning over a supplied finite action.
+- Portable numeric receipts, central certificates and claim graphs, strict agent contracts and
+  hazards, and three runnable journeys covering a two-sheet cover with one exact normalized
+  quadratic \(B_2\) homotopy, recognition and exactification of sqrt(2), and weighted exact braid
+  planning.
+
+### Proof and compatibility boundaries
+
+- A certified ball or continuation tube is validated numerical evidence, not an exact algebraic
+  value or proof of an exact braid target.
+- Nontrivial `braid_continue` is claimed only for the explicit normalized quadratic (B_2)
+  generator or inverse with its exact `QuadraticB2Homotopy`; local sheet-loop evidence and general
+  words do not cross that boundary.
+- A recognition candidate is not exact until `exactify` independently checks the exact equations
+  and candidate relation. Increasing precision alone does not close that proof obligation.
+- Counting one supplied regular fiber does not prove generic degree. The stronger conclusion is
+  emitted only when an exact generic witness is supplied and replayed.
+- Real numerical branch coordinates do not imply a real normalized model, and weighted shortest
+  paths are scoped to the declared finite action and cost map.
+- The 0.1, 0.2, and 0.3 APIs remain additive. The existing
+  `arbogast.hurwitz.weighted_braid_path` contract is unchanged.
+
 ## [0.3.0] - 2026-08-30
 
 ### Added
@@ -128,7 +169,8 @@ All notable changes to Arbogast are documented here. The project follows
   successors suspend. SSH, Slurm, cloud provisioning, and remote-license automation are extension
   points rather than bundled 0.1.0 features.
 
-[Unreleased]: https://github.com/azide0x37/arbogast/compare/v0.3.0...HEAD
+[Unreleased]: https://github.com/azide0x37/arbogast/compare/v0.4.0...HEAD
+[0.4.0]: https://github.com/azide0x37/arbogast/compare/v0.3.0...v0.4.0
 [0.3.0]: https://github.com/azide0x37/arbogast/compare/v0.2.0...v0.3.0
 [0.2.0]: https://github.com/azide0x37/arbogast/compare/v0.1.0...v0.2.0
 [0.1.0]: https://github.com/azide0x37/arbogast/releases/tag/v0.1.0

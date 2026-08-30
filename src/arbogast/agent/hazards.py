@@ -428,6 +428,132 @@ DEFAULT_HAZARDS = HazardRegistry(
             severity=HazardSeverity.ERROR,
         ),
         Hazard(
+            id="numeric.approximation-vs-exact-value",
+            triggered_by=(
+                "ComplexBall",
+                "RealBall",
+                "numeric.condition_number",
+                "numeric.recognize",
+            ),
+            message="A certified enclosure is validated numerical evidence, not an exact value.",
+            remediation=(
+                "Retain NUMERICAL status until a separate exactification witness replays exact "
+                "polynomial identities."
+            ),
+            severity=HazardSeverity.ERROR,
+        ),
+        Hazard(
+            id="numeric.continuation-vs-exact-braid-action",
+            triggered_by=(
+                "BraidContinuationResult",
+                "ContinuationResult",
+                "NumericalCover",
+                "QuadraticB2Homotopy",
+                "numeric.braid_continue",
+                "numeric.continue_path",
+            ),
+            message=(
+                "A validated numerical continuation endpoint is not by itself an exact braid "
+                "target."
+            ),
+            remediation=(
+                "Keep a bare endpoint numerical. Promote only the exact normalized quadratic "
+                "B2 generator or inverse with its QuadraticB2Homotopy; local sheet loops are "
+                "not a cover-coefficient homotopy."
+            ),
+            severity=HazardSeverity.ERROR,
+        ),
+        Hazard(
+            id="numeric.incomplete-tracking-vs-exact-branch-cycles",
+            triggered_by=(
+                "BranchCycleTuple",
+                "NielsenVertex",
+                "numeric.bind_vertex",
+                "numeric.branch_cycles",
+            ),
+            message=(
+                "Raw or incomplete numerical tracking does not justify an exact discrete branch "
+                "cycle tuple or Nielsen vertex."
+            ),
+            remediation=(
+                "Require complete separated continuation for every sheet and finite branch, the "
+                "exact infinity product convention, one generating product-one tuple, and a "
+                "literal computed-complete class match before exact promotion."
+            ),
+            severity=HazardSeverity.ERROR,
+        ),
+        Hazard(
+            id="numeric.recognition-candidate-vs-exactification",
+            triggered_by=(
+                "AlgebraicCandidate",
+                "numeric.exactify",
+                "numeric.recognize",
+            ),
+            message="An algebraic relation compatible with a ball is only a recognition candidate.",
+            remediation=(
+                "Call exactify with the pinned exact system and replay substitution before "
+                "emitting an exact claim."
+            ),
+            severity=HazardSeverity.ERROR,
+        ),
+        Hazard(
+            id="numeric.real-branch-points-vs-real-model",
+            triggered_by=("ExactCover", "NumericalCover", "numeric.branch_cycles"),
+            message="Numerically real branch coordinates do not prove a real normalized model.",
+            remediation=(
+                "Bind exact coefficients, normalization, and a real-structure witness before "
+                "claiming descent to the reals."
+            ),
+            severity=HazardSeverity.ERROR,
+        ),
+        Hazard(
+            id="numeric.label-permutation-vs-model-identity",
+            triggered_by=("NielsenVertex", "NumericalCover", "numeric.bind_vertex"),
+            message="Relabelling ordered numerical sheets or branches changes the model binding.",
+            remediation=(
+                "Preserve branch and sheet order and replay the explicit permutation witness "
+                "against the exact Nielsen vertex."
+            ),
+            severity=HazardSeverity.ERROR,
+        ),
+        Hazard(
+            id="numeric.precision-increase-vs-proof",
+            triggered_by=("NumericUnknown", "RecognitionBounds", "numeric.recognize"),
+            message="Increasing precision is not itself a proof rule.",
+            remediation=(
+                "Use additional precision only to construct a new explicit witness; replay that "
+                "witness before strengthening the claim status."
+            ),
+            severity=HazardSeverity.ERROR,
+        ),
+        Hazard(
+            id="numeric.regular-fiber-vs-generic-degree",
+            triggered_by=(
+                "DegreeResult",
+                "RegularFiberDegree",
+                "numeric.projection_degree",
+            ),
+            message="The cardinality of one supplied regular fiber is not a generic-degree proof.",
+            remediation=(
+                "Report the scoped regular-fiber count unless an exact generic witness proves "
+                "nondegeneracy and completeness on a generic locus."
+            ),
+            severity=HazardSeverity.ERROR,
+        ),
+        Hazard(
+            id="numeric.weight-vs-mathematical-shortest-path",
+            triggered_by=("WeightedBraidPlan", "numeric.weighted_braid_plan"),
+            message=(
+                "A minimum-cost word in one supplied finite action is not an intrinsic geometric "
+                "shortest path."
+            ),
+            remediation=(
+                "Scope optimality to the declared action graph, generator convention, and exact "
+                "nonnegative cost map."
+            ),
+            severity=HazardSeverity.ERROR,
+        ),
+        Hazard(
             id="fleet.pari-and-python-verification-task-separation",
             triggered_by=(
                 "backends.pari.arithmetic.v1",

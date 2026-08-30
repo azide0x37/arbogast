@@ -4,7 +4,7 @@
 
 <p align="center">
   <strong>Certificate-first computational mathematics for finite cohomology,
-  deformation, symmetry, and Hurwitz arithmetic.</strong>
+  deformation, validated numerics, symmetry, and Hurwitz arithmetic.</strong>
 </p>
 
 > “What does this?” she said at last. She’d meant it as a rhetorical question. Of course there
@@ -21,8 +21,8 @@
 
 Arbogast is for computations that are finite enough to check, large enough to distribute,
 and delicate enough that “the script returned this” is not an acceptable proof boundary.
-It keeps exact computations, imported facts, deductions, and conjectures separate, then joins
-them in a machine-readable **claim graph**.
+It keeps exact computations, validated numerical evidence, imported facts, deductions, and
+conjectures separate, then joins them in a machine-readable **claim graph**.
 
 ```text
 mathematical input
@@ -156,8 +156,43 @@ Every substantial result within the portable receipt limits retains the establis
 `certificate`, `claim()`, and `claim_graph()` boundary. The 0.3 operations are intentionally
 non-shardable: the implemented problems are small globally coupled finite linear systems, and
 splitting them would not create independently meaningful proof tasks. Read
-[Certified deformation](docs/deformation.md) for the exact numeric limits, supported inputs, and
+[Certified deformation](docs/deformation.md) for the exact limits, supported inputs, and
 deferrals.
+
+## Certified numeric-to-exact bridge in 0.4
+
+Arbogast 0.4 adds exact dyadics and closed real and complex balls, bounded polynomial systems,
+witnessed continuation, exact discrete branch-cycle recovery, exact Nielsen-vertex binding,
+bounded algebraic
+recognition and exactification, projection-degree witnesses, and weighted braid planning over a
+supplied finite action.
+
+The automatic cover slice is deliberately small: one monic quadratic in one sheet variable and
+one parameter, with a completely replayed discriminant divisor and projective infinity parity.
+Automatic recognition is limited to real-centered balls, degree at most 2, and height at most 16;
+larger serialized bounds produce `UnsupportedNumeric` rather than an unbounded search.
+
+The proof levels remain separate. A replayed ball or continuation tube is certified numerical
+evidence, not an exact algebraic value or an exact braid target. A recognition candidate becomes
+exact only after `exactify` independently substitutes it into the pinned exact system. A count in
+one supplied regular fiber is not called a generic degree unless a stronger exact generic witness
+is present. Likewise, numerically real branch coordinates do not prove that a normalized exact
+cover is defined over the reals. Raw trackings and a `NumericalCover` remain `NUMERICAL`; they
+cross to an exact discrete `BranchCycleTuple` only after complete separated continuation replay,
+and to an exact `NielsenVertex` only after a literal match in a computed-complete Nielsen class.
+Incomplete or ambiguous paths cannot cross either boundary.
+
+The public `braid_continue` boundary keeps local sheet loops separate from coefficient homotopy.
+It passes through the identity word and supports one genuine nontrivial exact slice: an explicit
+`QuadraticB2Homotopy` for the normalized (x^2-t(t-1)) cover and one (\sigma_0) generator or
+inverse. Absent witnesses, unwitnessed unsupported covers, the older local-sheet witness, and
+general words remain `NumericUnknown` or `UnsupportedNumeric`; a supplied witness bound to a
+different cover, word, endpoint, or action is rejected as invalid input.
+
+Numeric operations return typed unknown or unsupported outcomes when precision, witness data, or
+scope is insufficient. The portable surface requires no external numerical backend and exposes no
+generic evaluator. Read [Certified numeric-to-exact bridge](docs/numeric.md) for the complete
+boundary and the three runnable journeys.
 
 ## What 0.1.0 is—and is not
 
@@ -187,11 +222,11 @@ See [the theorem boundary](docs/theorem-boundaries.md) for the exact epistemic c
 
 ## Install
 
-Arbogast 0.3.0 requires Python 3.11 or newer. Pin the exact GitHub source tag with
+Arbogast 0.4.0 requires Python 3.11 or newer. Pin the exact GitHub source tag with
 [uv](https://docs.astral.sh/uv/):
 
 ```bash
-uv add "arbogast @ git+https://github.com/azide0x37/arbogast.git@v0.3.0"
+uv add "arbogast @ git+https://github.com/azide0x37/arbogast.git@v0.4.0"
 ```
 
 For a contributor checkout:
@@ -205,12 +240,14 @@ uv run arbogast version
 
 No external algebra backend is required for the portable examples. If an operation can use an
 external backend, install that system independently and inspect capability discovery before
-depending on it. The 0.3.0 surface retains the narrow FLINT matrix and GAP permutation-group
-discovery adapters, the closed operation-specific PARI arithmetic adapter, and the portable
-finite-exact deformation layer. The PARI path keeps explicit portable-versus-pinned verification
+depending on it. The 0.4.0 surface retains the narrow FLINT matrix and GAP permutation-group
+discovery adapters, the closed operation-specific PARI arithmetic adapter, the portable
+finite-exact deformation layer, and the backend-free validated numeric-to-exact bridge. The PARI
+path keeps explicit portable-versus-pinned verification
 requirements; see [Optional backends](docs/optional-backends.md),
 [Certified arithmetic](docs/certified-arithmetic.md), and
-[Certified deformation](docs/deformation.md).
+[Certified deformation](docs/deformation.md), and
+[Certified numeric-to-exact bridge](docs/numeric.md).
 
 ## Thirty-second tour
 
@@ -328,7 +365,7 @@ preconditions hold; missing transformations are reported as missing capabilities
 Campaign files serialize specifications, their campaign-owned `ClaimGraph`, and the authoritative
 event ledger, never executable Python callables. With the default `--fleet off`, `run` fails
 closed if the current runtime has no injected implementation for a named operation.
-`--fleet auto` creates an audited local worker pool and registry. In 0.3.0 that registry contains
+`--fleet auto` creates an audited local worker pool and registry. In 0.4.0 that registry contains
 the non-closing `fleet.echo.v1` plumbing plus declared local-`H^1`, localization, Selmer assembly,
 PARI replay, and portable Python certificate-replay tasks. Registry membership never turns a
 scheduler outcome into mathematics or executes a callable named by JSON. The runnable campaign
@@ -351,6 +388,7 @@ The public surface is organized by mathematical layer:
 | `arbogast.arithmetic` | Local conditions, Selmer kernels and groups, duality, aiming, and elementary descent outcomes |
 | `arbogast.deform` | Explicit finite deformation complexes, framed/equivariant spaces, finite lifts, rigidity, and certified fixed lifts |
 | `arbogast.hurwitz` | Nielsen classes, braid orbits, real structures, and components |
+| `arbogast.numeric` | Exact dyadics and balls, witnessed continuation, exactification, cover bindings, projection degree, and weighted braid plans |
 | `arbogast.claims` | Typed claims, theorem dependencies, and epistemic status |
 | `arbogast.cert` | Discovery receipts and independent verification certificates |
 | `arbogast.fleet` | Deterministic task specs, shards, artifact stores, and reduction |
@@ -443,6 +481,22 @@ backend.
   literal obstruction, separate unique and non-unique outcomes, and a fixed lift backed by an
   explicit contraction certificate.
 
+## Certified numeric-to-exact journeys
+
+The 0.4 examples are portable and require no external numerical or algebra backend.
+
+- [`two_sheet_cover`](examples/numeric/two_sheet_cover/) validates the two finite branch points of
+  the cover \(x^2-t(t-1)\), replays separated sheet continuations, recovers the branch cycles, and
+  binds them to one exact Nielsen vertex. It then proves the supported normalized quadratic
+  \(B_2\) generator homotopy while retaining absent-witness and general-word continuations as
+  `NumericUnknown`.
+- [`sqrt2_exactification`](examples/numeric/sqrt2_exactification/) keeps bounded recognition
+  separate from exact polynomial substitution, retains the ambiguous branch as `NumericUnknown`,
+  and rejects a damaged receipt.
+- [`weighted_braid_plan`](examples/numeric/weighted_braid_plan/) proves exact cost optimality in a
+  supplied finite action while showing that the selected word alone authorizes neither a numerical
+  endpoint nor an exact cover target.
+
 ## Reproducibility and theorem boundaries
 
 Arbogast distinguishes these layers:
@@ -518,7 +572,7 @@ additional permission.
 
 ## Status and citation
 
-Arbogast 0.3.0 is alpha research software. Certificate verification is intended to be small
+Arbogast 0.4.0 is alpha research software. Certificate verification is intended to be small
 and inspectable, but users remain responsible for auditing the hypotheses and imported facts
 of any theorem they rely on. See [SECURITY.md](SECURITY.md) for reporting integrity or
 parser issues and [CITATION.cff](CITATION.cff) for citation metadata.

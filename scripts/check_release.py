@@ -116,6 +116,39 @@ DEFORMATION_REQUIRED_PATHS: Final = (
     "tests/unit/test_deform_semantic_acceptance.py",
     "tests/unit/test_deform_surface_acceptance.py",
 )
+NUMERIC_INTRODUCED: Final = (0, 4, 0)
+NUMERIC_REQUIRED_PATHS: Final = (
+    "docs/numeric.md",
+    "docs/release-notes-0.4.0.md",
+    "src/arbogast/numeric/__init__.py",
+    "src/arbogast/numeric/_schema.py",
+    "src/arbogast/numeric/braid.py",
+    "src/arbogast/numeric/certificate.py",
+    "src/arbogast/numeric/continuation.py",
+    "src/arbogast/numeric/dyadic.py",
+    "src/arbogast/numeric/errors.py",
+    "src/arbogast/numeric/models.py",
+    "src/arbogast/numeric/outcomes.py",
+    "src/arbogast/numeric/projection.py",
+    "src/arbogast/numeric/recognition.py",
+    "src/arbogast/numeric/semantic.py",
+    "examples/numeric/README.md",
+    "examples/numeric/sqrt2_exactification/README.md",
+    "examples/numeric/sqrt2_exactification/run.py",
+    "examples/numeric/two_sheet_cover/README.md",
+    "examples/numeric/two_sheet_cover/fixture.py",
+    "examples/numeric/two_sheet_cover/run.py",
+    "examples/numeric/weighted_braid_plan/README.md",
+    "examples/numeric/weighted_braid_plan/run.py",
+    "tests/integration/test_numeric_examples_acceptance.py",
+    "tests/integration/test_numeric_fresh_process_acceptance.py",
+    "tests/unit/test_numeric_b2_homotopy.py",
+    "tests/unit/test_numeric_core.py",
+    "tests/unit/test_numeric_cover.py",
+    "tests/unit/test_numeric_schema_acceptance.py",
+    "tests/unit/test_numeric_surface_acceptance.py",
+    "tests/unit/test_numeric_weighted_braid.py",
+)
 TEXT_SUFFIXES: Final = {".cff", ".json", ".md", ".py", ".toml", ".yaml", ".yml"}
 SKIP_PARTS: Final = {".git", ".mypy_cache", ".pytest_cache", ".ruff_cache", ".venv"}
 UNRESOLVED_MARKERS: Final = ("TODO", "FIXME", "will be filled in")
@@ -234,6 +267,13 @@ def _deformation_release(version: str) -> bool:
     return (major, minor, patch) >= DEFORMATION_INTRODUCED
 
 
+def _numeric_release(version: str) -> bool:
+    if FINAL_VERSION_RE.fullmatch(version) is None:
+        return False
+    major, minor, patch = (int(part) for part in version.split("."))
+    return (major, minor, patch) >= NUMERIC_INTRODUCED
+
+
 def required_paths(version: str, *, root: Path = PROJECT_ROOT) -> tuple[str, ...]:
     """Return the release surface for ``version`` without forgetting old fixtures."""
 
@@ -257,11 +297,13 @@ def required_paths(version: str, *, root: Path = PROJECT_ROOT) -> tuple[str, ...
                     for record in fixtures
                     if isinstance(record, dict) and isinstance(record.get("path"), str)
                 )
-    additive = DEFORMATION_REQUIRED_PATHS if _deformation_release(version) else ()
+    deformation = DEFORMATION_REQUIRED_PATHS if _deformation_release(version) else ()
+    numeric = NUMERIC_REQUIRED_PATHS if _numeric_release(version) else ()
     paths = (
         *REQUIRED_PATHS,
         *indexed,
-        *additive,
+        *deformation,
+        *numeric,
         f"docs/release-notes-{version}.md",
     )
     return tuple(dict.fromkeys(paths))

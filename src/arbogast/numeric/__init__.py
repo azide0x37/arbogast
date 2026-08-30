@@ -1,0 +1,162 @@
+"""Bounded certificate-first numerical continuation and exact bridges."""
+
+from __future__ import annotations
+
+from .braid import (
+    BraidContinuationOutcome,
+    BraidContinuationResult,
+    BraidContinuationWitness,
+    BranchCycleOutcome,
+    BranchCycleTuple,
+    BranchLoop,
+    BranchTracking,
+    NielsenVertex,
+    NumericalCover,
+    QuadraticB2Homotopy,
+    VertexOutcome,
+    WeightedBraidPlan,
+    WeightedPlanOutcome,
+    bind_vertex,
+    braid_continue,
+    branch_cycles,
+    weighted_braid_plan,
+)
+from .certificate import (
+    PORTABLE_TRUST,
+    PORTABLE_VERIFIER,
+    RECEIPT_SCHEMAS,
+    NumericCertificateError,
+    NumericReceipt,
+    verify_numeric_receipt,
+)
+from .continuation import (
+    ConditionBound,
+    ConditionOutcome,
+    ContinuationOutcome,
+    ContinuationResult,
+    ContinuationStep,
+    ContinuationTube,
+    condition_number,
+    continue_path,
+)
+from .dyadic import ComplexBall, ComplexDyadic, Dyadic, RealBall
+from .errors import NumericError, NumericVerificationError, UnsupportedNumericOperation
+from .models import (
+    ExactCover,
+    ExactPolynomial,
+    NumericPoint,
+    ParameterPath,
+    Path,
+    Point,
+    PolynomialFamily,
+    PolynomialSystem,
+)
+from .outcomes import NumericUnknown, UnsupportedNumeric
+from .projection import (
+    DegreeResult,
+    GenericDegreeWitness,
+    ProjectionDegreeOutcome,
+    RegularFiberDegree,
+    RegularFiberWitness,
+    projection_degree,
+)
+from .recognition import (
+    AlgebraicCandidate,
+    ExactificationOutcome,
+    ExactificationResult,
+    RecognitionBounds,
+    RecognitionOutcome,
+    exactify,
+    recognize,
+)
+from .semantic import (
+    VERIFICATION_CHECKS,
+    VERIFICATION_GUARANTEES,
+    VERIFIER_NAME,
+    claim_for_result,
+    claim_graph_for_result,
+    verification_certificate_for_result,
+)
+
+Polynomial = ExactPolynomial
+System = PolynomialSystem
+Family = PolynomialFamily
+Cover = ExactCover
+NumericUnsupported = UnsupportedNumeric
+Unsupported = UnsupportedNumeric
+
+__all__ = [
+    "PORTABLE_TRUST",
+    "PORTABLE_VERIFIER",
+    "RECEIPT_SCHEMAS",
+    "VERIFICATION_CHECKS",
+    "VERIFICATION_GUARANTEES",
+    "VERIFIER_NAME",
+    "AlgebraicCandidate",
+    "BraidContinuationOutcome",
+    "BraidContinuationResult",
+    "BraidContinuationWitness",
+    "BranchCycleOutcome",
+    "BranchCycleTuple",
+    "BranchLoop",
+    "BranchTracking",
+    "ComplexBall",
+    "ComplexDyadic",
+    "ConditionBound",
+    "ConditionOutcome",
+    "ContinuationOutcome",
+    "ContinuationResult",
+    "ContinuationStep",
+    "ContinuationTube",
+    "Cover",
+    "DegreeResult",
+    "Dyadic",
+    "ExactCover",
+    "ExactPolynomial",
+    "ExactificationOutcome",
+    "ExactificationResult",
+    "Family",
+    "GenericDegreeWitness",
+    "NielsenVertex",
+    "NumericCertificateError",
+    "NumericError",
+    "NumericPoint",
+    "NumericReceipt",
+    "NumericUnknown",
+    "NumericUnsupported",
+    "NumericVerificationError",
+    "NumericalCover",
+    "ParameterPath",
+    "Path",
+    "Point",
+    "Polynomial",
+    "PolynomialFamily",
+    "PolynomialSystem",
+    "ProjectionDegreeOutcome",
+    "QuadraticB2Homotopy",
+    "RealBall",
+    "RecognitionBounds",
+    "RecognitionOutcome",
+    "RegularFiberDegree",
+    "RegularFiberWitness",
+    "System",
+    "Unsupported",
+    "UnsupportedNumeric",
+    "UnsupportedNumericOperation",
+    "VertexOutcome",
+    "WeightedBraidPlan",
+    "WeightedPlanOutcome",
+    "bind_vertex",
+    "braid_continue",
+    "branch_cycles",
+    "claim_for_result",
+    "claim_graph_for_result",
+    "condition_number",
+    "continue_path",
+    "exactify",
+    "projection_degree",
+    "recognize",
+    "verification_certificate_for_result",
+    "verify_numeric_receipt",
+    "weighted_braid_plan",
+]

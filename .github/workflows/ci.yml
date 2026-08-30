@@ -84,6 +84,12 @@ jobs:
           uv run python examples/hurwitz/m23_real_component/compute.py --output "${RUNNER_TEMP}/m23-claims.json"
           uv run python examples/hurwitz/m23_real_component/verify.py "${RUNNER_TEMP}/m23-claims.json"
 
+      - name: Run certified numeric-to-exact examples
+        run: |
+          uv run python examples/numeric/two_sheet_cover/run.py
+          uv run python examples/numeric/sqrt2_exactification/run.py
+          uv run python examples/numeric/weighted_braid_plan/run.py
+
   release-qualification:
     name: Exact release-artifact qualification
     runs-on: ubuntu-latest

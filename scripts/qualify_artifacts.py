@@ -34,6 +34,7 @@ COMMAND_TIMEOUT_SECONDS: Final = 300
 ARCHIVE_SCHEMA: Final = "arbogast.release-qualification/v1"
 COMPATIBILITY_INDEX: Final = "tests/fixtures/compat/index.json"
 DEFORMATION_INTRODUCED: Final = (0, 3, 0)
+NUMERIC_INTRODUCED: Final = (0, 4, 0)
 WHEEL_REQUIRED: Final = (
     "arbogast/__init__.py",
     "arbogast/py.typed",
@@ -106,6 +107,41 @@ DEFORMATION_SDIST_REQUIRED: Final = (
     "examples/deformation/finite_lifts/README.md",
     "examples/deformation/finite_lifts/run.py",
     *(f"src/{relative}" for relative in DEFORMATION_WHEEL_REQUIRED),
+)
+NUMERIC_WHEEL_REQUIRED: Final = (
+    "arbogast/numeric/__init__.py",
+    "arbogast/numeric/_schema.py",
+    "arbogast/numeric/braid.py",
+    "arbogast/numeric/certificate.py",
+    "arbogast/numeric/continuation.py",
+    "arbogast/numeric/dyadic.py",
+    "arbogast/numeric/errors.py",
+    "arbogast/numeric/models.py",
+    "arbogast/numeric/outcomes.py",
+    "arbogast/numeric/projection.py",
+    "arbogast/numeric/recognition.py",
+    "arbogast/numeric/semantic.py",
+)
+NUMERIC_SDIST_REQUIRED: Final = (
+    "docs/numeric.md",
+    "docs/release-notes-0.4.0.md",
+    "examples/numeric/README.md",
+    "examples/numeric/sqrt2_exactification/README.md",
+    "examples/numeric/sqrt2_exactification/run.py",
+    "examples/numeric/two_sheet_cover/README.md",
+    "examples/numeric/two_sheet_cover/fixture.py",
+    "examples/numeric/two_sheet_cover/run.py",
+    "examples/numeric/weighted_braid_plan/README.md",
+    "examples/numeric/weighted_braid_plan/run.py",
+    *(f"src/{relative}" for relative in NUMERIC_WHEEL_REQUIRED),
+    "tests/integration/test_numeric_examples_acceptance.py",
+    "tests/integration/test_numeric_fresh_process_acceptance.py",
+    "tests/unit/test_numeric_b2_homotopy.py",
+    "tests/unit/test_numeric_core.py",
+    "tests/unit/test_numeric_cover.py",
+    "tests/unit/test_numeric_schema_acceptance.py",
+    "tests/unit/test_numeric_surface_acceptance.py",
+    "tests/unit/test_numeric_weighted_braid.py",
 )
 POST_V020_COMPATIBILITY_REQUIRED: Final = (
     COMPATIBILITY_INDEX,
@@ -253,8 +289,9 @@ def required_wheel_paths(version: str) -> tuple[str, ...]:
     """Return the wheel surface appropriate for one final release version."""
 
     version_key = _version_key(version)
-    additive = DEFORMATION_WHEEL_REQUIRED if version_key >= DEFORMATION_INTRODUCED else ()
-    return tuple(dict.fromkeys((*WHEEL_REQUIRED, *additive)))
+    deformation = DEFORMATION_WHEEL_REQUIRED if version_key >= DEFORMATION_INTRODUCED else ()
+    numeric = NUMERIC_WHEEL_REQUIRED if version_key >= NUMERIC_INTRODUCED else ()
+    return tuple(dict.fromkeys((*WHEEL_REQUIRED, *deformation, *numeric)))
 
 
 def required_sdist_paths(
@@ -271,6 +308,8 @@ def required_sdist_paths(
     if version_key >= DEFORMATION_INTRODUCED:
         additive = (*POST_V020_COMPATIBILITY_REQUIRED, *DEFORMATION_SDIST_REQUIRED)
         compatibility = _prior_compatibility_paths(payloads, version, label=label)
+    if version_key >= NUMERIC_INTRODUCED:
+        additive = (*additive, *NUMERIC_SDIST_REQUIRED)
     return tuple(
         dict.fromkeys(
             (
@@ -787,6 +826,14 @@ def _packaged_example_commands(
             (
                 (str(python), "examples/deformation/exact_spaces/run.py"),
                 (str(python), "examples/deformation/finite_lifts/run.py"),
+            )
+        )
+    if _version_key(version) >= NUMERIC_INTRODUCED:
+        commands.extend(
+            (
+                (str(python), "examples/numeric/two_sheet_cover/run.py"),
+                (str(python), "examples/numeric/sqrt2_exactification/run.py"),
+                (str(python), "examples/numeric/weighted_braid_plan/run.py"),
             )
         )
     return tuple(commands)

@@ -10,7 +10,7 @@ from arbogast.proof import ObligationClass, ProofGap, ProofObligation
 def test_version_and_describe_json_are_stable(capsys) -> None:  # type: ignore[no-untyped-def]
     assert main(("version", "--json")) == 0
     version = json.loads(capsys.readouterr().out)
-    assert version == {"schema": "arbogast.cli.version.v1", "version": "0.3.0"}
+    assert version == {"schema": "arbogast.cli.version.v1", "version": "0.4.0"}
 
     assert main(("describe", "cohom.h1", "--json")) == 0
     description = json.loads(capsys.readouterr().out)

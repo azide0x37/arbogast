@@ -102,6 +102,7 @@ _PORTABLE_PYTHON_VERIFIERS = frozenset(
         "hurwitz.real_census",
         "hurwitz.real_structure",
         "hurwitz.reduced",
+        "numeric.exact-bridge.v1",
     }
 )
 

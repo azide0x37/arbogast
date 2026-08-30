@@ -163,6 +163,63 @@ _BUILTIN_TYPE_PORTS: dict[str, tuple[tuple[str, ...], tuple[str, ...]]] = {
         ("ClaimGraph",),
     ),
     "deform.verify_receipt": (("DeformationReceipt",), ("tuple[str, ...]",)),
+    "numeric.continue_path": (
+        (
+            "PolynomialFamily | PolynomialSystem",
+            "NumericPoint",
+            "ParameterPath",
+            "ContinuationTube | None",
+        ),
+        ("ContinuationResult | NumericUnknown | UnsupportedNumeric",),
+    ),
+    "numeric.condition_number": (
+        ("PolynomialSystem", "NumericPoint", "InverseJacobianMatrix | None"),
+        ("ConditionBound | NumericUnknown | UnsupportedNumeric",),
+    ),
+    "numeric.branch_cycles": (
+        ("NumericalCover",),
+        ("BranchCycleTuple | NumericUnknown",),
+    ),
+    "numeric.bind_vertex": (
+        ("NumericalCover", "NielsenClass", "NielsenTuple | int | None"),
+        ("NielsenVertex | NumericUnknown | UnsupportedNumeric",),
+    ),
+    "numeric.braid_continue": (
+        (
+            "NumericalCover",
+            "BraidWord",
+            "BraidContinuationWitness | QuadraticB2Homotopy | None",
+        ),
+        ("NumericalCover | BraidContinuationResult | NumericUnknown | UnsupportedNumeric",),
+    ),
+    "numeric.recognize": (
+        ("ComplexBall | RealBall", "RecognitionBounds | None"),
+        ("AlgebraicCandidate | NumericUnknown | UnsupportedNumeric",),
+    ),
+    "numeric.exactify": (
+        ("NumericPoint", "AlgebraicCandidate | None", "RecognitionBounds | None"),
+        ("ExactificationResult | NumericUnknown | UnsupportedNumeric",),
+    ),
+    "numeric.projection_degree": (
+        (
+            "ExactPolynomial | PolynomialSystem | ExactCover",
+            "ProjectionFunctionSequence",
+            "RegularFiberWitness | None",
+            "GenericDegreeWitness | None",
+        ),
+        ("DegreeResult | RegularFiberDegree | NumericUnknown | UnsupportedNumeric",),
+    ),
+    "numeric.weighted_braid_plan": (
+        ("BraidAction", "NielsenTuple | int", "NielsenTuple | int", "GeneratorCostMap"),
+        ("WeightedBraidPlan | NumericUnknown | UnsupportedNumeric",),
+    ),
+    "numeric.verification_certificate": (
+        ("NumericSemanticResult | NumericReceipt",),
+        ("VerificationCertificate",),
+    ),
+    "numeric.claim": (("NumericSemanticResult | NumericReceipt",), ("Claim",)),
+    "numeric.claim_graph": (("NumericSemanticResult | NumericReceipt",), ("ClaimGraph",)),
+    "numeric.verify_receipt": (("NumericReceipt",), ("tuple[str, ...]",)),
 }
 
 

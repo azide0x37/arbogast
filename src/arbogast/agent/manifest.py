@@ -389,6 +389,84 @@ _MODULE_PROFILES = {
             ),
         ),
     ),
+    "arbogast.numeric": _ModuleProfile(
+        (
+            "Bounded validated continuation, exact discrete branch-cycle and Nielsen binding "
+            "only after complete numerical replay, a witnessed normalized quadratic B2 slice "
+            "with typed deferrals beyond it, recognition, exactification, projection witnesses, "
+            "and exact weighted braid plans."
+        ),
+        (
+            "AlgebraicCandidate",
+            "BraidContinuationResult",
+            "BraidContinuationWitness",
+            "BranchCycleTuple",
+            "BranchLoop",
+            "BranchTracking",
+            "ComplexBall",
+            "ComplexDyadic",
+            "ConditionBound",
+            "ContinuationResult",
+            "ContinuationStep",
+            "ContinuationTube",
+            "DegreeResult",
+            "Dyadic",
+            "ExactCover",
+            "ExactificationResult",
+            "ExactPolynomial",
+            "GenericDegreeWitness",
+            "NielsenVertex",
+            "NumericReceipt",
+            "NumericPoint",
+            "NumericUnknown",
+            "NumericalCover",
+            "ParameterPath",
+            "PolynomialFamily",
+            "PolynomialSystem",
+            "QuadraticB2Homotopy",
+            "RecognitionBounds",
+            "RegularFiberDegree",
+            "RegularFiberWitness",
+            "UnsupportedNumeric",
+            "WeightedBraidPlan",
+        ),
+        (
+            (
+                "Canonical numerical identities use normalized exact dyadics and closed balls, "
+                "never floats."
+            ),
+            (
+                "Validated continuation certifies its tube and numerical endpoint without "
+                "silently proving an exact braid target; only the normalized quadratic B2 "
+                "generator or inverse has an exact coefficient-homotopy witness in 0.4."
+            ),
+            (
+                "Only complete separated tracking may promote to an exact discrete "
+                "BranchCycleTuple, and only a literal computed-complete match may promote to an "
+                "exact NielsenVertex."
+            ),
+            (
+                "Recognition produces a bounded candidate; exactification separately replays "
+                "the exact polynomial relation and system equations."
+            ),
+            (
+                "Projection results distinguish a count in one supplied regular fiber from a "
+                "certified generic degree."
+            ),
+            (
+                "Weighted braid optimality is exact only within the supplied finite action, "
+                "generator convention, and cost map."
+            ),
+        ),
+        (
+            "Do not promote a ball, condition bound, or continuation endpoint to an exact value.",
+            "Do not present local sheet-loop evidence as a nontrivial cover-coefficient homotopy.",
+            "Do not treat greater precision as a substitute for an exactification witness.",
+            "Do not infer a real model from numerically real branch coordinates.",
+            "Do not identify a regular-fiber count with generic degree without a generic witness.",
+            "Do not expose a generic backend evaluator or backend-local numerical identity.",
+        ),
+    ),
     "arbogast.hurwitz": _ModuleProfile(
         "Finite Nielsen classes, braid actions, real structures, and component invariants.",
         ("BraidAction", "HurwitzComponent", "NielsenClass", "NielsenTuple"),

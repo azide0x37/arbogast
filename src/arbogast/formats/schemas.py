@@ -129,6 +129,104 @@ DEFORM_RIGID_RECEIPT_SCHEMA_V1: Final = "arbogast.deform.rigid-receipt/v1"
 DEFORM_NONRIGID_RECEIPT_SCHEMA_V1: Final = "arbogast.deform.nonrigid-receipt/v1"
 DEFORM_UNSUPPORTED_RECEIPT_SCHEMA_V1: Final = "arbogast.deform.unsupported-receipt/v1"
 
+# Exact-dyadic numerical bridge identities introduced in 0.4.0.  Runtime
+# objects and proving receipts evolve independently: a future package release
+# may keep reading these v1 documents while adding a separately named schema.
+NUMERIC_DYADIC_SCHEMA_V1: Final = "arbogast.numeric.dyadic/v1"
+NUMERIC_COMPLEX_DYADIC_SCHEMA_V1: Final = "arbogast.numeric.complex-dyadic/v1"
+NUMERIC_REAL_BALL_SCHEMA_V1: Final = "arbogast.numeric.real-ball/v1"
+NUMERIC_COMPLEX_BALL_SCHEMA_V1: Final = "arbogast.numeric.complex-ball/v1"
+NUMERIC_EXACT_POLYNOMIAL_SCHEMA_V1: Final = "arbogast.numeric.exact-polynomial/v1"
+NUMERIC_POLYNOMIAL_SYSTEM_SCHEMA_V1: Final = "arbogast.numeric.polynomial-system/v1"
+NUMERIC_POLYNOMIAL_FAMILY_SCHEMA_V1: Final = "arbogast.numeric.polynomial-family/v1"
+NUMERIC_PARAMETER_PATH_SCHEMA_V1: Final = "arbogast.numeric.parameter-path/v1"
+NUMERIC_POINT_SCHEMA_V1: Final = "arbogast.numeric.point/v1"
+NUMERIC_EXACT_COVER_SCHEMA_V1: Final = "arbogast.numeric.exact-cover/v1"
+NUMERIC_CONTINUATION_STEP_SCHEMA_V1: Final = "arbogast.numeric.continuation-step/v1"
+NUMERIC_CONTINUATION_TUBE_SCHEMA_V1: Final = "arbogast.numeric.continuation-tube/v1"
+NUMERIC_CONTINUATION_RESULT_SCHEMA_V1: Final = "arbogast.numeric.continuation-result/v1"
+NUMERIC_CONDITION_BOUND_SCHEMA_V1: Final = "arbogast.numeric.condition-bound/v1"
+NUMERIC_RECOGNITION_BOUNDS_SCHEMA_V1: Final = "arbogast.numeric.recognition-bounds/v1"
+NUMERIC_ALGEBRAIC_CANDIDATE_SCHEMA_V1: Final = "arbogast.numeric.algebraic-candidate/v1"
+NUMERIC_EXACTIFICATION_RESULT_SCHEMA_V1: Final = "arbogast.numeric.exactification-result/v1"
+NUMERIC_REGULAR_FIBER_WITNESS_SCHEMA_V1: Final = "arbogast.numeric.regular-fiber-witness/v1"
+NUMERIC_GENERIC_DEGREE_WITNESS_SCHEMA_V1: Final = "arbogast.numeric.generic-degree-witness/v1"
+NUMERIC_REGULAR_FIBER_DEGREE_SCHEMA_V1: Final = "arbogast.numeric.regular-fiber-degree/v1"
+NUMERIC_DEGREE_RESULT_SCHEMA_V1: Final = "arbogast.numeric.degree-result/v1"
+NUMERIC_BRANCH_LOOP_SCHEMA_V1: Final = "arbogast.numeric.branch-loop/v1"
+NUMERIC_BRANCH_TRACKING_SCHEMA_V1: Final = "arbogast.numeric.branch-tracking/v1"
+NUMERIC_NUMERICAL_COVER_SCHEMA_V1: Final = "arbogast.numeric.numerical-cover/v1"
+NUMERIC_BRANCH_CYCLE_TUPLE_SCHEMA_V1: Final = "arbogast.numeric.branch-cycle-tuple/v1"
+NUMERIC_NIELSEN_VERTEX_SCHEMA_V1: Final = "arbogast.numeric.nielsen-vertex/v1"
+NUMERIC_BRAID_CONTINUATION_WITNESS_SCHEMA_V1: Final = (
+    "arbogast.numeric.braid-continuation-witness/v1"
+)
+NUMERIC_QUADRATIC_B2_HOMOTOPY_SCHEMA_V1: Final = "arbogast.numeric.quadratic-b2-homotopy/v1"
+NUMERIC_BRAID_CONTINUATION_RESULT_SCHEMA_V1: Final = "arbogast.numeric.braid-continuation-result/v1"
+NUMERIC_WEIGHTED_BRAID_PLAN_SCHEMA_V1: Final = "arbogast.numeric.weighted-braid-plan/v1"
+NUMERIC_UNKNOWN_SCHEMA_V1: Final = "arbogast.numeric.unknown/v1"
+NUMERIC_UNSUPPORTED_SCHEMA_V1: Final = "arbogast.numeric.unsupported/v1"
+
+# Every numeric runtime identity has a one-to-one receipt identity.  Receipts
+# share the central VerificationCertificate envelope but remain independently
+# versioned so their exact replay contracts cannot be inferred from objects.
+NUMERIC_DYADIC_RECEIPT_SCHEMA_V1: Final = "arbogast.numeric.dyadic-receipt/v1"
+NUMERIC_COMPLEX_DYADIC_RECEIPT_SCHEMA_V1: Final = "arbogast.numeric.complex-dyadic-receipt/v1"
+NUMERIC_REAL_BALL_RECEIPT_SCHEMA_V1: Final = "arbogast.numeric.real-ball-receipt/v1"
+NUMERIC_COMPLEX_BALL_RECEIPT_SCHEMA_V1: Final = "arbogast.numeric.complex-ball-receipt/v1"
+NUMERIC_EXACT_POLYNOMIAL_RECEIPT_SCHEMA_V1: Final = "arbogast.numeric.exact-polynomial-receipt/v1"
+NUMERIC_POLYNOMIAL_SYSTEM_RECEIPT_SCHEMA_V1: Final = "arbogast.numeric.polynomial-system-receipt/v1"
+NUMERIC_POLYNOMIAL_FAMILY_RECEIPT_SCHEMA_V1: Final = "arbogast.numeric.polynomial-family-receipt/v1"
+NUMERIC_PARAMETER_PATH_RECEIPT_SCHEMA_V1: Final = "arbogast.numeric.parameter-path-receipt/v1"
+NUMERIC_POINT_RECEIPT_SCHEMA_V1: Final = "arbogast.numeric.point-receipt/v1"
+NUMERIC_EXACT_COVER_RECEIPT_SCHEMA_V1: Final = "arbogast.numeric.exact-cover-receipt/v1"
+NUMERIC_CONTINUATION_STEP_RECEIPT_SCHEMA_V1: Final = "arbogast.numeric.continuation-step-receipt/v1"
+NUMERIC_CONTINUATION_TUBE_RECEIPT_SCHEMA_V1: Final = "arbogast.numeric.continuation-tube-receipt/v1"
+NUMERIC_CONTINUATION_RESULT_RECEIPT_SCHEMA_V1: Final = (
+    "arbogast.numeric.continuation-result-receipt/v1"
+)
+NUMERIC_CONDITION_BOUND_RECEIPT_SCHEMA_V1: Final = "arbogast.numeric.condition-bound-receipt/v1"
+NUMERIC_RECOGNITION_BOUNDS_RECEIPT_SCHEMA_V1: Final = (
+    "arbogast.numeric.recognition-bounds-receipt/v1"
+)
+NUMERIC_ALGEBRAIC_CANDIDATE_RECEIPT_SCHEMA_V1: Final = (
+    "arbogast.numeric.algebraic-candidate-receipt/v1"
+)
+NUMERIC_EXACTIFICATION_RESULT_RECEIPT_SCHEMA_V1: Final = (
+    "arbogast.numeric.exactification-result-receipt/v1"
+)
+NUMERIC_REGULAR_FIBER_WITNESS_RECEIPT_SCHEMA_V1: Final = (
+    "arbogast.numeric.regular-fiber-witness-receipt/v1"
+)
+NUMERIC_GENERIC_DEGREE_WITNESS_RECEIPT_SCHEMA_V1: Final = (
+    "arbogast.numeric.generic-degree-witness-receipt/v1"
+)
+NUMERIC_REGULAR_FIBER_DEGREE_RECEIPT_SCHEMA_V1: Final = (
+    "arbogast.numeric.regular-fiber-degree-receipt/v1"
+)
+NUMERIC_DEGREE_RESULT_RECEIPT_SCHEMA_V1: Final = "arbogast.numeric.degree-result-receipt/v1"
+NUMERIC_BRANCH_LOOP_RECEIPT_SCHEMA_V1: Final = "arbogast.numeric.branch-loop-receipt/v1"
+NUMERIC_BRANCH_TRACKING_RECEIPT_SCHEMA_V1: Final = "arbogast.numeric.branch-tracking-receipt/v1"
+NUMERIC_NUMERICAL_COVER_RECEIPT_SCHEMA_V1: Final = "arbogast.numeric.numerical-cover-receipt/v1"
+NUMERIC_BRANCH_CYCLE_TUPLE_RECEIPT_SCHEMA_V1: Final = (
+    "arbogast.numeric.branch-cycle-tuple-receipt/v1"
+)
+NUMERIC_NIELSEN_VERTEX_RECEIPT_SCHEMA_V1: Final = "arbogast.numeric.nielsen-vertex-receipt/v1"
+NUMERIC_BRAID_CONTINUATION_WITNESS_RECEIPT_SCHEMA_V1: Final = (
+    "arbogast.numeric.braid-continuation-witness-receipt/v1"
+)
+NUMERIC_QUADRATIC_B2_HOMOTOPY_RECEIPT_SCHEMA_V1: Final = (
+    "arbogast.numeric.quadratic-b2-homotopy-receipt/v1"
+)
+NUMERIC_BRAID_CONTINUATION_RESULT_RECEIPT_SCHEMA_V1: Final = (
+    "arbogast.numeric.braid-continuation-result-receipt/v1"
+)
+NUMERIC_WEIGHTED_BRAID_PLAN_RECEIPT_SCHEMA_V1: Final = (
+    "arbogast.numeric.weighted-braid-plan-receipt/v1"
+)
+NUMERIC_UNKNOWN_RECEIPT_SCHEMA_V1: Final = "arbogast.numeric.unknown-receipt/v1"
+NUMERIC_UNSUPPORTED_RECEIPT_SCHEMA_V1: Final = "arbogast.numeric.unsupported-receipt/v1"
+
 
 class SchemaError(ValueError):
     """Raised for an unknown schema or structurally invalid document."""
@@ -653,6 +751,367 @@ _DEFINITIONS: Final = {
                 (DEFORM_RIGID_RECEIPT_SCHEMA_V1, "Rigid-deformation receipt"),
                 (DEFORM_NONRIGID_RECEIPT_SCHEMA_V1, "Non-rigid-deformation receipt"),
                 (DEFORM_UNSUPPORTED_RECEIPT_SCHEMA_V1, "Unsupported-deformation receipt"),
+            )
+        ),
+        *(
+            SchemaDefinition(identifier, required, title)
+            for identifier, required, title in (
+                (
+                    NUMERIC_DYADIC_SCHEMA_V1,
+                    ("exponent", "mantissa", "type"),
+                    "Exact dyadic",
+                ),
+                (
+                    NUMERIC_COMPLEX_DYADIC_SCHEMA_V1,
+                    ("imag", "real", "type"),
+                    "Exact complex dyadic",
+                ),
+                (
+                    NUMERIC_REAL_BALL_SCHEMA_V1,
+                    ("center", "radius", "type"),
+                    "Closed exact real ball",
+                ),
+                (
+                    NUMERIC_COMPLEX_BALL_SCHEMA_V1,
+                    ("center", "radius", "type"),
+                    "Closed exact complex ball",
+                ),
+                (
+                    NUMERIC_EXACT_POLYNOMIAL_SCHEMA_V1,
+                    ("nvariables", "terms", "type", "variable_names"),
+                    "Exact sparse polynomial",
+                ),
+                (
+                    NUMERIC_POLYNOMIAL_SYSTEM_SCHEMA_V1,
+                    ("label", "nvariables", "polynomials", "type"),
+                    "Exact polynomial system",
+                ),
+                (
+                    NUMERIC_POLYNOMIAL_FAMILY_SCHEMA_V1,
+                    ("nvariables", "parameter_name", "polynomials", "type"),
+                    "Exact one-parameter polynomial family",
+                ),
+                (
+                    NUMERIC_PARAMETER_PATH_SCHEMA_V1,
+                    ("type", "vertices"),
+                    "Exact parameter path",
+                ),
+                (
+                    NUMERIC_POINT_SCHEMA_V1,
+                    ("coordinates", "system", "type"),
+                    "Certified numeric point",
+                ),
+                (
+                    NUMERIC_EXACT_COVER_SCHEMA_V1,
+                    (
+                        "branch_points",
+                        "degree",
+                        "discriminant",
+                        "family",
+                        "infinity_branch",
+                        "infinity_convention",
+                        "label",
+                        "type",
+                    ),
+                    "Exact bounded cover model",
+                ),
+                (
+                    NUMERIC_CONTINUATION_STEP_SCHEMA_V1,
+                    (
+                        "contraction_bound",
+                        "domain",
+                        "family",
+                        "inverse_jacobian",
+                        "parameter_end",
+                        "parameter_start",
+                        "residual_bound",
+                        "type",
+                    ),
+                    "Certified continuation step",
+                ),
+                (
+                    NUMERIC_CONTINUATION_TUBE_SCHEMA_V1,
+                    ("family", "path", "start_point", "steps", "type"),
+                    "Certified continuation tube",
+                ),
+                (
+                    NUMERIC_CONTINUATION_RESULT_SCHEMA_V1,
+                    ("endpoint", "tube", "type"),
+                    "Certified continuation result",
+                ),
+                (
+                    NUMERIC_CONDITION_BOUND_SCHEMA_V1,
+                    (
+                        "bound",
+                        "inverse_jacobian",
+                        "inverse_norm",
+                        "jacobian_norm",
+                        "point",
+                        "system",
+                        "type",
+                    ),
+                    "Certified Jacobian condition bound",
+                ),
+                (
+                    NUMERIC_RECOGNITION_BOUNDS_SCHEMA_V1,
+                    ("max_degree", "max_height", "type"),
+                    "Exact algebraic-recognition bounds",
+                ),
+                (
+                    NUMERIC_ALGEBRAIC_CANDIDATE_SCHEMA_V1,
+                    (
+                        "bounds",
+                        "isolating_interval",
+                        "minimal_polynomial",
+                        "source",
+                        "type",
+                    ),
+                    "Bounded algebraic candidate",
+                ),
+                (
+                    NUMERIC_EXACTIFICATION_RESULT_SCHEMA_V1,
+                    ("candidate", "point", "type"),
+                    "Exactification result",
+                ),
+                (
+                    NUMERIC_REGULAR_FIBER_WITNESS_SCHEMA_V1,
+                    ("degree", "factors", "system", "type"),
+                    "Complete regular-fiber witness",
+                ),
+                (
+                    NUMERIC_GENERIC_DEGREE_WITNESS_SCHEMA_V1,
+                    ("degree", "polynomial", "type"),
+                    "Generic polynomial-degree witness",
+                ),
+                (
+                    NUMERIC_REGULAR_FIBER_DEGREE_SCHEMA_V1,
+                    ("degree", "generic", "type", "witness"),
+                    "Scoped regular-fiber degree",
+                ),
+                (
+                    NUMERIC_DEGREE_RESULT_SCHEMA_V1,
+                    ("degree", "generic", "type", "witness"),
+                    "Certified generic degree",
+                ),
+                (
+                    NUMERIC_BRANCH_LOOP_SCHEMA_V1,
+                    ("branch_index", "model", "path", "type"),
+                    "Exact branch loop",
+                ),
+                (
+                    NUMERIC_BRANCH_TRACKING_SCHEMA_V1,
+                    ("continuations", "loop", "permutation", "source_points", "type"),
+                    "Complete branch tracking",
+                ),
+                (
+                    NUMERIC_NUMERICAL_COVER_SCHEMA_V1,
+                    ("base_parameter", "fiber_points", "model", "trackings", "type"),
+                    "Certified numerical cover",
+                ),
+                (
+                    NUMERIC_BRANCH_CYCLE_TUPLE_SCHEMA_V1,
+                    ("cover", "entries", "type"),
+                    "Tracked branch-cycle tuple",
+                ),
+                (
+                    NUMERIC_NIELSEN_VERTEX_SCHEMA_V1,
+                    (
+                        "base_parameter",
+                        "fiber_points",
+                        "model",
+                        "nielsen",
+                        "trackings",
+                        "type",
+                    ),
+                    "Numerical cover bound to a Nielsen vertex",
+                ),
+                (
+                    NUMERIC_BRAID_CONTINUATION_WITNESS_SCHEMA_V1,
+                    (
+                        "action",
+                        "sheet_continuations",
+                        "sheet_permutation",
+                        "source",
+                        "target",
+                        "type",
+                        "word",
+                    ),
+                    "Local-sheet braid continuation witness",
+                ),
+                (
+                    NUMERIC_QUADRATIC_B2_HOMOTOPY_SCHEMA_V1,
+                    (
+                        "action",
+                        "branch_paths",
+                        "coefficient_homotopy",
+                        "collision_sos",
+                        "convention",
+                        "orientation",
+                        "q",
+                        "sheet_paths",
+                        "sheet_permutation",
+                        "source",
+                        "target",
+                        "type",
+                        "word",
+                    ),
+                    "Exact normalized quadratic B2 homotopy",
+                ),
+                (
+                    NUMERIC_BRAID_CONTINUATION_RESULT_SCHEMA_V1,
+                    ("homotopy", "type"),
+                    "Exact braid continuation result",
+                ),
+                (
+                    NUMERIC_WEIGHTED_BRAID_PLAN_SCHEMA_V1,
+                    (
+                        "costs",
+                        "distances",
+                        "graph",
+                        "source",
+                        "steps",
+                        "target",
+                        "total_cost",
+                        "type",
+                        "word",
+                    ),
+                    "Exact weighted braid plan",
+                ),
+                (
+                    NUMERIC_UNKNOWN_SCHEMA_V1,
+                    ("operation", "reason", "requested", "type"),
+                    "Explicit unknown numeric result",
+                ),
+                (
+                    NUMERIC_UNSUPPORTED_SCHEMA_V1,
+                    ("operation", "reason", "requested", "supported", "type"),
+                    "Unsupported numeric result",
+                ),
+            )
+        ),
+        *(
+            SchemaDefinition(
+                identifier,
+                (
+                    "assumptions",
+                    "completeness",
+                    "dependencies",
+                    "kind",
+                    "layer",
+                    "payload",
+                    "verifier_trust",
+                ),
+                title,
+                marker="schema_version",
+            )
+            for identifier, title in (
+                (NUMERIC_DYADIC_RECEIPT_SCHEMA_V1, "Exact-dyadic numeric receipt"),
+                (
+                    NUMERIC_COMPLEX_DYADIC_RECEIPT_SCHEMA_V1,
+                    "Complex-dyadic numeric receipt",
+                ),
+                (NUMERIC_REAL_BALL_RECEIPT_SCHEMA_V1, "Real-ball numeric receipt"),
+                (NUMERIC_COMPLEX_BALL_RECEIPT_SCHEMA_V1, "Complex-ball numeric receipt"),
+                (
+                    NUMERIC_EXACT_POLYNOMIAL_RECEIPT_SCHEMA_V1,
+                    "Exact-polynomial numeric receipt",
+                ),
+                (
+                    NUMERIC_POLYNOMIAL_SYSTEM_RECEIPT_SCHEMA_V1,
+                    "Polynomial-system numeric receipt",
+                ),
+                (
+                    NUMERIC_POLYNOMIAL_FAMILY_RECEIPT_SCHEMA_V1,
+                    "Polynomial-family numeric receipt",
+                ),
+                (
+                    NUMERIC_PARAMETER_PATH_RECEIPT_SCHEMA_V1,
+                    "Parameter-path numeric receipt",
+                ),
+                (NUMERIC_POINT_RECEIPT_SCHEMA_V1, "Numeric-point receipt"),
+                (NUMERIC_EXACT_COVER_RECEIPT_SCHEMA_V1, "Exact-cover numeric receipt"),
+                (
+                    NUMERIC_CONTINUATION_STEP_RECEIPT_SCHEMA_V1,
+                    "Continuation-step numeric receipt",
+                ),
+                (
+                    NUMERIC_CONTINUATION_TUBE_RECEIPT_SCHEMA_V1,
+                    "Continuation-tube numeric receipt",
+                ),
+                (
+                    NUMERIC_CONTINUATION_RESULT_RECEIPT_SCHEMA_V1,
+                    "Continuation-result numeric receipt",
+                ),
+                (
+                    NUMERIC_CONDITION_BOUND_RECEIPT_SCHEMA_V1,
+                    "Condition-bound numeric receipt",
+                ),
+                (
+                    NUMERIC_RECOGNITION_BOUNDS_RECEIPT_SCHEMA_V1,
+                    "Recognition-bounds numeric receipt",
+                ),
+                (
+                    NUMERIC_ALGEBRAIC_CANDIDATE_RECEIPT_SCHEMA_V1,
+                    "Algebraic-candidate numeric receipt",
+                ),
+                (
+                    NUMERIC_EXACTIFICATION_RESULT_RECEIPT_SCHEMA_V1,
+                    "Exactification-result numeric receipt",
+                ),
+                (
+                    NUMERIC_REGULAR_FIBER_WITNESS_RECEIPT_SCHEMA_V1,
+                    "Regular-fiber-witness numeric receipt",
+                ),
+                (
+                    NUMERIC_GENERIC_DEGREE_WITNESS_RECEIPT_SCHEMA_V1,
+                    "Generic-degree-witness numeric receipt",
+                ),
+                (
+                    NUMERIC_REGULAR_FIBER_DEGREE_RECEIPT_SCHEMA_V1,
+                    "Regular-fiber-degree numeric receipt",
+                ),
+                (
+                    NUMERIC_DEGREE_RESULT_RECEIPT_SCHEMA_V1,
+                    "Generic-degree-result numeric receipt",
+                ),
+                (NUMERIC_BRANCH_LOOP_RECEIPT_SCHEMA_V1, "Branch-loop numeric receipt"),
+                (
+                    NUMERIC_BRANCH_TRACKING_RECEIPT_SCHEMA_V1,
+                    "Branch-tracking numeric receipt",
+                ),
+                (
+                    NUMERIC_NUMERICAL_COVER_RECEIPT_SCHEMA_V1,
+                    "Numerical-cover receipt",
+                ),
+                (
+                    NUMERIC_BRANCH_CYCLE_TUPLE_RECEIPT_SCHEMA_V1,
+                    "Branch-cycle-tuple receipt",
+                ),
+                (
+                    NUMERIC_NIELSEN_VERTEX_RECEIPT_SCHEMA_V1,
+                    "Nielsen-vertex numeric receipt",
+                ),
+                (
+                    NUMERIC_BRAID_CONTINUATION_WITNESS_RECEIPT_SCHEMA_V1,
+                    "Braid-continuation-witness receipt",
+                ),
+                (
+                    NUMERIC_QUADRATIC_B2_HOMOTOPY_RECEIPT_SCHEMA_V1,
+                    "Quadratic-B2-homotopy receipt",
+                ),
+                (
+                    NUMERIC_BRAID_CONTINUATION_RESULT_RECEIPT_SCHEMA_V1,
+                    "Braid-continuation-result receipt",
+                ),
+                (
+                    NUMERIC_WEIGHTED_BRAID_PLAN_RECEIPT_SCHEMA_V1,
+                    "Weighted-braid-plan receipt",
+                ),
+                (NUMERIC_UNKNOWN_RECEIPT_SCHEMA_V1, "Unknown numeric-result receipt"),
+                (
+                    NUMERIC_UNSUPPORTED_RECEIPT_SCHEMA_V1,
+                    "Unsupported numeric-result receipt",
+                ),
             )
         ),
     )

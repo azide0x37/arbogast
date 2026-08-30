@@ -34,6 +34,14 @@ deformation_sdist_required = cast(
     tuple[str, ...],
     QUALIFIER["DEFORMATION_SDIST_REQUIRED"],
 )
+numeric_wheel_required = cast(
+    tuple[str, ...],
+    QUALIFIER["NUMERIC_WHEEL_REQUIRED"],
+)
+numeric_sdist_required = cast(
+    tuple[str, ...],
+    QUALIFIER["NUMERIC_SDIST_REQUIRED"],
+)
 compatibility_index = cast(str, QUALIFIER["COMPATIBILITY_INDEX"])
 required_wheel_paths = cast(Callable[[str], tuple[str, ...]], QUALIFIER["required_wheel_paths"])
 required_sdist_paths = cast(Callable[..., tuple[str, ...]], QUALIFIER["required_sdist_paths"])
@@ -182,6 +190,11 @@ def test_pre_deformation_release_surfaces_remain_unchanged() -> None:
         assert not set(deformation_sdist_required).intersection(required)
 
 
+def test_v030_release_surface_remains_free_of_numeric_040_paths() -> None:
+    assert set(numeric_wheel_required).isdisjoint(required_wheel_paths("0.3.0"))
+    assert set(numeric_sdist_required).isdisjoint(required_sdist_paths({}, "0.3.0"))
+
+
 def test_v030_release_trio_requires_and_binds_the_deformation_surface(tmp_path: Path) -> None:
     wheel_path = _wheel(tmp_path, version="0.3.0")
     sdist_path = _sdist(tmp_path, version="0.3.0")
@@ -227,10 +240,52 @@ def test_v030_release_trio_rejects_missing_deformation_and_prior_contracts(
         )
 
 
+def test_v040_release_trio_requires_and_binds_the_numeric_surface(tmp_path: Path) -> None:
+    wheel_path = _wheel(tmp_path, version="0.4.0")
+    sdist_path = _sdist(tmp_path, version="0.4.0")
+    source_path = _source_archive(tmp_path, version="0.4.0")
+
+    inspect_wheel(wheel_path, "0.4.0")
+    inspect_sdist(sdist_path, "0.4.0")
+    inspect_source_archive(source_path, "0.4.0")
+    cross_artifact_consistency(wheel_path, sdist_path, source_path, "0.4.0")
+
+    assert set(numeric_wheel_required).issubset(required_wheel_paths("0.4.0"))
+    with tarfile.open(sdist_path, "r:gz") as archive:
+        names = {member.name.removeprefix("arbogast-0.4.0/") for member in archive}
+    assert set(numeric_sdist_required).issubset(names)
+    assert "tests/unit/test_numeric_b2_homotopy.py" in numeric_sdist_required
+    assert "tests/unit/test_numeric_core.py" in numeric_sdist_required
+    assert "tests/unit/test_numeric_cover.py" in numeric_sdist_required
+    assert "tests/unit/test_numeric_weighted_braid.py" in numeric_sdist_required
+    assert "examples/numeric/two_sheet_cover/fixture.py" in numeric_sdist_required
+
+
+def test_v040_release_trio_fails_closed_for_every_numeric_path(tmp_path: Path) -> None:
+    for relative in numeric_wheel_required:
+        with pytest.raises(QualificationError, match=relative):
+            inspect_wheel(
+                _wheel(tmp_path, version="0.4.0", omit=relative),
+                "0.4.0",
+            )
+
+    for relative in numeric_sdist_required:
+        with pytest.raises(QualificationError, match=relative):
+            inspect_sdist(
+                _sdist(tmp_path, version="0.4.0", omit=relative),
+                "0.4.0",
+            )
+        with pytest.raises(QualificationError, match=relative):
+            inspect_source_archive(
+                _source_archive(tmp_path, version="0.4.0", omit=relative),
+                "0.4.0",
+            )
+
+
 def test_prior_compatibility_surface_is_derived_from_the_packaged_index() -> None:
     payload = (PROJECT_ROOT / compatibility_index).read_bytes()
     index = json.loads(payload)
-    required = set(required_sdist_paths({compatibility_index: payload}, "0.3.0"))
+    required = set(required_sdist_paths({compatibility_index: payload}, "0.4.0"))
 
     for release in index["releases"]:
         assert release["release_notes"]["path"] in required
@@ -244,21 +299,22 @@ def test_future_minor_release_adds_newly_indexed_prior_contracts() -> None:
     index["releases"].append(
         {
             "fixture_files": [
-                {"path": "tests/fixtures/compat/v0.3.0/release.json"},
-                {"path": "tests/fixtures/compat/v0.3.0/deformation-contracts.json"},
+                {"path": "tests/fixtures/compat/v0.4.0/release.json"},
+                {"path": "tests/fixtures/compat/v0.4.0/numeric-contracts.json"},
             ],
-            "release_notes": {"path": "docs/release-notes-0.3.0.md"},
-            "version": "0.3.0",
+            "release_notes": {"path": "docs/release-notes-0.4.0.md"},
+            "version": "0.4.0",
         }
     )
     payload = json.dumps(index).encode()
-    required = set(required_sdist_paths({compatibility_index: payload}, "0.4.0"))
+    required = set(required_sdist_paths({compatibility_index: payload}, "0.5.0"))
 
-    assert "tests/fixtures/compat/v0.3.0/release.json" in required
-    assert "tests/fixtures/compat/v0.3.0/deformation-contracts.json" in required
-    assert "docs/release-notes-0.3.0.md" in required
+    assert "tests/fixtures/compat/v0.4.0/release.json" in required
+    assert "tests/fixtures/compat/v0.4.0/numeric-contracts.json" in required
     assert "docs/release-notes-0.4.0.md" in required
+    assert "docs/release-notes-0.5.0.md" in required
     assert set(deformation_sdist_required).issubset(required)
+    assert set(numeric_sdist_required).issubset(required)
 
 
 def test_packaged_deformation_journeys_begin_with_v030(tmp_path: Path) -> None:
@@ -292,6 +348,14 @@ def test_packaged_deformation_journeys_begin_with_v030(tmp_path: Path) -> None:
     assert v020_scripts.isdisjoint(deformation_scripts)
     assert deformation_scripts.issubset(v030_scripts)
     assert deformation_scripts.issubset(v040_scripts)
+    numeric_scripts = {
+        "examples/numeric/two_sheet_cover/run.py",
+        "examples/numeric/sqrt2_exactification/run.py",
+        "examples/numeric/weighted_braid_plan/run.py",
+    }
+    assert v020_scripts.isdisjoint(numeric_scripts)
+    assert v030_scripts.isdisjoint(numeric_scripts)
+    assert numeric_scripts.issubset(v040_scripts)
     assert any("--with-pari" in command for command in v040_with_gp)
 
 
@@ -310,6 +374,9 @@ def test_release_workflow_derives_candidate_identity_and_preserves_ci_anchors() 
     assert "scripts/pari_anchor_payload.py" in workflow
     assert "tests/integration/test_pari_live.py" in workflow
     assert "--require-gp" in workflow
+    assert "uv run python examples/numeric/two_sheet_cover/run.py" in workflow
+    assert "uv run python examples/numeric/sqrt2_exactification/run.py" in workflow
+    assert "uv run python examples/numeric/weighted_braid_plan/run.py" in workflow
 
 
 @pytest.mark.parametrize("version", ("0.3", "v0.3.0", "0.3.0.dev1", "../../0.3.0"))
