@@ -132,6 +132,50 @@
       "source_commit": "46aef45d7bb24893d552476aee2d9b17b3da7e43",
       "source_tag": "v0.3.0",
       "version": "0.3.0"
+    },
+    {
+      "fixture_files": [
+        {
+          "bytes": 751246,
+          "path": "tests/fixtures/compat/v0.4.0/api-cli-contracts.json",
+          "sha256": "sha256:7c888a7d12059acf6f3c4429f7d080110e023693f4eadc01e9cd6689d69ce959"
+        },
+        {
+          "bytes": 1607,
+          "path": "tests/fixtures/compat/v0.4.0/release.json",
+          "sha256": "sha256:77c3c8af351aede2e47e6fe6481ada3b74e6229d5f94273ef36df2b1e7d03d78"
+        },
+        {
+          "bytes": 251742,
+          "path": "tests/fixtures/compat/v0.4.0/semantic-contracts.json",
+          "sha256": "sha256:d8bfe5df57e2173f1484f524ce4ca17005a5509610a6b042052368af8c344f35"
+        }
+      ],
+      "published_artifacts": [
+        {
+          "bytes": 711694,
+          "filename": "arbogast-0.4.0-py3-none-any.whl",
+          "sha256": "sha256:7072e2da27614dbb0159347659b3d5b8518c1baf9ee889704ff6649ce3eb55ad"
+        },
+        {
+          "bytes": 1838152,
+          "filename": "arbogast-0.4.0.tar.gz",
+          "sha256": "sha256:0e2b2dcb6805e805994c0d613afadbaeae39eb59a19efe7978679c9e645a10c5"
+        },
+        {
+          "bytes": 1904418,
+          "filename": "arbogast-0.4.0-source.tar.gz",
+          "sha256": "sha256:f3d9dc05c3e5aad6a66248041fc5d20c506e502b8bc9c3bc5f5f90e3bd32cb71"
+        }
+      ],
+      "release_notes": {
+        "bytes": 5276,
+        "path": "docs/release-notes-0.4.0.md",
+        "sha256": "sha256:b6f42078e3ebe06b3013beadd8f00153107a384c29bce4922d14e1a63b6e0727"
+      },
+      "source_commit": "771a1a150e02b0459ff82bf1b44e3c0fb7cdd933",
+      "source_tag": "v0.4.0",
+      "version": "0.4.0"
     }
   ],
   "schema_version": "arbogast.compatibility-index/v1"

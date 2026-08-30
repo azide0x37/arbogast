@@ -21,6 +21,9 @@ V020_COMMIT = "8cab7f03379b75cfe875e5b9717f5a831332dfa1"
 V030_API_PATH = PROJECT_ROOT / "tests/fixtures/compat/v0.3.0/api-cli-contracts.json"
 V030_SEMANTIC_PATH = PROJECT_ROOT / "tests/fixtures/compat/v0.3.0/semantic-contracts.json"
 V030_COMMIT = "46aef45d7bb24893d552476aee2d9b17b3da7e43"
+V040_API_PATH = PROJECT_ROOT / "tests/fixtures/compat/v0.4.0/api-cli-contracts.json"
+V040_SEMANTIC_PATH = PROJECT_ROOT / "tests/fixtures/compat/v0.4.0/semantic-contracts.json"
+V040_COMMIT = "771a1a150e02b0459ff82bf1b44e3c0fb7cdd933"
 V020_CERTIFICATE_IDS = (
     "sha256:7fc9a8a70169714070587e7abaebb5700ff4515f4eae9f376b464cedb2055e2e",
     "sha256:6dfabd77769bd8b7b58692c53deadb0caffae30535d526aa487c1c7eebfcbbeb",
@@ -31,6 +34,11 @@ V030_CERTIFICATE_IDS = (
     "sha256:6dfabd77769bd8b7b58692c53deadb0caffae30535d526aa487c1c7eebfcbbeb",
     "sha256:2750040c28839e24955eadd6543e62d6a6495e2296a16908a2802516a17127a5",
     "sha256:ad8e666111f5c89f81dc558cb763e189216515ee714b3ae6f29ee03434e1db4d",
+)
+V040_CERTIFICATE_IDS = (
+    *V030_CERTIFICATE_IDS,
+    "sha256:659d84788e7a1e1cb31c10b37bd2f61c87b92a96b3b3705ba71b1a60a9a75374",
+    "sha256:bd6a74e2581ab3aaed0fa6a73ef51e4395b2116670a36030168adb2545d684f3",
 )
 V020_ARTIFACTS = [
     {
@@ -66,6 +74,23 @@ V030_ARTIFACTS = [
         "sha256": "sha256:ede2a8c5b872168eff6d4abedcd10e5357cbbf9565822b8255303bffac01af4f",
     },
 ]
+V040_ARTIFACTS = [
+    {
+        "bytes": 711694,
+        "filename": "arbogast-0.4.0-py3-none-any.whl",
+        "sha256": "sha256:7072e2da27614dbb0159347659b3d5b8518c1baf9ee889704ff6649ce3eb55ad",
+    },
+    {
+        "bytes": 1838152,
+        "filename": "arbogast-0.4.0.tar.gz",
+        "sha256": "sha256:0e2b2dcb6805e805994c0d613afadbaeae39eb59a19efe7978679c9e645a10c5",
+    },
+    {
+        "bytes": 1904418,
+        "filename": "arbogast-0.4.0-source.tar.gz",
+        "sha256": "sha256:f3d9dc05c3e5aad6a66248041fc5d20c506e502b8bc9c3bc5f5f90e3bd32cb71",
+    },
+]
 PARI_ANCHORS = [
     {
         "source_sha256": "0efdda7515d9d954f63324c34b34c560e60f73a81c3924a71260a2cc91d5f981",
@@ -94,7 +119,12 @@ def test_compatibility_index_pins_all_published_source_and_release_identities() 
     index = _json(INDEX_PATH)
     assert index["schema_version"] == "arbogast.compatibility-index/v1"
     releases = index["releases"]
-    assert [release["version"] for release in releases] == ["0.1.0", "0.2.0", "0.3.0"]
+    assert [release["version"] for release in releases] == [
+        "0.1.0",
+        "0.2.0",
+        "0.3.0",
+        "0.4.0",
+    ]
     assert releases[0]["source_commit"] == "dfd1cc0fd7830ae77de2a04617fa21cece69dde2"
     assert releases[0]["source_tag"] == "v0.1.0"
     assert releases[1]["source_commit"] == V020_COMMIT
@@ -103,6 +133,16 @@ def test_compatibility_index_pins_all_published_source_and_release_identities() 
     assert releases[2]["source_commit"] == V030_COMMIT
     assert releases[2]["source_tag"] == "v0.3.0"
     assert releases[2]["published_artifacts"] == V030_ARTIFACTS
+    assert releases[3]["source_commit"] == V040_COMMIT
+    assert releases[3]["source_tag"] == "v0.4.0"
+    assert releases[3]["published_artifacts"] == V040_ARTIFACTS
+    v040_manifest = _json(PROJECT_ROOT / "tests/fixtures/compat/v0.4.0/release.json")
+    assert v040_manifest["github_release"] == {
+        "id": 379302816,
+        "platform_immutable": False,
+        "published_at": "2026-08-30T14:17:14Z",
+        "url": "https://github.com/azide0x37/arbogast/releases/tag/v0.4.0",
+    }
 
     for release in releases:
         for record in (*release["fixture_files"], release["release_notes"]):
@@ -116,6 +156,7 @@ def test_compatibility_index_pins_all_published_source_and_release_identities() 
     (
         (V020_SEMANTIC_PATH, V020_COMMIT, 41),
         (V030_SEMANTIC_PATH, V030_COMMIT, 96),
+        (V040_SEMANTIC_PATH, V040_COMMIT, 160),
     ),
 )
 def test_published_schema_catalogs_and_backend_boundary_remain_additive(
@@ -138,20 +179,26 @@ def test_published_schema_catalogs_and_backend_boundary_remain_additive(
         "ci_anchors": PARI_ANCHORS,
         "supported_range": ">=2.15.5,<2.18.0",
     }
-    expected_certificates = (
-        V020_CERTIFICATE_IDS if path == V020_SEMANTIC_PATH else V030_CERTIFICATE_IDS
-    )
+    expected_certificates = {
+        V020_SEMANTIC_PATH: V020_CERTIFICATE_IDS,
+        V030_SEMANTIC_PATH: V030_CERTIFICATE_IDS,
+        V040_SEMANTIC_PATH: V040_CERTIFICATE_IDS,
+    }[path]
     assert (
         tuple(record["certificate_id"] for record in snapshot["central_certificates"])
         == expected_certificates
     )
-    if path == V030_SEMANTIC_PATH:
+    if path in {V030_SEMANTIC_PATH, V040_SEMANTIC_PATH}:
         identifiers = {record["identifier"] for record in catalog}
         assert {
             "arbogast.deform.artin-ring/v1",
             "arbogast.deform.artin-ring-receipt/v1",
         } <= identifiers
-        deformation = snapshot["central_certificates"][-1]
+        deformation = next(
+            record
+            for record in snapshot["central_certificates"]
+            if record["label"] == "deform.artin-ring-f3"
+        )
         assert deformation["label"] == "deform.artin-ring-f3"
         assert deformation["deformation_receipt"]["schema_version"] == (
             "arbogast.deform.artin-ring-receipt/v1"
@@ -159,6 +206,28 @@ def test_published_schema_catalogs_and_backend_boundary_remain_additive(
         assert (
             deformation["deformation_receipt_id"]
             == deformation["deformation_receipt"]["certificate_id"]
+        )
+    if path == V040_SEMANTIC_PATH:
+        identifiers = {record["identifier"] for record in catalog}
+        assert {
+            "arbogast.numeric.algebraic-candidate/v1",
+            "arbogast.numeric.algebraic-candidate-receipt/v1",
+        } <= identifiers
+        candidate, exactification = snapshot["central_certificates"][-2:]
+        assert candidate["label"] == "numeric.recognize-sqrt2-candidate"
+        assert candidate["numeric_claim_status"] == "numerical"
+        assert candidate["numeric_receipt"]["schema_version"] == (
+            "arbogast.numeric.algebraic-candidate-receipt/v1"
+        )
+        assert candidate["numeric_receipt_id"] == candidate["numeric_receipt"]["certificate_id"]
+        assert exactification["label"] == "numeric.exactify-sqrt2"
+        assert exactification["numeric_claim_status"] == "exact"
+        assert exactification["numeric_receipt"]["schema_version"] == (
+            "arbogast.numeric.exactification-result-receipt/v1"
+        )
+        assert (
+            exactification["numeric_receipt_id"]
+            == (exactification["numeric_receipt"]["certificate_id"])
         )
 
 
@@ -176,6 +245,7 @@ def test_published_api_cli_snapshots_rederive_from_exact_tags() -> None:
         ),
         ("0.2.0", "v0.2.0", V020_COMMIT, V020_API_PATH),
         ("0.3.0", "v0.3.0", V030_COMMIT, V030_API_PATH),
+        ("0.4.0", "v0.4.0", V040_COMMIT, V040_API_PATH),
     )
     for version, tag, commit, fixture in commands:
         completed = subprocess.run(
@@ -209,6 +279,7 @@ def test_published_api_cli_snapshots_rederive_from_exact_tags() -> None:
     (
         ("0.2.0", V020_COMMIT, V020_SEMANTIC_PATH),
         ("0.3.0", V030_COMMIT, V030_SEMANTIC_PATH),
+        ("0.4.0", V040_COMMIT, V040_SEMANTIC_PATH),
     ),
 )
 def test_published_semantic_snapshots_rederive_from_exact_tags(
@@ -243,6 +314,7 @@ def test_published_semantic_snapshots_rederive_from_exact_tags(
     (
         (V020_SEMANTIC_PATH, V020_CERTIFICATE_IDS),
         (V030_SEMANTIC_PATH, V030_CERTIFICATE_IDS),
+        (V040_SEMANTIC_PATH, V040_CERTIFICATE_IDS),
     ),
 )
 def test_published_central_certificates_replay_in_a_fresh_process(
@@ -261,6 +333,9 @@ with open(sys.argv[1], encoding="utf-8") as stream:
 if payload["version"] >= "0.3.0":
     import arbogast.deform.semantic
     from arbogast.deform import DeformationReceipt, verify_deformation_receipt
+if payload["version"] >= "0.4.0":
+    import arbogast.numeric.semantic
+    from arbogast.numeric import NumericReceipt, verify_numeric_receipt
 ids = []
 for record in payload["central_certificates"]:
     if "deformation_receipt" in record:
@@ -269,6 +344,10 @@ for record in payload["central_certificates"]:
         assert tuple(verify_deformation_receipt(receipt)) == tuple(
             record["deformation_receipt_checks"]
         )
+    if "numeric_receipt" in record:
+        receipt = NumericReceipt.from_dict(record["numeric_receipt"])
+        assert receipt.certificate_id == record["numeric_receipt_id"]
+        assert tuple(verify_numeric_receipt(receipt)) == tuple(record["numeric_receipt_checks"])
     certificate = VerificationCertificate.from_dict(record["certificate"])
     assert certificate.certificate_id == record["certificate_id"]
     assert verify_certificate(certificate).valid

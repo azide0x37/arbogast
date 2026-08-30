@@ -340,13 +340,14 @@ def test_v050_release_trio_fails_closed_for_every_padic_path(tmp_path: Path) -> 
 def test_prior_compatibility_surface_is_derived_from_the_packaged_index() -> None:
     payload = (PROJECT_ROOT / compatibility_index).read_bytes()
     index = json.loads(payload)
-    required = set(required_sdist_paths({compatibility_index: payload}, "0.4.0"))
+    required = set(required_sdist_paths({compatibility_index: payload}, "0.5.0"))
 
     for release in index["releases"]:
         assert release["release_notes"]["path"] in required
         for fixture in release["fixture_files"]:
             assert fixture["path"] in required
     assert "docs/release-notes-0.3.0.md" in required
+    assert "docs/release-notes-0.4.0.md" in required
 
 
 def test_future_minor_release_adds_newly_indexed_prior_contracts() -> None:
@@ -354,20 +355,20 @@ def test_future_minor_release_adds_newly_indexed_prior_contracts() -> None:
     index["releases"].append(
         {
             "fixture_files": [
-                {"path": "tests/fixtures/compat/v0.4.0/release.json"},
-                {"path": "tests/fixtures/compat/v0.4.0/numeric-contracts.json"},
+                {"path": "tests/fixtures/compat/v0.5.0/release.json"},
+                {"path": "tests/fixtures/compat/v0.5.0/padic-contracts.json"},
             ],
-            "release_notes": {"path": "docs/release-notes-0.4.0.md"},
-            "version": "0.4.0",
+            "release_notes": {"path": "docs/release-notes-0.5.0.md"},
+            "version": "0.5.0",
         }
     )
     payload = json.dumps(index).encode()
-    required = set(required_sdist_paths({compatibility_index: payload}, "0.5.0"))
+    required = set(required_sdist_paths({compatibility_index: payload}, "0.6.0"))
 
-    assert "tests/fixtures/compat/v0.4.0/release.json" in required
-    assert "tests/fixtures/compat/v0.4.0/numeric-contracts.json" in required
-    assert "docs/release-notes-0.4.0.md" in required
+    assert "tests/fixtures/compat/v0.5.0/release.json" in required
+    assert "tests/fixtures/compat/v0.5.0/padic-contracts.json" in required
     assert "docs/release-notes-0.5.0.md" in required
+    assert "docs/release-notes-0.6.0.md" in required
     assert set(deformation_sdist_required).issubset(required)
     assert set(numeric_sdist_required).issubset(required)
     assert set(padic_sdist_required).issubset(required)

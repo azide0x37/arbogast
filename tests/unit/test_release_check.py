@@ -17,6 +17,7 @@ check_release_metadata = cast(CheckReleaseMetadata, CHECKER["_check_release_meta
 check_required_paths = cast(CheckRequiredPaths, CHECKER["_check_required_paths"])
 check_m23_fixture = cast(CheckSection, CHECKER["_check_m23_fixture"])
 check_compatibility_index = cast(CheckSection, CHECKER["_check_compatibility_index"])
+check_semantic_snapshot = cast(Callable[..., None], CHECKER["_check_semantic_snapshot"])
 check_v010_compatibility = cast(CheckSection, CHECKER["_check_v010_compatibility"])
 check_live_pari_matrix = cast(CheckSection, CHECKER["_check_live_pari_matrix"])
 required_paths = cast(tuple[str, ...], CHECKER["REQUIRED_PATHS"])
@@ -133,6 +134,9 @@ def test_numeric_release_surface_is_additive_from_v040() -> None:
     assert legacy.isdisjoint(numeric_required_paths)
     assert set(numeric_required_paths).issubset(v040)
     assert set(numeric_required_paths).issubset(future)
+    v040_manifest = "tests/fixtures/compat/v0.4.0/release.json"
+    assert v040_manifest not in v040
+    assert v040_manifest in future
     assert (
         len([path for path in numeric_required_paths if path.startswith("src/arbogast/numeric/")])
         == 12
@@ -364,6 +368,36 @@ def test_release_gate_validates_every_indexed_compatibility_release(tmp_path: Pa
     check_compatibility_index(tmp_path, failures)
     assert failures == []
 
+    manifest_path = tmp_path / "tests/fixtures/compat/v0.4.0/release.json"
+    manifest = json.loads(manifest_path.read_text(encoding="utf-8"))
+    manifest["github_release"]["id"] += 1
+    _write_json(manifest_path, manifest)
+    index_path = tmp_path / "tests/fixtures/compat/index.json"
+    rewritten_index = json.loads(index_path.read_text(encoding="utf-8"))
+    v040 = next(release for release in rewritten_index["releases"] if release["version"] == "0.4.0")
+    manifest_pointer = next(
+        fixture
+        for fixture in v040["fixture_files"]
+        if fixture["path"] == "tests/fixtures/compat/v0.4.0/release.json"
+    )
+    manifest_bytes = manifest_path.read_bytes()
+    manifest_pointer.update(
+        {
+            "bytes": len(manifest_bytes),
+            "sha256": f"sha256:{hashlib.sha256(manifest_bytes).hexdigest()}",
+        }
+    )
+    _write_json(index_path, rewritten_index)
+    failures = []
+    check_compatibility_index(tmp_path, failures)
+    assert any("github_release" in failure for failure in failures)
+
+    shutil.copyfile(
+        PROJECT_ROOT / "tests/fixtures/compat/v0.4.0/release.json",
+        manifest_path,
+    )
+    shutil.copyfile(PROJECT_ROOT / "tests/fixtures/compat/index.json", index_path)
+
     semantic = tmp_path / "tests/fixtures/compat/v0.2.0/semantic-contracts.json"
     semantic.write_text(semantic.read_text(encoding="utf-8") + "\n", encoding="utf-8")
     failures = []
@@ -378,6 +412,31 @@ def test_release_gate_validates_every_indexed_compatibility_release(tmp_path: Pa
     failures = []
     check_compatibility_index(tmp_path, failures)
     assert any("release-notes-0.2.0.md" in failure for failure in failures)
+
+
+def test_v040_semantic_fixture_requires_numeric_candidate_and_exactification() -> None:
+    semantic = json.loads(
+        (PROJECT_ROOT / "tests/fixtures/compat/v0.4.0/semantic-contracts.json").read_text(
+            encoding="utf-8"
+        )
+    )
+    semantic["central_certificates"] = [
+        record
+        for record in semantic["central_certificates"]
+        if record["label"] != "numeric.exactify-sqrt2"
+    ]
+    failures: list[str] = []
+    check_semantic_snapshot(
+        semantic,
+        version="0.4.0",
+        source_tag="v0.4.0",
+        source_commit="771a1a150e02b0459ff82bf1b44e3c0fb7cdd933",
+        failures=failures,
+    )
+    assert (
+        "0.4.0 semantic compatibility fixture is missing required numeric record "
+        "numeric.exactify-sqrt2" in failures
+    )
 
 
 def test_m23_release_gate_binds_exact_artifacts_and_theorem_counts(tmp_path: Path) -> None:

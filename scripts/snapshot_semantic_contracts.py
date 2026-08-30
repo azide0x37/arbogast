@@ -140,6 +140,67 @@ if snapshot_version >= (0, 3, 0):
     )
     certificates.append(deformation_record)
 
+if snapshot_version >= (0, 4, 0):
+    from arbogast.numeric import (
+        AlgebraicCandidate,
+        ComplexBall,
+        Dyadic,
+        ExactificationResult,
+        ExactPolynomial,
+        NumericPoint,
+        PolynomialSystem,
+        RecognitionBounds,
+        exactify,
+        recognize,
+    )
+    from arbogast.numeric.semantic import receipt_for_result as numeric_receipt_for_result
+
+    numeric_candidate = recognize(
+        ComplexBall(Dyadic(181, -7), Dyadic(1, -10)),
+        RecognitionBounds(2, 2),
+    )
+    if not isinstance(numeric_candidate, AlgebraicCandidate):
+        raise RuntimeError("tagged sqrt(2) recognition fixture did not isolate one candidate")
+    numeric_receipt = numeric_receipt_for_result(numeric_candidate)
+    numeric_record = certificate_record("numeric.recognize-sqrt2-candidate", numeric_candidate)
+    numeric_record.update(
+        {
+            "numeric_claim_status": numeric_candidate.claim().status.value,
+            "numeric_receipt": numeric_receipt.to_dict(),
+            "numeric_receipt_checks": list(numeric_receipt.verify()),
+            "numeric_receipt_id": numeric_receipt.certificate_id,
+        }
+    )
+    certificates.append(numeric_record)
+
+    numeric_system = PolynomialSystem(
+        1,
+        (
+            ExactPolynomial(
+                1,
+                {(0,): -2, (2,): 1},
+                variable_names=("x",),
+            ),
+        ),
+    )
+    exactification = exactify(
+        NumericPoint(numeric_system, (numeric_candidate.source,)),
+        candidate=numeric_candidate,
+    )
+    if not isinstance(exactification, ExactificationResult):
+        raise RuntimeError("tagged sqrt(2) fixture did not cross the exactification boundary")
+    exactification_receipt = numeric_receipt_for_result(exactification)
+    exactification_record = certificate_record("numeric.exactify-sqrt2", exactification)
+    exactification_record.update(
+        {
+            "numeric_claim_status": exactification.claim().status.value,
+            "numeric_receipt": exactification_receipt.to_dict(),
+            "numeric_receipt_checks": list(exactification_receipt.verify()),
+            "numeric_receipt_id": exactification_receipt.certificate_id,
+        }
+    )
+    certificates.append(exactification_record)
+
 workflow = (archive_root / ".github/workflows/ci.yml").read_text(encoding="utf-8")
 anchor_pattern = re.compile(
     r'- pari-version: "(?P<version>[0-9]+\.[0-9]+\.[0-9]+)"\s+'

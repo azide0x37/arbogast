@@ -271,6 +271,14 @@ V010_PUBLISHED_ARTIFACTS: Final = (
         "sha256": "sha256:6f20622025a0bdebce76ce41c765380e9f4ab2574488fdc443ba1dd098c9b02c",
     },
 )
+PUBLISHED_GITHUB_RELEASES: Final[dict[str, dict[str, object]]] = {
+    "0.4.0": {
+        "id": 379302816,
+        "platform_immutable": False,
+        "published_at": "2026-08-30T14:17:14Z",
+        "url": "https://github.com/azide0x37/arbogast/releases/tag/v0.4.0",
+    },
+}
 V010_CERTIFICATE_ID: Final = (
     "sha256:52b76eed5ad4ab3ee16fa7b34920c680cdb68e82470c72cefadf06a3d9439377"
 )
@@ -329,6 +337,11 @@ def required_paths(version: str, *, root: Path = PROJECT_ROOT) -> tuple[str, ...
     """Return the release surface for ``version`` without forgetting old fixtures."""
 
     indexed: list[str] = []
+    candidate_key = (
+        tuple(int(part) for part in version.split("."))
+        if FINAL_VERSION_RE.fullmatch(version) is not None
+        else None
+    )
     path = root / COMPATIBILITY_INDEX
     try:
         value = json.loads(path.read_text(encoding="utf-8"))
@@ -337,6 +350,14 @@ def required_paths(version: str, *, root: Path = PROJECT_ROOT) -> tuple[str, ...
     if isinstance(value, dict) and isinstance(value.get("releases"), list):
         for release in value["releases"]:
             if not isinstance(release, dict):
+                continue
+            release_version = release.get("version")
+            if (
+                candidate_key is not None
+                and isinstance(release_version, str)
+                and FINAL_VERSION_RE.fullmatch(release_version) is not None
+                and tuple(int(part) for part in release_version.split(".")) >= candidate_key
+            ):
                 continue
             notes = release.get("release_notes")
             if isinstance(notes, dict) and isinstance(notes.get("path"), str):
@@ -861,6 +882,7 @@ def _check_semantic_snapshot(
 
     certificates = value.get("central_certificates")
     labels: list[str] = []
+    records_by_label: dict[str, dict[str, object]] = {}
     if not isinstance(certificates, list) or not certificates:
         failures.append(f"{label}.central_certificates must be a nonempty array")
     else:
@@ -877,6 +899,7 @@ def _check_semantic_snapshot(
             certificate_id = record.get("certificate_id")
             if isinstance(record_label, str):
                 labels.append(record_label)
+                records_by_label[record_label] = record
             if (
                 not isinstance(certificate_id, str)
                 or not certificate_id.startswith("sha256:")
@@ -899,6 +922,77 @@ def _check_semantic_snapshot(
         failures.append(f"{label} has no representative Galois central certificate")
     if not any(item.startswith("arithmetic.") for item in labels):
         failures.append(f"{label} has no representative arithmetic central certificate")
+    if _deformation_release(version) and not any(item.startswith("deform.") for item in labels):
+        failures.append(f"{label} has no representative deformation central certificate")
+    if _numeric_release(version):
+        required_numeric_records = {
+            "numeric.recognize-sqrt2-candidate": (
+                "numerical",
+                "arbogast.numeric.recognition.AlgebraicCandidate",
+                "algebraic-candidate",
+                "arbogast.numeric.algebraic-candidate-receipt/v1",
+            ),
+            "numeric.exactify-sqrt2": (
+                "exact",
+                "arbogast.numeric.recognition.ExactificationResult",
+                "exactification-result",
+                "arbogast.numeric.exactification-result-receipt/v1",
+            ),
+        }
+        for record_label, (
+            claim_status,
+            result_type,
+            receipt_kind,
+            receipt_schema,
+        ) in required_numeric_records.items():
+            record = records_by_label.get(record_label)
+            if record is None:
+                failures.append(f"{label} is missing required numeric record {record_label}")
+                continue
+            _expect_fields(
+                record,
+                {
+                    "numeric_claim_status": claim_status,
+                    "result_type": result_type,
+                },
+                f"{label}.{record_label}",
+                failures,
+            )
+            receipt = _object_field(
+                record.get("numeric_receipt"),
+                f"{label}.{record_label}.numeric_receipt",
+                failures,
+            )
+            receipt_id = record.get("numeric_receipt_id")
+            if (
+                not isinstance(receipt_id, str)
+                or not receipt_id.startswith("sha256:")
+                or SHA256_RE.fullmatch(receipt_id.removeprefix("sha256:")) is None
+            ):
+                failures.append(f"{label}.{record_label} has an invalid numeric receipt ID")
+            if receipt is not None:
+                _expect_fields(
+                    receipt,
+                    {
+                        "certificate_id": receipt_id,
+                        "kind": receipt_kind,
+                        "schema_version": receipt_schema,
+                    },
+                    f"{label}.{record_label}.numeric_receipt",
+                    failures,
+                )
+            certificate = _object_field(
+                record.get("certificate"),
+                f"{label}.{record_label}.certificate",
+                failures,
+            )
+            if certificate is not None:
+                _expect_fields(
+                    certificate,
+                    {"verifier": "numeric.exact-bridge.v1"},
+                    f"{label}.{record_label}.certificate",
+                    failures,
+                )
 
     pari = _object_field(value.get("pari"), f"{label}.pari", failures)
     if pari is not None:
@@ -1035,6 +1129,14 @@ def _check_compatibility_index(root: Path, failures: list[str]) -> None:
             f"{version} compatibility manifest",
             failures,
         )
+        expected_github_release = PUBLISHED_GITHUB_RELEASES.get(version)
+        if expected_github_release is not None:
+            _expect_fields(
+                manifest,
+                {"github_release": expected_github_release},
+                f"{version} compatibility manifest",
+                failures,
+            )
         for field, raw_pointer in manifest.items():
             if field != "representative_fixture" and not field.endswith("_fixture"):
                 continue
