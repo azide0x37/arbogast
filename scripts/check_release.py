@@ -149,6 +149,50 @@ NUMERIC_REQUIRED_PATHS: Final = (
     "tests/unit/test_numeric_surface_acceptance.py",
     "tests/unit/test_numeric_weighted_braid.py",
 )
+PADIC_INTRODUCED: Final = (0, 5, 0)
+PADIC_REQUIRED_PATHS: Final = (
+    "docs/padic.md",
+    "src/arbogast/padic/__init__.py",
+    "src/arbogast/padic/_schema.py",
+    "src/arbogast/padic/certificate.py",
+    "src/arbogast/padic/covers.py",
+    "src/arbogast/padic/descent.py",
+    "src/arbogast/padic/errors.py",
+    "src/arbogast/padic/fields.py",
+    "src/arbogast/padic/frobenius.py",
+    "src/arbogast/padic/frontier.py",
+    "src/arbogast/padic/inertia.py",
+    "src/arbogast/padic/lifts.py",
+    "src/arbogast/padic/matrices.py",
+    "src/arbogast/padic/modules.py",
+    "src/arbogast/padic/plans.py",
+    "src/arbogast/padic/reduction.py",
+    "src/arbogast/padic/results.py",
+    "src/arbogast/padic/semantic.py",
+    "src/arbogast/padic/wewers.py",
+    "examples/padic/README.md",
+    "examples/padic/frobenius_slopes/README.md",
+    "examples/padic/frobenius_slopes/run.py",
+    "examples/padic/lifts_rigid_descent/README.md",
+    "examples/padic/lifts_rigid_descent/run.py",
+    "examples/padic/m23_local_frontier/README.md",
+    "examples/padic/m23_local_frontier/run.py",
+    "examples/padic/special_deformation_datum/README.md",
+    "examples/padic/special_deformation_datum/run.py",
+    "examples/padic/three_point_good_reduction/README.md",
+    "examples/padic/three_point_good_reduction/run.py",
+    "tests/integration/test_padic_examples_acceptance.py",
+    "tests/integration/test_padic_fresh_process_acceptance.py",
+    "tests/integration/test_padic_frobenius_inertia_fresh.py",
+    "tests/unit/test_padic_frobenius_inertia.py",
+    "tests/unit/test_padic_local_factorization_frontier.py",
+    "tests/unit/test_padic_local_substrate.py",
+    "tests/unit/test_padic_proof_substrate.py",
+    "tests/unit/test_padic_schema_acceptance.py",
+    "tests/unit/test_padic_surface_acceptance.py",
+    "tests/unit/test_padic_three_point_reduction.py",
+    "tests/unit/test_padic_wewers_lifts_descent.py",
+)
 TEXT_SUFFIXES: Final = {".cff", ".json", ".md", ".py", ".toml", ".yaml", ".yml"}
 SKIP_PARTS: Final = {".git", ".mypy_cache", ".pytest_cache", ".ruff_cache", ".venv"}
 UNRESOLVED_MARKERS: Final = ("TODO", "FIXME", "will be filled in")
@@ -274,6 +318,13 @@ def _numeric_release(version: str) -> bool:
     return (major, minor, patch) >= NUMERIC_INTRODUCED
 
 
+def _padic_release(version: str) -> bool:
+    if FINAL_VERSION_RE.fullmatch(version) is None:
+        return False
+    major, minor, patch = (int(part) for part in version.split("."))
+    return (major, minor, patch) >= PADIC_INTRODUCED
+
+
 def required_paths(version: str, *, root: Path = PROJECT_ROOT) -> tuple[str, ...]:
     """Return the release surface for ``version`` without forgetting old fixtures."""
 
@@ -299,11 +350,13 @@ def required_paths(version: str, *, root: Path = PROJECT_ROOT) -> tuple[str, ...
                 )
     deformation = DEFORMATION_REQUIRED_PATHS if _deformation_release(version) else ()
     numeric = NUMERIC_REQUIRED_PATHS if _numeric_release(version) else ()
+    padic = PADIC_REQUIRED_PATHS if _padic_release(version) else ()
     paths = (
         *REQUIRED_PATHS,
         *indexed,
         *deformation,
         *numeric,
+        *padic,
         f"docs/release-notes-{version}.md",
     )
     return tuple(dict.fromkeys(paths))

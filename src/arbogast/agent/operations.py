@@ -220,6 +220,95 @@ _BUILTIN_TYPE_PORTS: dict[str, tuple[tuple[str, ...], tuple[str, ...]]] = {
     "numeric.claim": (("NumericSemanticResult | NumericReceipt",), ("Claim",)),
     "numeric.claim_graph": (("NumericSemanticResult | NumericReceipt",), ("ClaimGraph",)),
     "numeric.verify_receipt": (("NumericReceipt",), ("tuple[str, ...]",)),
+    "padic.frobenius": (
+        ("PAdicModule", "FrobeniusOperator | FrobeniusDatum | None"),
+        ("Certified[FrobeniusOperator] | Unknown",),
+    ),
+    "padic.slopes": (
+        ("FrobeniusOperator", "SlopeProjectorSequence | None"),
+        ("Certified[SlopeDecomposition] | Unknown",),
+    ),
+    "padic.ordinary_part": (
+        ("FrobeniusOperator | SlopeDecomposition", "SlopeProjector | None"),
+        ("Certified[SlopeProjector] | Unknown",),
+    ),
+    "padic.inertia_action": (
+        (
+            "PAdicArithmeticObject",
+            "int | None",
+            "InertiaRepresentation | FiniteInertiaDatum | None",
+        ),
+        ("Certified[InertiaRepresentation] | Unknown",),
+    ),
+    "padic.good_reduction": (
+        ("ThreePointCover", "int", "GoodReductionWitness | None"),
+        ("Certified[GoodReduction] | Unknown | Unsupported",),
+    ),
+    "padic.semistable_reduction": (
+        (
+            "ThreePointCover | Certified[GoodReduction]",
+            "int | None",
+            "SemistableReductionWitness | None",
+        ),
+        ("Certified[SemistableReduction] | Unsupported",),
+    ),
+    "padic.stable_reduction": (
+        (
+            "ThreePointCover | Certified[SemistableReduction]",
+            "int | None",
+            "StableReductionWitness | None",
+        ),
+        ("Certified[StableReduction] | Unsupported",),
+    ),
+    "padic.deformation_datum": (
+        ("Certified[StableReduction]", "DeformationDatumWitness | None"),
+        ("Certified[DeformationDatum] | Unknown | Unsupported",),
+    ),
+    "padic.lift_set": (
+        (
+            "DeformationDatum | Certified[DeformationDatum]",
+            "LiftChart | None",
+            "LiftEnumerationWitness | None",
+        ),
+        ("Certified[LiftSet] | Unknown | Unsupported",),
+    ),
+    "padic.lift_galois_action": (
+        (
+            "Certified[LiftSet]",
+            "FiniteGaloisQuotient",
+            "LiftTransportWitnessSequence",
+        ),
+        ("Certified[LiftGaloisAction] | Unknown | Unsupported",),
+    ),
+    "padic.fixed_lifts": (
+        ("FiniteLiftAction | Certified[LiftGaloisAction]",),
+        ("Certified[FixedLiftSet]",),
+    ),
+    "padic.effective_descent": (
+        ("Certified[FixedLiftSet]", "RigidDescentWitness | None"),
+        ("Certified[DescendedModel] | Unknown",),
+    ),
+    "padic.local_factorization_fragment": (
+        (
+            "str",
+            "int",
+            "IntegerCoefficientSequence",
+            "int",
+            "FiniteFieldFactorSequence",
+        ),
+        ("Certified[LocalFactorizationFragment]",),
+    ),
+    "padic.reduction_frontier": (
+        ("M23ExactDataset | Certified[LocalFactorizationFragment]", "int"),
+        ("Partial | Unknown | Unsupported",),
+    ),
+    "padic.verification_certificate": (
+        ("PAdicSemanticResult | PAdicReceipt",),
+        ("VerificationCertificate",),
+    ),
+    "padic.claim": (("PAdicSemanticResult | PAdicReceipt",), ("Claim",)),
+    "padic.claim_graph": (("PAdicSemanticResult | PAdicReceipt",), ("ClaimGraph",)),
+    "padic.verify_receipt": (("PAdicReceipt",), ("tuple[str, ...]",)),
 }
 
 

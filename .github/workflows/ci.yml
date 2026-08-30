@@ -90,6 +90,14 @@ jobs:
           uv run python examples/numeric/sqrt2_exactification/run.py
           uv run python examples/numeric/weighted_braid_plan/run.py
 
+      - name: Run bounded p-adic examples
+        run: |
+          uv run python examples/padic/frobenius_slopes/run.py
+          uv run python examples/padic/three_point_good_reduction/run.py
+          uv run python examples/padic/special_deformation_datum/run.py
+          uv run python examples/padic/lifts_rigid_descent/run.py
+          uv run python examples/padic/m23_local_frontier/run.py
+
   release-qualification:
     name: Exact release-artifact qualification
     runs-on: ubuntu-latest

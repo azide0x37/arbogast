@@ -554,6 +554,190 @@ DEFAULT_HAZARDS = HazardRegistry(
             severity=HazardSeverity.ERROR,
         ),
         Hazard(
+            id="padic.precision-ball-vs-exact-element",
+            triggered_by=(
+                "PAdicBall",
+                "PAdicPrecisionRing",
+                "padic.frobenius",
+                "padic.slopes",
+            ),
+            message=(
+                "A residue class modulo a finite p-adic precision is not a selected element "
+                "of the complete local field."
+            ),
+            remediation=(
+                "Keep the precision ring, modulus, and valuation interval in the claim; "
+                "promote only conclusions invariant over the entire represented ball."
+            ),
+            severity=HazardSeverity.ERROR,
+        ),
+        Hazard(
+            id="padic.frobenius-convention-and-period",
+            triggered_by=(
+                "FrobeniusConvention",
+                "FrobeniusOperator",
+                "padic.frobenius",
+                "padic.slopes",
+            ),
+            message=(
+                "Arithmetic and geometric Frobenius, and a semilinear operator and its "
+                "linearized period, have different slope conventions."
+            ),
+            remediation=(
+                "Bind the convention and semilinear period explicitly and replay the declared "
+                "normalization; never invert Frobenius or rescale slopes implicitly."
+            ),
+            severity=HazardSeverity.ERROR,
+        ),
+        Hazard(
+            id="padic.newton-slopes-vs-slope-summands",
+            triggered_by=(
+                "SlopeDecomposition",
+                "SlopeProjector",
+                "padic.ordinary_part",
+                "padic.slopes",
+            ),
+            message=(
+                "Newton-polygon slope multiplicities do not themselves construct saturated "
+                "Frobenius-stable direct summands."
+            ),
+            remediation=(
+                "Return multiplicities separately and expose an ordinary or slope part only "
+                "with an exact idempotent, stable, saturated projector witness."
+            ),
+            severity=HazardSeverity.ERROR,
+        ),
+        Hazard(
+            id="padic.finite-inertia-vs-full-local-action",
+            triggered_by=(
+                "FiniteInertiaQuotient",
+                "InertiaRepresentation",
+                "padic.inertia_action",
+            ),
+            message=(
+                "An action of one pinned finite inertia quotient and a declared finite "
+                "group-theoretic series is not a valuation-derived complete lower filtration, "
+                "the full continuous inertia, decomposition-group, or Weil action."
+            ),
+            remediation=(
+                "State arithmetic_lower_numbering_claimed=False and the checked tame/wild "
+                "quotient identities literally; do not infer local-extension origin, omitted "
+                "ramification groups, wild inertia, or a decomposition-group extension."
+            ),
+            severity=HazardSeverity.ERROR,
+        ),
+        Hazard(
+            id="padic.reduction-levels-are-distinct",
+            triggered_by=(
+                "GoodReduction",
+                "SemistableReduction",
+                "StableReduction",
+                "padic.good_reduction",
+                "padic.semistable_reduction",
+                "padic.stable_reduction",
+            ),
+            message=(
+                "Good, semistable, and stable reduction are different certified conclusions; "
+                "a special-fibre graph or local equation does not silently prove the next level."
+            ),
+            remediation=(
+                "Replay the level-specific model, singularity, component, and stability "
+                "witnesses and return a typed non-conclusion when any layer is missing."
+            ),
+            severity=HazardSeverity.ERROR,
+        ),
+        Hazard(
+            id="padic.deformation-datum-vs-realized-lift",
+            triggered_by=(
+                "DeformationDatum",
+                "LiftSet",
+                "padic.deformation_datum",
+                "padic.lift_set",
+            ),
+            message=(
+                "A deformation datum or infinitesimal solution space does not construct or "
+                "enumerate characteristic-zero lifts."
+            ),
+            remediation=(
+                "Require every lift to replay the exact equations and completeness witness; "
+                "retain explicit obligations or Unknown when lifting is not closed."
+            ),
+            severity=HazardSeverity.ERROR,
+        ),
+        Hazard(
+            id="padic.local-factorization-vs-reduction-model",
+            triggered_by=(
+                "LocalFactorizationFragment",
+                "padic.local_factorization_fragment",
+                "padic.reduction_frontier",
+            ),
+            message=(
+                "A complete factorization of one displayed mod-p polynomial is not a local "
+                "cover model or a reduction certificate."
+            ),
+            remediation=(
+                "Keep the source identity, finite field, polynomial, unit, and exact factors "
+                "in scope and list the missing cover/model obligations explicitly."
+            ),
+            severity=HazardSeverity.ERROR,
+        ),
+        Hazard(
+            id="padic.lift-set-vs-galois-action",
+            triggered_by=(
+                "LiftGaloisAction",
+                "LiftSet",
+                "padic.fixed_lifts",
+                "padic.lift_galois_action",
+            ),
+            message=(
+                "A finite lift set does not acquire a Galois action from labels or coefficient "
+                "conjugacy alone."
+            ),
+            remediation=(
+                "In 0.5, certify only a computed-complete trivial quotient with an explicit "
+                "identity model-coordinate transport for every lift; treat incomplete evidence "
+                "as Unknown and a nontrivial complete quotient as Unsupported."
+            ),
+            severity=HazardSeverity.ERROR,
+        ),
+        Hazard(
+            id="padic.fixed-lift-vs-effective-descent",
+            triggered_by=(
+                "DescendedModel",
+                "FixedLiftSet",
+                "padic.effective_descent",
+                "padic.fixed_lifts",
+            ),
+            message=(
+                "A fixed lift or field-of-moduli point is not automatically an effectively "
+                "descended model."
+            ),
+            remediation=(
+                "Require and replay the explicit descent datum, cocycle compatibility, exact "
+                "coefficient vector, and two-sided base change; scope success to the rigid "
+                "pinned F_p chart-model category, not a characteristic-zero or number-field cover."
+            ),
+            severity=HazardSeverity.ERROR,
+        ),
+        Hazard(
+            id="padic.bounded-frontier-vs-nonexistence",
+            triggered_by=(
+                "Partial",
+                "Unknown",
+                "Unsupported",
+                "padic.reduction_frontier",
+            ),
+            message=(
+                "Exhausting one bounded reduction or lifting frontier is not a proof that no "
+                "model, lift, or descent exists outside that declared frontier."
+            ),
+            remediation=(
+                "Bind the complete finite search domain and report only its scoped frontier; "
+                "use Partial or Unknown for unresolved obligations."
+            ),
+            severity=HazardSeverity.ERROR,
+        ),
+        Hazard(
             id="fleet.pari-and-python-verification-task-separation",
             triggered_by=(
                 "backends.pari.arithmetic.v1",

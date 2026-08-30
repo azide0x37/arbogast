@@ -194,6 +194,32 @@ scope is insufficient. The portable surface requires no external numerical backe
 generic evaluator. Read [Certified numeric-to-exact bridge](docs/numeric.md) for the complete
 boundary and the three runnable journeys.
 
+## Certified bounded p-adic arithmetic
+
+The additive p-adic layer performs finite-exact arithmetic in pinned quotients
+\(\mathcal O_K/\pi^N\), replays supplied semilinear Frobenius and finite inertia actions, and
+certifies one deliberately narrow tame three-point reduction profile. `PAdicBall` remains a
+finite-precision residue class, never a selected infinite p-adic number. An `InertiaFiltration`
+is only a declared finite group-theoretic series satisfying its listed tame/wild quotient
+identities: it records that neither arithmetic origin nor a valuation-derived complete lower
+numbering is claimed.
+
+Every operation returns a proof-bearing `Certified`, `Partial`, `Unknown`, or `Unsupported`
+boundary. Good, semistable, and stable reduction remain distinct. A complete factorization of one
+displayed mod-\(p\) polynomial is only a `LocalFactorizationFragment`, not a local cover model.
+Lift enumeration is complete only in one pinned finite chart; the supported arithmetic lift action
+uses a computed-complete trivial quotient and explicit identity transports on every exact model.
+A fixed lift does not prove descent, and the positive rigid descent result is only an exact
+coefficient vector in the pinned \(\mathbf F_p\) chart-model category—not a characteristic-zero,
+number-field, or geometric cover.
+
+The public four-point M23 dataset therefore returns `Unsupported` at the automatic reduction
+boundary. Supplying an independently certified local factorization fragment returns `Partial`
+with explicit obligations rather than a global model. All p-adic operations are non-shardable and
+use exactly the portable verifier families `padic.finite-exact.v1` and
+`padic.three-point-exact.v1`. Read [Certified bounded p-adic arithmetic](docs/padic.md) for the
+complete supported slices and deferrals.
+
 ## What 0.1.0 is—and is not
 
 Arbogast 0.1.0 is an alpha **finite exact core**. It provides canonical finite objects, exact
@@ -389,6 +415,7 @@ The public surface is organized by mathematical layer:
 | `arbogast.deform` | Explicit finite deformation complexes, framed/equivariant spaces, finite lifts, rigidity, and certified fixed lifts |
 | `arbogast.hurwitz` | Nielsen classes, braid orbits, real structures, and components |
 | `arbogast.numeric` | Exact dyadics and balls, witnessed continuation, exactification, cover bindings, projection degree, and weighted braid plans |
+| `arbogast.padic` | Finite-precision local arithmetic, supplied Frobenius/inertia actions, bounded three-point reduction, chart-local lifts, and rigid finite-field descent |
 | `arbogast.claims` | Typed claims, theorem dependencies, and epistemic status |
 | `arbogast.cert` | Discovery receipts and independent verification certificates |
 | `arbogast.fleet` | Deterministic task specs, shards, artifact stores, and reduction |
@@ -496,6 +523,24 @@ The 0.4 examples are portable and require no external numerical or algebra backe
 - [`weighted_braid_plan`](examples/numeric/weighted_braid_plan/) proves exact cost optimality in a
   supplied finite action while showing that the selected word alone authorizes neither a numerical
   endpoint nor an exact cover target.
+
+## Bounded p-adic journeys
+
+The five p-adic examples are portable finite replays and require no external p-adic backend.
+
+- [`frobenius_slopes`](examples/padic/frobenius_slopes/) certifies a supplied arithmetic
+  Frobenius and its Newton multiplicities, then keeps the ordinary summand `Unknown` until an exact
+  saturated projector is supplied.
+- [`three_point_good_reduction`](examples/padic/three_point_good_reduction/) certifies the displayed
+  tame beta model at \(p=5\) through good, semistable, and stable reduction, while other primes
+  remain `Unsupported` rather than proofs of bad reduction.
+- [`special_deformation_datum`](examples/padic/special_deformation_datum/) separates certified
+  componentwise formal identities from an unproved geometric Wewers extraction.
+- [`lifts_rigid_descent`](examples/padic/lifts_rigid_descent/) exhausts one pinned chart, rejects a
+  label-only action, computes fixed classes, and closes only the rigid pinned
+  \(\mathbf F_p\)-chart descent witnessed by exact coefficients and two-sided base change.
+- [`m23_local_frontier`](examples/padic/m23_local_frontier/) keeps the public four-point M23 request
+  `Unsupported` and a separate exact mod-23 factorization `Partial` with four open obligations.
 
 ## Reproducibility and theorem boundaries
 

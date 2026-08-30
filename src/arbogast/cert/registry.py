@@ -194,6 +194,8 @@ _BUILTIN_VERIFIER_MODULES = {
     "hurwitz.cusps": "arbogast.hurwitz.claims",
     "hurwitz.boundary": "arbogast.hurwitz.claims",
     "numeric.exact-bridge.v1": "arbogast.numeric.semantic",
+    "padic.finite-exact.v1": "arbogast.padic.semantic",
+    "padic.three-point-exact.v1": "arbogast.padic.semantic",
 }
 
 

@@ -28,6 +28,10 @@ numeric_required_paths = cast(
     tuple[str, ...],
     CHECKER["NUMERIC_REQUIRED_PATHS"],
 )
+padic_required_paths = cast(
+    tuple[str, ...],
+    CHECKER["PADIC_REQUIRED_PATHS"],
+)
 release_required_paths = cast(Callable[[str], tuple[str, ...]], CHECKER["required_paths"])
 
 
@@ -158,6 +162,48 @@ def test_deformation_release_surface_is_additive_from_v030() -> None:
     )
 
 
+def test_padic_release_surface_is_additive_from_v050() -> None:
+    legacy = set(release_required_paths("0.4.0"))
+    v050 = set(release_required_paths("0.5.0"))
+    future = set(release_required_paths("0.6.0"))
+
+    assert len(padic_required_paths) == 41
+    assert legacy.isdisjoint(padic_required_paths)
+    assert set(padic_required_paths).issubset(v050)
+    assert set(padic_required_paths).issubset(future)
+
+    expected_sources = {
+        path.removeprefix("src/arbogast/padic/")
+        for path in padic_required_paths
+        if path.startswith("src/arbogast/padic/")
+    }
+    actual_sources = {path.name for path in (PROJECT_ROOT / "src/arbogast/padic").glob("*.py")}
+    assert len(expected_sources) == 18
+    assert expected_sources == actual_sources
+
+    expected_examples = {
+        path.removeprefix("examples/padic/")
+        for path in padic_required_paths
+        if path.startswith("examples/padic/")
+    }
+    actual_examples = {
+        path.relative_to(PROJECT_ROOT / "examples/padic").as_posix()
+        for path in (PROJECT_ROOT / "examples/padic").glob("**/*")
+        if path.is_file() and (path.name == "README.md" or path.name == "run.py")
+    }
+    assert len(expected_examples) == 11
+    assert expected_examples == actual_examples
+
+    expected_tests = {path for path in padic_required_paths if "/test_padic" in path}
+    actual_tests = {
+        path.relative_to(PROJECT_ROOT).as_posix()
+        for base in (PROJECT_ROOT / "tests/unit", PROJECT_ROOT / "tests/integration")
+        for path in base.glob("test_padic*.py")
+    }
+    assert len(expected_tests) == 11
+    assert expected_tests == actual_tests
+
+
 def test_every_deformation_release_path_fails_closed_when_deleted(tmp_path: Path) -> None:
     for relative in deformation_required_paths:
         _write(tmp_path / relative, "release-boundary fixture\n")
@@ -216,6 +262,36 @@ def test_every_numeric_release_path_fails_closed_when_deleted(tmp_path: Path) ->
     check_required_paths(tmp_path, failures, "0.3.0")
     assert all(
         f"missing required path: {relative}" not in failures for relative in numeric_required_paths
+    )
+
+
+def test_every_padic_release_path_fails_closed_when_deleted(tmp_path: Path) -> None:
+    for relative in padic_required_paths:
+        _write(tmp_path / relative, "release-boundary fixture\n")
+
+    failures: list[str] = []
+    check_required_paths(tmp_path, failures, "0.5.0")
+    padic_failures = [
+        failure
+        for failure in failures
+        if any(relative in failure for relative in padic_required_paths)
+    ]
+    assert padic_failures == []
+
+    for relative in padic_required_paths:
+        path = tmp_path / relative
+        path.unlink()
+        failures = []
+        check_required_paths(tmp_path, failures, "0.5.0")
+        assert f"missing required path: {relative}" in failures
+        _write(path, "release-boundary fixture\n")
+
+    failures = []
+    for relative in padic_required_paths:
+        (tmp_path / relative).unlink()
+    check_required_paths(tmp_path, failures, "0.4.0")
+    assert all(
+        f"missing required path: {relative}" not in failures for relative in padic_required_paths
     )
 
 

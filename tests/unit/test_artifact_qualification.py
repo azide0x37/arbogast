@@ -42,6 +42,14 @@ numeric_sdist_required = cast(
     tuple[str, ...],
     QUALIFIER["NUMERIC_SDIST_REQUIRED"],
 )
+padic_wheel_required = cast(
+    tuple[str, ...],
+    QUALIFIER["PADIC_WHEEL_REQUIRED"],
+)
+padic_sdist_required = cast(
+    tuple[str, ...],
+    QUALIFIER["PADIC_SDIST_REQUIRED"],
+)
 compatibility_index = cast(str, QUALIFIER["COMPATIBILITY_INDEX"])
 required_wheel_paths = cast(Callable[[str], tuple[str, ...]], QUALIFIER["required_wheel_paths"])
 required_sdist_paths = cast(Callable[..., tuple[str, ...]], QUALIFIER["required_sdist_paths"])
@@ -195,6 +203,11 @@ def test_v030_release_surface_remains_free_of_numeric_040_paths() -> None:
     assert set(numeric_sdist_required).isdisjoint(required_sdist_paths({}, "0.3.0"))
 
 
+def test_v040_release_surface_remains_free_of_padic_050_paths() -> None:
+    assert set(padic_wheel_required).isdisjoint(required_wheel_paths("0.4.0"))
+    assert set(padic_sdist_required).isdisjoint(required_sdist_paths({}, "0.4.0"))
+
+
 def test_v030_release_trio_requires_and_binds_the_deformation_surface(tmp_path: Path) -> None:
     wheel_path = _wheel(tmp_path, version="0.3.0")
     sdist_path = _sdist(tmp_path, version="0.3.0")
@@ -282,6 +295,48 @@ def test_v040_release_trio_fails_closed_for_every_numeric_path(tmp_path: Path) -
             )
 
 
+def test_v050_release_trio_requires_and_binds_the_padic_surface(tmp_path: Path) -> None:
+    wheel_path = _wheel(tmp_path, version="0.5.0")
+    sdist_path = _sdist(tmp_path, version="0.5.0")
+    source_path = _source_archive(tmp_path, version="0.5.0")
+
+    inspect_wheel(wheel_path, "0.5.0")
+    inspect_sdist(sdist_path, "0.5.0")
+    inspect_source_archive(source_path, "0.5.0")
+    cross_artifact_consistency(wheel_path, sdist_path, source_path, "0.5.0")
+
+    assert set(padic_wheel_required).issubset(required_wheel_paths("0.5.0"))
+    with tarfile.open(sdist_path, "r:gz") as archive:
+        names = {member.name.removeprefix("arbogast-0.5.0/") for member in archive}
+    assert set(padic_sdist_required).issubset(names)
+
+    expected_sources = {path.removeprefix("arbogast/padic/") for path in padic_wheel_required}
+    actual_sources = {path.name for path in (PROJECT_ROOT / "src/arbogast/padic").glob("*.py")}
+    assert len(expected_sources) == 18
+    assert expected_sources == actual_sources
+
+
+def test_v050_release_trio_fails_closed_for_every_padic_path(tmp_path: Path) -> None:
+    for relative in padic_wheel_required:
+        with pytest.raises(QualificationError, match=relative):
+            inspect_wheel(
+                _wheel(tmp_path, version="0.5.0", omit=relative),
+                "0.5.0",
+            )
+
+    for relative in padic_sdist_required:
+        with pytest.raises(QualificationError, match=relative):
+            inspect_sdist(
+                _sdist(tmp_path, version="0.5.0", omit=relative),
+                "0.5.0",
+            )
+        with pytest.raises(QualificationError, match=relative):
+            inspect_source_archive(
+                _source_archive(tmp_path, version="0.5.0", omit=relative),
+                "0.5.0",
+            )
+
+
 def test_prior_compatibility_surface_is_derived_from_the_packaged_index() -> None:
     payload = (PROJECT_ROOT / compatibility_index).read_bytes()
     index = json.loads(payload)
@@ -315,6 +370,7 @@ def test_future_minor_release_adds_newly_indexed_prior_contracts() -> None:
     assert "docs/release-notes-0.5.0.md" in required
     assert set(deformation_sdist_required).issubset(required)
     assert set(numeric_sdist_required).issubset(required)
+    assert set(padic_sdist_required).issubset(required)
 
 
 def test_packaged_deformation_journeys_begin_with_v030(tmp_path: Path) -> None:
@@ -337,10 +393,17 @@ def test_packaged_deformation_journeys_begin_with_v030(tmp_path: Path) -> None:
         version="0.4.0",
         require_gp=True,
     )
+    v050 = packaged_example_commands(
+        python,
+        tmp_path / "v050",
+        version="0.5.0",
+        require_gp=False,
+    )
 
     v020_scripts = {command[1] for command in v020}
     v030_scripts = {command[1] for command in v030}
     v040_scripts = {command[1] for command in v040_with_gp}
+    v050_scripts = {command[1] for command in v050}
     deformation_scripts = {
         "examples/deformation/exact_spaces/run.py",
         "examples/deformation/finite_lifts/run.py",
@@ -356,6 +419,18 @@ def test_packaged_deformation_journeys_begin_with_v030(tmp_path: Path) -> None:
     assert v020_scripts.isdisjoint(numeric_scripts)
     assert v030_scripts.isdisjoint(numeric_scripts)
     assert numeric_scripts.issubset(v040_scripts)
+    padic_scripts = {
+        "examples/padic/frobenius_slopes/run.py",
+        "examples/padic/three_point_good_reduction/run.py",
+        "examples/padic/special_deformation_datum/run.py",
+        "examples/padic/lifts_rigid_descent/run.py",
+        "examples/padic/m23_local_frontier/run.py",
+    }
+    assert v020_scripts.isdisjoint(padic_scripts)
+    assert v030_scripts.isdisjoint(padic_scripts)
+    assert v040_scripts.isdisjoint(padic_scripts)
+    assert padic_scripts.issubset(v050_scripts)
+    assert v050_scripts - v040_scripts == padic_scripts
     assert any("--with-pari" in command for command in v040_with_gp)
 
 
@@ -377,6 +452,11 @@ def test_release_workflow_derives_candidate_identity_and_preserves_ci_anchors() 
     assert "uv run python examples/numeric/two_sheet_cover/run.py" in workflow
     assert "uv run python examples/numeric/sqrt2_exactification/run.py" in workflow
     assert "uv run python examples/numeric/weighted_braid_plan/run.py" in workflow
+    assert "uv run python examples/padic/frobenius_slopes/run.py" in workflow
+    assert "uv run python examples/padic/three_point_good_reduction/run.py" in workflow
+    assert "uv run python examples/padic/special_deformation_datum/run.py" in workflow
+    assert "uv run python examples/padic/lifts_rigid_descent/run.py" in workflow
+    assert "uv run python examples/padic/m23_local_frontier/run.py" in workflow
 
 
 @pytest.mark.parametrize("version", ("0.3", "v0.3.0", "0.3.0.dev1", "../../0.3.0"))

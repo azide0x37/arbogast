@@ -467,6 +467,108 @@ _MODULE_PROFILES = {
             "Do not expose a generic backend evaluator or backend-local numerical identity.",
         ),
     ),
+    "arbogast.padic": _ModuleProfile(
+        (
+            "Bounded finite-precision p-adic linear algebra, finite inertia, exact displayed "
+            "three-point reduction, chart-local lifting, rigid finite-field descent, and an "
+            "explicit non-closing reduction frontier."
+        ),
+        (
+            "Certified",
+            "DeformationDatum",
+            "DescendedModel",
+            "FiniteInertiaQuotient",
+            "FixedLiftSet",
+            "FrobeniusConvention",
+            "FrobeniusOperator",
+            "GoodReduction",
+            "InertiaFiltration",
+            "InertiaRepresentation",
+            "LiftGaloisAction",
+            "LiftSet",
+            "LocalFactorizationFragment",
+            "LocalFieldEmbedding",
+            "NewtonSegment",
+            "PAdicBall",
+            "PAdicElement",
+            "PAdicField",
+            "PAdicMatrix",
+            "PAdicModule",
+            "PAdicPrecisionRing",
+            "PAdicReceipt",
+            "Partial",
+            "ProofObligation",
+            "SemistableReduction",
+            "SlopeDecomposition",
+            "SlopeProjector",
+            "StableReduction",
+            "ThreePointCover",
+            "Unknown",
+            "Unsupported",
+        ),
+        (
+            (
+                "Every finite-precision element, ball, matrix, and module remains bound to its "
+                "canonical base, precision, and exact residue presentation."
+            ),
+            (
+                "Frobenius convention, semilinear embedding, and linearizing period are part "
+                "of the proof identity."
+            ),
+            (
+                "Newton slope multiplicities become submodules only through exact stable "
+                "saturated projectors."
+            ),
+            (
+                "Inertia conclusions concern only the explicitly enumerated finite quotient "
+                "and declared group-theoretic series; arithmetic_origin_claimed=False and "
+                "arithmetic_lower_numbering_claimed=False record the absence of local-extension "
+                "or valuation-derived origin."
+            ),
+            (
+                "Good, semistable, and stable reduction are separate proof-bearing levels for "
+                "the displayed normalized model."
+            ),
+            (
+                "A certified local factorization fragment proves only the exact displayed "
+                "mod-p polynomial factorization and leaves frontier obligations open."
+            ),
+            (
+                "Lift completeness is confined to one pinned finite chart; version 0.5 "
+                "certifies lift Galois action only for a computed-complete trivial quotient "
+                "with explicit identity model transports."
+            ),
+            (
+                "Effective descent returns the exact coefficient vector of one rigid pinned "
+                "F_p chart model, not a characteristic-zero or number-field cover."
+            ),
+            (
+                "Certified, Partial, Unknown, and Unsupported closures remain literal under "
+                "the two fixed portable verifier families."
+            ),
+        ),
+        (
+            "Do not promote a finite-precision ball or residue class to an infinite p-adic value.",
+            "Do not silently switch arithmetic and geometric Frobenius conventions.",
+            "Do not infer a slope summand from Newton multiplicity data alone.",
+            "Do not identify a finite inertia quotient with the full continuous local action.",
+            (
+                "Do not infer potential good reduction, coordinate changes, extensions, "
+                "blow-ups, or contractions outside the displayed reduction witness."
+            ),
+            "Do not identify a deformation datum with a realized lift.",
+            "Do not identify a finite lift-set permutation with an arithmetic Galois action.",
+            "Do not identify a fixed lift with effective descent.",
+            (
+                "Do not turn a Partial, Unknown, Unsupported, or bounded frontier result into "
+                "a global existence or nonexistence conclusion."
+            ),
+            (
+                "Do not use certified_result to bypass a kind-specific constructor; it is a "
+                "low-level proof-envelope factory for already verified public schema objects."
+            ),
+        ),
+    ),
     "arbogast.hurwitz": _ModuleProfile(
         "Finite Nielsen classes, braid actions, real structures, and component invariants.",
         ("BraidAction", "HurwitzComponent", "NielsenClass", "NielsenTuple"),

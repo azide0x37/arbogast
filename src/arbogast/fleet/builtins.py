@@ -103,6 +103,8 @@ _PORTABLE_PYTHON_VERIFIERS = frozenset(
         "hurwitz.real_structure",
         "hurwitz.reduced",
         "numeric.exact-bridge.v1",
+        "padic.finite-exact.v1",
+        "padic.three-point-exact.v1",
     }
 )
 

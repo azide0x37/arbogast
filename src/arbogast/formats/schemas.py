@@ -227,6 +227,116 @@ NUMERIC_WEIGHTED_BRAID_PLAN_RECEIPT_SCHEMA_V1: Final = (
 NUMERIC_UNKNOWN_RECEIPT_SCHEMA_V1: Final = "arbogast.numeric.unknown-receipt/v1"
 NUMERIC_UNSUPPORTED_RECEIPT_SCHEMA_V1: Final = "arbogast.numeric.unsupported-receipt/v1"
 
+# Bounded finite-exact p-adic identities introduced after 0.4.0.  Runtime
+# objects and proving receipts keep independent schema identifiers so the
+# finite-precision, reduction, lifting, and descent boundaries remain literal.
+PADIC_AUTOMORPHISM_SCHEMA_V1: Final = "arbogast.padic.automorphism/v1"
+PADIC_AUTOMORPHISM_TRIVIALITY_WITNESS_SCHEMA_V1: Final = (
+    "arbogast.padic.automorphism-triviality-witness/v1"
+)
+PADIC_BALL_SCHEMA_V1: Final = "arbogast.padic.ball/v1"
+PADIC_BRANCH_FIBER_WITNESS_SCHEMA_V1: Final = "arbogast.padic.branch-fiber-witness/v1"
+PADIC_CERTIFIED_SCHEMA_V1: Final = "arbogast.padic.certified/v1"
+PADIC_COMPONENT_MAP_WITNESS_SCHEMA_V1: Final = "arbogast.padic.component-map-witness/v1"
+PADIC_DEFORMATION_DATUM_WITNESS_SCHEMA_V1: Final = "arbogast.padic.deformation-datum-witness/v1"
+PADIC_DEFORMATION_DATUM_SCHEMA_V1: Final = "arbogast.padic.deformation-datum/v1"
+PADIC_DEFORMATION_SIGNATURE_SCHEMA_V1: Final = "arbogast.padic.deformation-signature/v1"
+PADIC_DERIVATIVE_WITNESS_SCHEMA_V1: Final = "arbogast.padic.derivative-witness/v1"
+PADIC_DESCENDED_MODEL_SCHEMA_V1: Final = "arbogast.padic.descended-model/v1"
+PADIC_DESCENT_COCYCLE_SCHEMA_V1: Final = "arbogast.padic.descent-cocycle/v1"
+PADIC_DESCENT_ISOMORPHISM_SCHEMA_V1: Final = "arbogast.padic.descent-isomorphism/v1"
+PADIC_ELEMENT_SCHEMA_V1: Final = "arbogast.padic.element/v1"
+PADIC_FIBER_FACTOR_SCHEMA_V1: Final = "arbogast.padic.fiber-factor/v1"
+PADIC_FIELD_WITNESS_SCHEMA_V1: Final = "arbogast.padic.field-witness/v1"
+PADIC_FIELD_SCHEMA_V1: Final = "arbogast.padic.field/v1"
+PADIC_FINITE_FIELD_FACTOR_SCHEMA_V1: Final = "arbogast.padic.finite-field-factor/v1"
+PADIC_FINITE_INERTIA_QUOTIENT_SCHEMA_V1: Final = "arbogast.padic.finite-inertia-quotient/v1"
+PADIC_FINITE_LIFT_ACTION_SCHEMA_V1: Final = "arbogast.padic.finite-lift-action/v1"
+PADIC_FIXED_LIFT_SET_SCHEMA_V1: Final = "arbogast.padic.fixed-lift-set/v1"
+PADIC_FIXED_LIFT_SCHEMA_V1: Final = "arbogast.padic.fixed-lift/v1"
+PADIC_FROBENIUS_OPERATOR_SCHEMA_V1: Final = "arbogast.padic.frobenius-operator/v1"
+PADIC_GOOD_REDUCTION_WITNESS_SCHEMA_V1: Final = "arbogast.padic.good-reduction-witness/v1"
+PADIC_GOOD_REDUCTION_SCHEMA_V1: Final = "arbogast.padic.good-reduction/v1"
+PADIC_INERTIA_FILTRATION_SCHEMA_V1: Final = "arbogast.padic.inertia-filtration/v1"
+PADIC_INERTIA_REPRESENTATION_SCHEMA_V1: Final = "arbogast.padic.inertia-representation/v1"
+PADIC_LIFT_CANDIDATE_SCHEMA_V1: Final = "arbogast.padic.lift-candidate/v1"
+PADIC_LIFT_CHART_SCHEMA_V1: Final = "arbogast.padic.lift-chart/v1"
+PADIC_LIFT_ENUMERATION_WITNESS_SCHEMA_V1: Final = "arbogast.padic.lift-enumeration-witness/v1"
+PADIC_LIFT_GALOIS_ACTION_SCHEMA_V1: Final = "arbogast.padic.lift-galois-action/v1"
+PADIC_LIFT_SET_SCHEMA_V1: Final = "arbogast.padic.lift-set/v1"
+PADIC_LIFT_TRANSPORT_WITNESS_SCHEMA_V1: Final = "arbogast.padic.lift-transport-witness/v1"
+PADIC_LOCAL_FACTORIZATION_FRAGMENT_SCHEMA_V1: Final = (
+    "arbogast.padic.local-factorization-fragment/v1"
+)
+PADIC_LOCAL_FIELD_EMBEDDING_SCHEMA_V1: Final = "arbogast.padic.local-field-embedding/v1"
+PADIC_MARKED_REDUCTION_COMPONENT_SCHEMA_V1: Final = "arbogast.padic.marked-reduction-component/v1"
+PADIC_MATRIX_SCHEMA_V1: Final = "arbogast.padic.matrix/v1"
+PADIC_MODULE_SCHEMA_V1: Final = "arbogast.padic.module/v1"
+PADIC_NEWTON_SEGMENT_SCHEMA_V1: Final = "arbogast.padic.newton-segment/v1"
+PADIC_PARTIAL_SCHEMA_V1: Final = "arbogast.padic.partial/v1"
+PADIC_PRECISION_RING_SCHEMA_V1: Final = "arbogast.padic.precision-ring/v1"
+PADIC_PROJECTIVE_RATIONAL_POINT_SCHEMA_V1: Final = "arbogast.padic.projective-rational-point/v1"
+PADIC_PROOF_OBLIGATION_SCHEMA_V1: Final = "arbogast.padic.proof-obligation/v1"
+PADIC_RATIONAL_DIFFERENTIAL_SCHEMA_V1: Final = "arbogast.padic.rational-differential/v1"
+PADIC_REDUCED_BRANCH_FIBER_SCHEMA_V1: Final = "arbogast.padic.reduced-branch-fiber/v1"
+PADIC_REDUCED_FIBER_FACTOR_SCHEMA_V1: Final = "arbogast.padic.reduced-fiber-factor/v1"
+PADIC_REDUCED_PROJECTIVE_POINT_SCHEMA_V1: Final = "arbogast.padic.reduced-projective-point/v1"
+PADIC_RIEMANN_HURWITZ_WITNESS_SCHEMA_V1: Final = "arbogast.padic.riemann-hurwitz-witness/v1"
+PADIC_RIGID_DESCENT_WITNESS_SCHEMA_V1: Final = "arbogast.padic.rigid-descent-witness/v1"
+PADIC_RIGID_FIXED_LIFT_SCHEMA_V1: Final = "arbogast.padic.rigid-fixed-lift/v1"
+PADIC_SEMISTABLE_REDUCTION_WITNESS_SCHEMA_V1: Final = (
+    "arbogast.padic.semistable-reduction-witness/v1"
+)
+PADIC_SEMISTABLE_REDUCTION_SCHEMA_V1: Final = "arbogast.padic.semistable-reduction/v1"
+PADIC_SLOPE_DECOMPOSITION_SCHEMA_V1: Final = "arbogast.padic.slope-decomposition/v1"
+PADIC_SLOPE_MULTIPLICITY_SCHEMA_V1: Final = "arbogast.padic.slope-multiplicity/v1"
+PADIC_SLOPE_PROJECTOR_SCHEMA_V1: Final = "arbogast.padic.slope-projector/v1"
+PADIC_SPECIAL_FIBER_MARKING_SCHEMA_V1: Final = "arbogast.padic.special-fiber-marking/v1"
+PADIC_SPECIALITY_WITNESS_SCHEMA_V1: Final = "arbogast.padic.speciality-witness/v1"
+PADIC_STABLE_REDUCTION_WITNESS_SCHEMA_V1: Final = "arbogast.padic.stable-reduction-witness/v1"
+PADIC_STABLE_REDUCTION_SCHEMA_V1: Final = "arbogast.padic.stable-reduction/v1"
+PADIC_SUBMODULE_SCHEMA_V1: Final = "arbogast.padic.submodule/v1"
+PADIC_THREE_POINT_COVER_SCHEMA_V1: Final = "arbogast.padic.three-point-cover/v1"
+PADIC_UNKNOWN_SCHEMA_V1: Final = "arbogast.padic.unknown/v1"
+PADIC_UNSUPPORTED_SCHEMA_V1: Final = "arbogast.padic.unsupported/v1"
+PADIC_VALUATION_INTERVAL_SCHEMA_V1: Final = "arbogast.padic.valuation-interval/v1"
+
+PADIC_AUTOMORPHISM_RECEIPT_SCHEMA_V1: Final = "arbogast.padic.automorphism-receipt/v1"
+PADIC_DEFORMATION_DATUM_RECEIPT_SCHEMA_V1: Final = "arbogast.padic.deformation-datum-receipt/v1"
+PADIC_DESCENDED_MODEL_RECEIPT_SCHEMA_V1: Final = "arbogast.padic.descended-model-receipt/v1"
+PADIC_FIELD_RECEIPT_SCHEMA_V1: Final = "arbogast.padic.field-receipt/v1"
+PADIC_FINITE_PARTIAL_RECEIPT_SCHEMA_V1: Final = "arbogast.padic.finite-partial-receipt/v1"
+PADIC_FINITE_UNKNOWN_RECEIPT_SCHEMA_V1: Final = "arbogast.padic.finite-unknown-receipt/v1"
+PADIC_FINITE_UNSUPPORTED_RECEIPT_SCHEMA_V1: Final = "arbogast.padic.finite-unsupported-receipt/v1"
+PADIC_FIXED_LIFT_SET_RECEIPT_SCHEMA_V1: Final = "arbogast.padic.fixed-lift-set-receipt/v1"
+PADIC_FROBENIUS_RECEIPT_SCHEMA_V1: Final = "arbogast.padic.frobenius-receipt/v1"
+PADIC_GOOD_REDUCTION_RECEIPT_SCHEMA_V1: Final = "arbogast.padic.good-reduction-receipt/v1"
+PADIC_INERTIA_REPRESENTATION_RECEIPT_SCHEMA_V1: Final = (
+    "arbogast.padic.inertia-representation-receipt/v1"
+)
+PADIC_LIFT_ACTION_RECEIPT_SCHEMA_V1: Final = "arbogast.padic.lift-action-receipt/v1"
+PADIC_LIFT_SET_RECEIPT_SCHEMA_V1: Final = "arbogast.padic.lift-set-receipt/v1"
+PADIC_LOCAL_FACTORIZATION_FRAGMENT_RECEIPT_SCHEMA_V1: Final = (
+    "arbogast.padic.local-factorization-fragment-receipt/v1"
+)
+PADIC_LOCAL_FIELD_EMBEDDING_RECEIPT_SCHEMA_V1: Final = (
+    "arbogast.padic.local-field-embedding-receipt/v1"
+)
+PADIC_MODULE_RECEIPT_SCHEMA_V1: Final = "arbogast.padic.module-receipt/v1"
+PADIC_ORDINARY_PART_RECEIPT_SCHEMA_V1: Final = "arbogast.padic.ordinary-part-receipt/v1"
+PADIC_PRECISION_RING_RECEIPT_SCHEMA_V1: Final = "arbogast.padic.precision-ring-receipt/v1"
+PADIC_SEMISTABLE_REDUCTION_RECEIPT_SCHEMA_V1: Final = (
+    "arbogast.padic.semistable-reduction-receipt/v1"
+)
+PADIC_SLOPE_DECOMPOSITION_RECEIPT_SCHEMA_V1: Final = "arbogast.padic.slope-decomposition-receipt/v1"
+PADIC_STABLE_REDUCTION_RECEIPT_SCHEMA_V1: Final = "arbogast.padic.stable-reduction-receipt/v1"
+PADIC_SUBMODULE_RECEIPT_SCHEMA_V1: Final = "arbogast.padic.submodule-receipt/v1"
+PADIC_THREE_POINT_PARTIAL_RECEIPT_SCHEMA_V1: Final = "arbogast.padic.three-point-partial-receipt/v1"
+PADIC_THREE_POINT_UNKNOWN_RECEIPT_SCHEMA_V1: Final = "arbogast.padic.three-point-unknown-receipt/v1"
+PADIC_THREE_POINT_UNSUPPORTED_RECEIPT_SCHEMA_V1: Final = (
+    "arbogast.padic.three-point-unsupported-receipt/v1"
+)
+
 
 class SchemaError(ValueError):
     """Raised for an unknown schema or structurally invalid document."""
@@ -1111,6 +1221,700 @@ _DEFINITIONS: Final = {
                 (
                     NUMERIC_UNSUPPORTED_RECEIPT_SCHEMA_V1,
                     "Unsupported numeric-result receipt",
+                ),
+            )
+        ),
+        *(
+            SchemaDefinition(identifier, required, title)
+            for identifier, required, title in (
+                (
+                    PADIC_AUTOMORPHISM_SCHEMA_V1,
+                    ("basis_images", "inverse_images", "ring_id", "type"),
+                    "PAdicAutomorphism",
+                ),
+                (
+                    PADIC_AUTOMORPHISM_TRIVIALITY_WITNESS_SCHEMA_V1,
+                    ("automorphisms", "category_scope", "exhaustive", "fixed_lift_id", "type"),
+                    "AutomorphismTrivialityWitness",
+                ),
+                (
+                    PADIC_BALL_SCHEMA_V1,
+                    ("coordinates", "ring_id", "type", "valuation_lower", "valuation_upper"),
+                    "PAdicBall",
+                ),
+                (
+                    PADIC_BRANCH_FIBER_WITNESS_SCHEMA_V1,
+                    ("branch", "factors", "scalar", "type"),
+                    "BranchFiberWitness",
+                ),
+                (PADIC_CERTIFIED_SCHEMA_V1, ("receipt", "type", "value"), "Certified"),
+                (
+                    PADIC_COMPONENT_MAP_WITNESS_SCHEMA_V1,
+                    ("degree", "source_component_id", "target_component_id", "type"),
+                    "ComponentMapWitness",
+                ),
+                (
+                    PADIC_DEFORMATION_DATUM_SCHEMA_V1,
+                    (
+                        "character_exponent",
+                        "character_values",
+                        "component_relation_scope",
+                        "completeness_scope",
+                        "differential",
+                        "differential_signature_relation_claimed",
+                        "label",
+                        "origin_scope",
+                        "signature",
+                        "speciality",
+                        "tame_order",
+                        "type",
+                    ),
+                    "DeformationDatum",
+                ),
+                (
+                    PADIC_DEFORMATION_DATUM_WITNESS_SCHEMA_V1,
+                    (
+                        "datum",
+                        "differential_extraction_rule",
+                        "divisor_residue_data",
+                        "group_action",
+                        "source_component",
+                        "source_reduction_id",
+                        "theorem_profile",
+                        "type",
+                    ),
+                    "DeformationDatumWitness",
+                ),
+                (
+                    PADIC_DEFORMATION_SIGNATURE_SCHEMA_V1,
+                    ("entries", "type"),
+                    "DeformationSignature",
+                ),
+                (
+                    PADIC_DERIVATIVE_WITNESS_SCHEMA_V1,
+                    ("derivative", "factors", "scalar", "type"),
+                    "DerivativeWitness",
+                ),
+                (
+                    PADIC_DESCENDED_MODEL_SCHEMA_V1,
+                    (
+                        "automorphisms_trivial",
+                        "characteristic_zero_descent_claimed",
+                        "cocycle_verified",
+                        "coefficients",
+                        "coordinate_labels",
+                        "descent_scope",
+                        "fixed_set",
+                        "geometric_cover_descent_claimed",
+                        "model_field_scope",
+                        "number_field_descent_claimed",
+                        "prime",
+                        "source_fixed_set_certificate_id",
+                        "two_sided_base_change_verified",
+                        "type",
+                        "witness",
+                    ),
+                    "DescendedModel",
+                ),
+                (
+                    PADIC_DESCENT_COCYCLE_SCHEMA_V1,
+                    (
+                        "action_id",
+                        "cocycle_convention",
+                        "isomorphisms",
+                        "quotient_id",
+                        "rigid_fixed_lift_id",
+                        "type",
+                    ),
+                    "DescentCocycle",
+                ),
+                (
+                    PADIC_DESCENT_ISOMORPHISM_SCHEMA_V1,
+                    (
+                        "forward",
+                        "inverse",
+                        "isomorphism_scope",
+                        "quotient_element",
+                        "rigid_fixed_lift_id",
+                        "type",
+                    ),
+                    "DescentIsomorphism",
+                ),
+                (PADIC_ELEMENT_SCHEMA_V1, ("coordinates", "field_id", "type"), "PAdicElement"),
+                (PADIC_FIBER_FACTOR_SCHEMA_V1, ("multiplicity", "point", "type"), "FiberFactor"),
+                (
+                    PADIC_FIELD_SCHEMA_V1,
+                    (
+                        "defining_polynomial",
+                        "integral_basis",
+                        "prime",
+                        "ramification_index",
+                        "residue_degree",
+                        "residue_polynomial",
+                        "type",
+                        "uniformizer",
+                        "witness",
+                    ),
+                    "PAdicField",
+                ),
+                (PADIC_FIELD_WITNESS_SCHEMA_V1, ("kind", "type"), "PAdicFieldWitness"),
+                (
+                    PADIC_FINITE_FIELD_FACTOR_SCHEMA_V1,
+                    ("coefficients", "degree", "irreducible", "multiplicity", "prime", "type"),
+                    "FiniteFieldFactor",
+                ),
+                (
+                    PADIC_FINITE_INERTIA_QUOTIENT_SCHEMA_V1,
+                    (
+                        "arithmetic_origin_claimed",
+                        "group",
+                        "place_id",
+                        "residue_cardinality",
+                        "residue_characteristic",
+                        "residue_degree",
+                        "source_id",
+                        "scope",
+                        "type",
+                    ),
+                    "FiniteInertiaQuotient",
+                ),
+                (
+                    PADIC_FINITE_LIFT_ACTION_SCHEMA_V1,
+                    (
+                        "action_scope",
+                        "arithmetic_galois_action",
+                        "group",
+                        "lifts",
+                        "type",
+                        "witnesses",
+                    ),
+                    "FiniteLiftAction",
+                ),
+                (
+                    PADIC_FIXED_LIFT_SCHEMA_V1,
+                    (
+                        "action_id",
+                        "candidate",
+                        "conclusion_scope",
+                        "descent_claimed",
+                        "lift_index",
+                        "type",
+                    ),
+                    "FixedLift",
+                ),
+                (
+                    PADIC_FIXED_LIFT_SET_SCHEMA_V1,
+                    (
+                        "action",
+                        "action_kind",
+                        "completeness_scope",
+                        "descent_claimed",
+                        "fixed",
+                        "source_action_certificate_id",
+                        "type",
+                    ),
+                    "FixedLiftSet",
+                ),
+                (
+                    PADIC_FROBENIUS_OPERATOR_SCHEMA_V1,
+                    (
+                        "action_convention",
+                        "characteristic_polynomial",
+                        "coefficient_field",
+                        "coefficient_field_id",
+                        "convention",
+                        "linearized_matrix",
+                        "linearized_power",
+                        "matrix",
+                        "module",
+                        "module_id",
+                        "precision_ring",
+                        "precision_ring_id",
+                        "semilinear_period",
+                        "sigma_id",
+                        "sigma",
+                        "sigma_residue_action",
+                        "type",
+                        "valuation_intervals",
+                    ),
+                    "FrobeniusOperator",
+                ),
+                (
+                    PADIC_GOOD_REDUCTION_SCHEMA_V1,
+                    ("cover_id", "prime", "type", "witness"),
+                    "GoodReduction",
+                ),
+                (
+                    PADIC_GOOD_REDUCTION_WITNESS_SCHEMA_V1,
+                    (
+                        "cover",
+                        "degree_preserved",
+                        "marked_source_points",
+                        "prime",
+                        "ramification_points",
+                        "reduced_derivative",
+                        "reduced_derivative_factors",
+                        "reduced_fibers",
+                        "reduced_polynomial",
+                        "tame",
+                        "type",
+                    ),
+                    "GoodReductionWitness",
+                ),
+                (
+                    PADIC_INERTIA_FILTRATION_SCHEMA_V1,
+                    (
+                        "arithmetic_lower_numbering_claimed",
+                        "level_element_indices",
+                        "numbering",
+                        "quotient_id",
+                        "scope",
+                        "tame_quotient_order",
+                        "type",
+                        "wild_residue_characteristic",
+                    ),
+                    "InertiaFiltration",
+                ),
+                (
+                    PADIC_INERTIA_REPRESENTATION_SCHEMA_V1,
+                    (
+                        "action_convention",
+                        "action_matrices",
+                        "coefficient_field",
+                        "filtration",
+                        "filtration_id",
+                        "frobenius_operator",
+                        "frobenius_relation",
+                        "module",
+                        "module_id",
+                        "precision_ring",
+                        "quotient",
+                        "quotient_id",
+                        "scope",
+                        "type",
+                    ),
+                    "InertiaRepresentation",
+                ),
+                (
+                    PADIC_LIFT_CANDIDATE_SCHEMA_V1,
+                    (
+                        "chart_id",
+                        "coordinate_labels",
+                        "isomorphism_key",
+                        "model_coefficients",
+                        "model_scope",
+                        "parameter",
+                        "type",
+                    ),
+                    "LiftCandidate",
+                ),
+                (
+                    PADIC_LIFT_CHART_SCHEMA_V1,
+                    (
+                        "completeness_scope",
+                        "coordinate_labels",
+                        "datum",
+                        "equation_coefficients",
+                        "label",
+                        "model_coordinate_polynomials",
+                        "model_scope",
+                        "type",
+                    ),
+                    "LiftChart",
+                ),
+                (
+                    PADIC_LIFT_ENUMERATION_WITNESS_SCHEMA_V1,
+                    (
+                        "candidates",
+                        "chart_id",
+                        "completeness_scope",
+                        "exhausted_parameters",
+                        "type",
+                    ),
+                    "LiftEnumerationWitness",
+                ),
+                (
+                    PADIC_LIFT_GALOIS_ACTION_SCHEMA_V1,
+                    (
+                        "action_scope",
+                        "arithmetic_galois_action",
+                        "characteristic_zero_lift_action_claimed",
+                        "coefficient_action_rule",
+                        "finite_action",
+                        "geometric_lift_action_claimed",
+                        "lift_set_certificate_id",
+                        "quotient_id",
+                        "quotient_presentation_certificate_id",
+                        "quotient_proving_certificate_id",
+                        "quotient_snapshot",
+                        "type",
+                    ),
+                    "LiftGaloisAction",
+                ),
+                (
+                    PADIC_LIFT_SET_SCHEMA_V1,
+                    (
+                        "candidates",
+                        "chart",
+                        "class_indices",
+                        "completeness_scope",
+                        "datum_id",
+                        "deduplication_scope",
+                        "representatives",
+                        "source_datum_certificate_id",
+                        "type",
+                        "witness",
+                    ),
+                    "LiftSet",
+                ),
+                (
+                    PADIC_LIFT_TRANSPORT_WITNESS_SCHEMA_V1,
+                    (
+                        "arithmetic_compatible",
+                        "group_element",
+                        "lift_permutation",
+                        "lift_set_id",
+                        "model_coordinate_permutations",
+                        "model_transport_verified",
+                        "transport_labels",
+                        "transport_scope",
+                        "type",
+                    ),
+                    "LiftTransportWitness",
+                ),
+                (
+                    PADIC_LOCAL_FACTORIZATION_FRAGMENT_SCHEMA_V1,
+                    (
+                        "factor_degrees",
+                        "factorization_complete",
+                        "factors",
+                        "polynomial",
+                        "prime",
+                        "ramification_indices",
+                        "scope",
+                        "source_id",
+                        "type",
+                        "unit",
+                    ),
+                    "LocalFactorizationFragment",
+                ),
+                (
+                    PADIC_LOCAL_FIELD_EMBEDDING_SCHEMA_V1,
+                    ("codomain_id", "domain_id", "generator_image", "type"),
+                    "LocalFieldEmbedding",
+                ),
+                (
+                    PADIC_MARKED_REDUCTION_COMPONENT_SCHEMA_V1,
+                    (
+                        "component_id",
+                        "genus",
+                        "incident_nodes",
+                        "markings",
+                        "role",
+                        "smooth",
+                        "stability_index",
+                        "type",
+                    ),
+                    "MarkedReductionComponent",
+                ),
+                (
+                    PADIC_MATRIX_SCHEMA_V1,
+                    ("base_id", "base_kind", "column_action", "entries", "shape", "type"),
+                    "PAdicMatrix",
+                ),
+                (
+                    PADIC_MODULE_SCHEMA_V1,
+                    ("basis_labels", "coordinate_convention", "rank", "ring_id", "type"),
+                    "PAdicModule",
+                ),
+                (
+                    PADIC_NEWTON_SEGMENT_SCHEMA_V1,
+                    (
+                        "frobenius_slope",
+                        "geometric_slope",
+                        "left_index",
+                        "left_valuation",
+                        "multiplicity",
+                        "normalization",
+                        "right_index",
+                        "right_valuation",
+                        "semilinear_period",
+                        "type",
+                    ),
+                    "NewtonSegment",
+                ),
+                (
+                    PADIC_PARTIAL_SCHEMA_V1,
+                    ("fragments", "obligations", "operation", "reason", "receipt", "type"),
+                    "Partial",
+                ),
+                (
+                    PADIC_PRECISION_RING_SCHEMA_V1,
+                    (
+                        "cardinality",
+                        "field_id",
+                        "modulus_hnf",
+                        "precision",
+                        "type",
+                        "uniformizer_power_convention",
+                    ),
+                    "PAdicPrecisionRing",
+                ),
+                (
+                    PADIC_PROJECTIVE_RATIONAL_POINT_SCHEMA_V1,
+                    ("denominator", "numerator", "type"),
+                    "ProjectiveRationalPoint",
+                ),
+                (
+                    PADIC_PROOF_OBLIGATION_SCHEMA_V1,
+                    (
+                        "blocked_result_kind",
+                        "input_ids",
+                        "obligation_id",
+                        "required_witness_kind",
+                        "statement",
+                        "type",
+                    ),
+                    "ProofObligation",
+                ),
+                (
+                    PADIC_RATIONAL_DIFFERENTIAL_SCHEMA_V1,
+                    (
+                        "cartier_relation",
+                        "denominator",
+                        "differential_kind",
+                        "logarithmic_unit",
+                        "numerator",
+                        "prime",
+                        "type",
+                    ),
+                    "RationalDifferential",
+                ),
+                (
+                    PADIC_REDUCED_BRANCH_FIBER_SCHEMA_V1,
+                    ("branch", "factors", "prime", "scalar", "type"),
+                    "ReducedBranchFiber",
+                ),
+                (
+                    PADIC_REDUCED_FIBER_FACTOR_SCHEMA_V1,
+                    ("linear_coefficient", "multiplicity", "point", "type"),
+                    "ReducedFiberFactor",
+                ),
+                (
+                    PADIC_REDUCED_PROJECTIVE_POINT_SCHEMA_V1,
+                    ("prime", "residue", "type"),
+                    "ReducedProjectivePoint",
+                ),
+                (
+                    PADIC_RIEMANN_HURWITZ_WITNESS_SCHEMA_V1,
+                    ("degree", "expected_ramification", "profiles", "ramification_sum", "type"),
+                    "RiemannHurwitzWitness",
+                ),
+                (
+                    PADIC_RIGID_DESCENT_WITNESS_SCHEMA_V1,
+                    (
+                        "base_change_forward",
+                        "base_change_inverse",
+                        "cocycle",
+                        "descended_model_coefficients",
+                        "descent_scope",
+                        "fixed_set_id",
+                        "rigid",
+                        "type",
+                    ),
+                    "RigidDescentWitness",
+                ),
+                (
+                    PADIC_RIGID_FIXED_LIFT_SCHEMA_V1,
+                    ("fixed", "rigidity_scope", "triviality", "type"),
+                    "RigidFixedLift",
+                ),
+                (
+                    PADIC_SEMISTABLE_REDUCTION_SCHEMA_V1,
+                    ("cover_id", "prime", "type", "witness"),
+                    "SemistableReduction",
+                ),
+                (
+                    PADIC_SEMISTABLE_REDUCTION_WITNESS_SCHEMA_V1,
+                    (
+                        "complete",
+                        "component_maps",
+                        "good_reduction",
+                        "nodes",
+                        "source_components",
+                        "target_components",
+                        "type",
+                    ),
+                    "SemistableReductionWitness",
+                ),
+                (
+                    PADIC_SLOPE_DECOMPOSITION_SCHEMA_V1,
+                    (
+                        "intervals",
+                        "multiplicities",
+                        "operator_id",
+                        "operator",
+                        "polygon_complete",
+                        "projectors",
+                        "projectors_complete",
+                        "segments",
+                        "type",
+                    ),
+                    "SlopeDecomposition",
+                ),
+                (
+                    PADIC_SLOPE_MULTIPLICITY_SCHEMA_V1,
+                    ("multiplicity", "slope", "type"),
+                    "SlopeMultiplicity",
+                ),
+                (
+                    PADIC_SLOPE_PROJECTOR_SCHEMA_V1,
+                    (
+                        "basis_change",
+                        "basis_change_inverse",
+                        "operator_id",
+                        "operator",
+                        "projector",
+                        "rank",
+                        "slope",
+                        "submodule",
+                        "type",
+                    ),
+                    "SlopeProjector",
+                ),
+                (
+                    PADIC_SPECIALITY_WITNESS_SCHEMA_V1,
+                    (
+                        "normalized_labels",
+                        "primitive_labels",
+                        "profile",
+                        "signature",
+                        "type",
+                        "wild_labels",
+                    ),
+                    "SpecialityWitness",
+                ),
+                (
+                    PADIC_SPECIAL_FIBER_MARKING_SCHEMA_V1,
+                    ("branch", "label", "point", "ramification_index", "type"),
+                    "SpecialFiberMarking",
+                ),
+                (
+                    PADIC_STABLE_REDUCTION_SCHEMA_V1,
+                    ("cover_id", "prime", "semistable_reduction_id", "type", "witness"),
+                    "StableReduction",
+                ),
+                (
+                    PADIC_STABLE_REDUCTION_WITNESS_SCHEMA_V1,
+                    (
+                        "complete",
+                        "contracted_components",
+                        "semistable_reduction",
+                        "source_stability_indices",
+                        "target_stability_indices",
+                        "type",
+                    ),
+                    "StableReductionWitness",
+                ),
+                (
+                    PADIC_SUBMODULE_SCHEMA_V1,
+                    ("ambient_id", "cardinality", "preimage_hnf", "type"),
+                    "PAdicSubmodule",
+                ),
+                (
+                    PADIC_THREE_POINT_COVER_SCHEMA_V1,
+                    (
+                        "degree",
+                        "derivative_witness",
+                        "fibers",
+                        "generic_degree_witness",
+                        "label",
+                        "polynomial",
+                        "riemann_hurwitz_witness",
+                        "type",
+                    ),
+                    "ThreePointCover",
+                ),
+                (
+                    PADIC_UNKNOWN_SCHEMA_V1,
+                    ("operation", "reason", "reason_code", "receipt", "requested", "type"),
+                    "Unknown",
+                ),
+                (
+                    PADIC_UNSUPPORTED_SCHEMA_V1,
+                    (
+                        "operation",
+                        "reason",
+                        "reason_code",
+                        "receipt",
+                        "requested",
+                        "supported",
+                        "type",
+                    ),
+                    "Unsupported",
+                ),
+                (
+                    PADIC_VALUATION_INTERVAL_SCHEMA_V1,
+                    ("lower", "normalization", "type", "upper"),
+                    "ValuationInterval",
+                ),
+            )
+        ),
+        *(
+            SchemaDefinition(
+                identifier,
+                (
+                    "closure",
+                    "evidence",
+                    "kind",
+                    "layer",
+                    "payload",
+                    "proof_context",
+                    "verifier",
+                ),
+                title,
+                marker="schema_version",
+            )
+            for identifier, title in (
+                (PADIC_AUTOMORPHISM_RECEIPT_SCHEMA_V1, "automorphism p-adic receipt"),
+                (PADIC_DEFORMATION_DATUM_RECEIPT_SCHEMA_V1, "deformation-datum p-adic receipt"),
+                (PADIC_DESCENDED_MODEL_RECEIPT_SCHEMA_V1, "descended-model p-adic receipt"),
+                (PADIC_FIELD_RECEIPT_SCHEMA_V1, "field p-adic receipt"),
+                (PADIC_FINITE_PARTIAL_RECEIPT_SCHEMA_V1, "finite-partial p-adic receipt"),
+                (PADIC_FINITE_UNKNOWN_RECEIPT_SCHEMA_V1, "finite-unknown p-adic receipt"),
+                (PADIC_FINITE_UNSUPPORTED_RECEIPT_SCHEMA_V1, "finite-unsupported p-adic receipt"),
+                (PADIC_FIXED_LIFT_SET_RECEIPT_SCHEMA_V1, "fixed-lift-set p-adic receipt"),
+                (PADIC_FROBENIUS_RECEIPT_SCHEMA_V1, "frobenius p-adic receipt"),
+                (PADIC_GOOD_REDUCTION_RECEIPT_SCHEMA_V1, "good-reduction p-adic receipt"),
+                (
+                    PADIC_INERTIA_REPRESENTATION_RECEIPT_SCHEMA_V1,
+                    "inertia-representation p-adic receipt",
+                ),
+                (PADIC_LIFT_ACTION_RECEIPT_SCHEMA_V1, "lift-action p-adic receipt"),
+                (PADIC_LIFT_SET_RECEIPT_SCHEMA_V1, "lift-set p-adic receipt"),
+                (
+                    PADIC_LOCAL_FACTORIZATION_FRAGMENT_RECEIPT_SCHEMA_V1,
+                    "local-factorization-fragment p-adic receipt",
+                ),
+                (
+                    PADIC_LOCAL_FIELD_EMBEDDING_RECEIPT_SCHEMA_V1,
+                    "local-field-embedding p-adic receipt",
+                ),
+                (PADIC_MODULE_RECEIPT_SCHEMA_V1, "module p-adic receipt"),
+                (PADIC_ORDINARY_PART_RECEIPT_SCHEMA_V1, "ordinary-part p-adic receipt"),
+                (PADIC_PRECISION_RING_RECEIPT_SCHEMA_V1, "precision-ring p-adic receipt"),
+                (
+                    PADIC_SEMISTABLE_REDUCTION_RECEIPT_SCHEMA_V1,
+                    "semistable-reduction p-adic receipt",
+                ),
+                (PADIC_SLOPE_DECOMPOSITION_RECEIPT_SCHEMA_V1, "slope-decomposition p-adic receipt"),
+                (PADIC_STABLE_REDUCTION_RECEIPT_SCHEMA_V1, "stable-reduction p-adic receipt"),
+                (PADIC_SUBMODULE_RECEIPT_SCHEMA_V1, "submodule p-adic receipt"),
+                (PADIC_THREE_POINT_PARTIAL_RECEIPT_SCHEMA_V1, "three-point-partial p-adic receipt"),
+                (PADIC_THREE_POINT_UNKNOWN_RECEIPT_SCHEMA_V1, "three-point-unknown p-adic receipt"),
+                (
+                    PADIC_THREE_POINT_UNSUPPORTED_RECEIPT_SCHEMA_V1,
+                    "three-point-unsupported p-adic receipt",
                 ),
             )
         ),

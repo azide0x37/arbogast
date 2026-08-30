@@ -9,6 +9,7 @@ _ADDITIVE_SEMANTIC_MODULE_PREFIXES = (
     "arbogast.deform.",
     "arbogast.galois.",
     "arbogast.numeric.",
+    "arbogast.padic.",
     "arbogast.cohom.five_term",
     "arbogast.cohom.maps",
     "arbogast.rep.maps",

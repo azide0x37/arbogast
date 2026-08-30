@@ -35,6 +35,7 @@ ARCHIVE_SCHEMA: Final = "arbogast.release-qualification/v1"
 COMPATIBILITY_INDEX: Final = "tests/fixtures/compat/index.json"
 DEFORMATION_INTRODUCED: Final = (0, 3, 0)
 NUMERIC_INTRODUCED: Final = (0, 4, 0)
+PADIC_INTRODUCED: Final = (0, 5, 0)
 WHEEL_REQUIRED: Final = (
     "arbogast/__init__.py",
     "arbogast/py.typed",
@@ -142,6 +143,52 @@ NUMERIC_SDIST_REQUIRED: Final = (
     "tests/unit/test_numeric_schema_acceptance.py",
     "tests/unit/test_numeric_surface_acceptance.py",
     "tests/unit/test_numeric_weighted_braid.py",
+)
+PADIC_WHEEL_REQUIRED: Final = (
+    "arbogast/padic/__init__.py",
+    "arbogast/padic/_schema.py",
+    "arbogast/padic/certificate.py",
+    "arbogast/padic/covers.py",
+    "arbogast/padic/descent.py",
+    "arbogast/padic/errors.py",
+    "arbogast/padic/fields.py",
+    "arbogast/padic/frobenius.py",
+    "arbogast/padic/frontier.py",
+    "arbogast/padic/inertia.py",
+    "arbogast/padic/lifts.py",
+    "arbogast/padic/matrices.py",
+    "arbogast/padic/modules.py",
+    "arbogast/padic/plans.py",
+    "arbogast/padic/reduction.py",
+    "arbogast/padic/results.py",
+    "arbogast/padic/semantic.py",
+    "arbogast/padic/wewers.py",
+)
+PADIC_SDIST_REQUIRED: Final = (
+    "docs/padic.md",
+    "examples/padic/README.md",
+    "examples/padic/frobenius_slopes/README.md",
+    "examples/padic/frobenius_slopes/run.py",
+    "examples/padic/lifts_rigid_descent/README.md",
+    "examples/padic/lifts_rigid_descent/run.py",
+    "examples/padic/m23_local_frontier/README.md",
+    "examples/padic/m23_local_frontier/run.py",
+    "examples/padic/special_deformation_datum/README.md",
+    "examples/padic/special_deformation_datum/run.py",
+    "examples/padic/three_point_good_reduction/README.md",
+    "examples/padic/three_point_good_reduction/run.py",
+    *(f"src/{relative}" for relative in PADIC_WHEEL_REQUIRED),
+    "tests/integration/test_padic_examples_acceptance.py",
+    "tests/integration/test_padic_fresh_process_acceptance.py",
+    "tests/integration/test_padic_frobenius_inertia_fresh.py",
+    "tests/unit/test_padic_frobenius_inertia.py",
+    "tests/unit/test_padic_local_factorization_frontier.py",
+    "tests/unit/test_padic_local_substrate.py",
+    "tests/unit/test_padic_proof_substrate.py",
+    "tests/unit/test_padic_schema_acceptance.py",
+    "tests/unit/test_padic_surface_acceptance.py",
+    "tests/unit/test_padic_three_point_reduction.py",
+    "tests/unit/test_padic_wewers_lifts_descent.py",
 )
 POST_V020_COMPATIBILITY_REQUIRED: Final = (
     COMPATIBILITY_INDEX,
@@ -291,7 +338,8 @@ def required_wheel_paths(version: str) -> tuple[str, ...]:
     version_key = _version_key(version)
     deformation = DEFORMATION_WHEEL_REQUIRED if version_key >= DEFORMATION_INTRODUCED else ()
     numeric = NUMERIC_WHEEL_REQUIRED if version_key >= NUMERIC_INTRODUCED else ()
-    return tuple(dict.fromkeys((*WHEEL_REQUIRED, *deformation, *numeric)))
+    padic = PADIC_WHEEL_REQUIRED if version_key >= PADIC_INTRODUCED else ()
+    return tuple(dict.fromkeys((*WHEEL_REQUIRED, *deformation, *numeric, *padic)))
 
 
 def required_sdist_paths(
@@ -310,6 +358,8 @@ def required_sdist_paths(
         compatibility = _prior_compatibility_paths(payloads, version, label=label)
     if version_key >= NUMERIC_INTRODUCED:
         additive = (*additive, *NUMERIC_SDIST_REQUIRED)
+    if version_key >= PADIC_INTRODUCED:
+        additive = (*additive, *PADIC_SDIST_REQUIRED)
     return tuple(
         dict.fromkeys(
             (
@@ -834,6 +884,16 @@ def _packaged_example_commands(
                 (str(python), "examples/numeric/two_sheet_cover/run.py"),
                 (str(python), "examples/numeric/sqrt2_exactification/run.py"),
                 (str(python), "examples/numeric/weighted_braid_plan/run.py"),
+            )
+        )
+    if _version_key(version) >= PADIC_INTRODUCED:
+        commands.extend(
+            (
+                (str(python), "examples/padic/frobenius_slopes/run.py"),
+                (str(python), "examples/padic/three_point_good_reduction/run.py"),
+                (str(python), "examples/padic/special_deformation_datum/run.py"),
+                (str(python), "examples/padic/lifts_rigid_descent/run.py"),
+                (str(python), "examples/padic/m23_local_frontier/run.py"),
             )
         )
     return tuple(commands)

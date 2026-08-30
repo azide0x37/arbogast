@@ -50,10 +50,11 @@ def test_certified_local_global_campaign_preserves_all_three_boundaries(tmp_path
 
 def test_local_reducer_rejects_reordered_shards() -> None:
     field = EXAMPLE.golden_field()
+    target = EXAMPLE._norm_target(11)
     task = TaskSpec(
         operation=EXAMPLE.LOCAL_OPERATION,
         input_refs=(field.content_id,),
-        parameters={"field_id": field.field_id, "target": 11, "target_id": "target-11"},
+        parameters={"field_id": field.field_id, "target": 11, "target_id": target.target_id},
     )
     partials = EXAMPLE._expected_local_partials(task)
 
@@ -63,10 +64,11 @@ def test_local_reducer_rejects_reordered_shards() -> None:
 
 def test_local_certificate_tamper_is_recomputed_not_trusted() -> None:
     field = EXAMPLE.golden_field()
+    target = EXAMPLE._norm_target(2)
     task = TaskSpec(
         operation=EXAMPLE.LOCAL_OPERATION,
         input_refs=(field.content_id,),
-        parameters={"field_id": field.field_id, "target": 2, "target_id": "target-2"},
+        parameters={"field_id": field.field_id, "target": 2, "target_id": target.target_id},
     )
     result = EXAMPLE.reduce_local(task, EXAMPLE._expected_local_partials(task))
     payload = dict(result["certificate"])
@@ -80,4 +82,71 @@ def test_local_certificate_tamper_is_recomputed_not_trusted() -> None:
     tampered = certificate_from_dict(payload)
 
     with pytest.raises(CertificateVerificationError, match="Hilbert table"):
+        verify_certificate(tampered)
+
+
+@pytest.mark.parametrize("target_value", (-1, 2, 11))
+def test_local_certificate_binds_each_canonical_integer_target(target_value: int) -> None:
+    field = EXAMPLE.golden_field()
+    target = EXAMPLE._norm_target(target_value)
+    task = TaskSpec(
+        operation=EXAMPLE.LOCAL_OPERATION,
+        input_refs=(field.content_id,),
+        parameters={
+            "field_id": field.field_id,
+            "target": target_value,
+            "target_id": target.target_id,
+        },
+    )
+    result = EXAMPLE.reduce_local(task, EXAMPLE._expected_local_partials(task))
+    certificate = certificate_from_dict(result["certificate"])
+
+    assert verify_certificate(certificate).valid
+
+
+def test_local_certificate_rejects_foreign_integer_target_id() -> None:
+    field = EXAMPLE.golden_field()
+    claimed_target = EXAMPLE._norm_target(-1)
+    task = TaskSpec(
+        operation=EXAMPLE.LOCAL_OPERATION,
+        input_refs=(field.content_id,),
+        parameters={
+            "field_id": field.field_id,
+            "target": 2,
+            "target_id": claimed_target.target_id,
+        },
+    )
+    result = EXAMPLE.reduce_local(task, EXAMPLE._expected_local_partials(task))
+    certificate = certificate_from_dict(result["certificate"])
+
+    with pytest.raises(CertificateVerificationError, match="exact integer norm target"):
+        verify_certificate(certificate)
+
+
+def test_global_certificate_is_self_contained_and_rejects_wrong_norm_witness() -> None:
+    field = EXAMPLE.golden_field()
+    target = EXAMPLE._norm_target(-1)
+    task = TaskSpec(
+        operation=EXAMPLE.GLOBAL_OPERATION,
+        input_refs=(field.content_id,),
+        parameters={
+            "field_id": field.field_id,
+            "search_bound": EXAMPLE.SEARCH_BOUND,
+            "target": -1,
+            "target_id": target.target_id,
+        },
+    )
+    result = EXAMPLE.reduce_global(task, EXAMPLE._expected_global_partials(task))
+    valid = certificate_from_dict(result["certificate"])
+    assert verify_certificate(valid).valid
+
+    payload = dict(result["certificate"])
+    witness = dict(payload["witness"])
+    witness["witness_coefficients"] = [1, 0]
+    witness["conjugate_witness"] = [1, 0]
+    payload["witness"] = witness
+    payload.pop("certificate_id")
+    tampered = certificate_from_dict(payload)
+
+    with pytest.raises(CertificateVerificationError, match="wrong exact norm"):
         verify_certificate(tampered)

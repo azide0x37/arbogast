@@ -510,6 +510,128 @@ _DEPENDENT_OUTPUTS_BY_INPUTS: dict[str, dict[tuple[str, ...], tuple[str, ...]]] 
             "GenericDegreeWitness",
         ): ("UnsupportedNumeric",),
     },
+    "padic.frobenius": {
+        ("PAdicModule",): ("Unknown",),
+        ("PAdicModule", "FrobeniusOperator"): ("Certified[FrobeniusOperator]",),
+        ("PAdicModule", "FrobeniusDatum"): ("Certified[FrobeniusOperator]",),
+    },
+    "padic.slopes": {
+        ("FrobeniusOperator",): ("Certified[SlopeDecomposition]", "Unknown"),
+        ("FrobeniusOperator", "SlopeProjectorSequence"): (
+            "Certified[SlopeDecomposition]",
+            "Unknown",
+        ),
+    },
+    "padic.ordinary_part": {
+        ("FrobeniusOperator",): ("Certified[SlopeProjector]", "Unknown"),
+        ("FrobeniusOperator", "SlopeProjector"): (
+            "Certified[SlopeProjector]",
+            "Unknown",
+        ),
+        ("SlopeDecomposition",): ("Certified[SlopeProjector]", "Unknown"),
+        ("SlopeDecomposition", "SlopeProjector"): (
+            "Certified[SlopeProjector]",
+            "Unknown",
+        ),
+    },
+    "padic.inertia_action": {
+        ("PAdicArithmeticObject",): ("Unknown",),
+        ("PAdicArithmeticObject", "int"): ("Unknown",),
+        ("PAdicArithmeticObject", "InertiaRepresentation"): ("Certified[InertiaRepresentation]",),
+        ("PAdicArithmeticObject", "FiniteInertiaDatum"): ("Certified[InertiaRepresentation]",),
+        ("PAdicArithmeticObject", "int", "InertiaRepresentation"): (
+            "Certified[InertiaRepresentation]",
+        ),
+        ("PAdicArithmeticObject", "int", "FiniteInertiaDatum"): (
+            "Certified[InertiaRepresentation]",
+        ),
+    },
+    "padic.good_reduction": {
+        ("ThreePointCover", "int"): (
+            "Certified[GoodReduction]",
+            "Unknown",
+            "Unsupported",
+        ),
+        ("ThreePointCover", "int", "GoodReductionWitness"): (
+            "Certified[GoodReduction]",
+            "Unsupported",
+        ),
+    },
+    "padic.semistable_reduction": {
+        ("ThreePointCover", "int"): (
+            "Certified[SemistableReduction]",
+            "Unsupported",
+        ),
+        ("ThreePointCover", "int", "SemistableReductionWitness"): (
+            "Certified[SemistableReduction]",
+            "Unsupported",
+        ),
+        ("Certified[GoodReduction]",): ("Certified[SemistableReduction]",),
+        ("Certified[GoodReduction]", "SemistableReductionWitness"): (
+            "Certified[SemistableReduction]",
+            "Unsupported",
+        ),
+    },
+    "padic.stable_reduction": {
+        ("ThreePointCover", "int"): (
+            "Certified[StableReduction]",
+            "Unsupported",
+        ),
+        ("ThreePointCover", "int", "StableReductionWitness"): (
+            "Certified[StableReduction]",
+            "Unsupported",
+        ),
+        ("Certified[SemistableReduction]",): ("Certified[StableReduction]",),
+        ("Certified[SemistableReduction]", "StableReductionWitness"): (
+            "Certified[StableReduction]",
+            "Unsupported",
+        ),
+    },
+    "padic.deformation_datum": {
+        ("Certified[StableReduction]",): ("Unknown",),
+        ("Certified[StableReduction]", "DeformationDatumWitness"): ("Unsupported",),
+    },
+    "padic.lift_set": {
+        ("DeformationDatum",): ("Unknown",),
+        ("Certified[DeformationDatum]",): ("Unknown",),
+        ("DeformationDatum", "LiftChart", "LiftEnumerationWitness"): (
+            "Certified[LiftSet]",
+            "Unsupported",
+        ),
+        (
+            "Certified[DeformationDatum]",
+            "LiftChart",
+            "LiftEnumerationWitness",
+        ): ("Certified[LiftSet]", "Unsupported"),
+    },
+    "padic.lift_galois_action": {
+        (
+            "Certified[LiftSet]",
+            "FiniteGaloisQuotient",
+            "LiftTransportWitnessSequence",
+        ): ("Certified[LiftGaloisAction]", "Unknown", "Unsupported"),
+    },
+    "padic.fixed_lifts": {
+        ("FiniteLiftAction",): ("Certified[FixedLiftSet]",),
+        ("Certified[LiftGaloisAction]",): ("Certified[FixedLiftSet]",),
+    },
+    "padic.effective_descent": {
+        ("Certified[FixedLiftSet]",): ("Unknown",),
+        ("Certified[FixedLiftSet]", "RigidDescentWitness"): ("Certified[DescendedModel]",),
+    },
+    "padic.local_factorization_fragment": {
+        (
+            "str",
+            "int",
+            "IntegerCoefficientSequence",
+            "int",
+            "FiniteFieldFactorSequence",
+        ): ("Certified[LocalFactorizationFragment]",),
+    },
+    "padic.reduction_frontier": {
+        ("M23ExactDataset", "int"): ("Unsupported",),
+        ("Certified[LocalFactorizationFragment]", "int"): ("Partial",),
+    },
 }
 
 

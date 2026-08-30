@@ -315,6 +315,38 @@ NUMERIC_VERIFICATION = FailureMode(
     "an exact-dyadic inequality, discrete binding, or numeric receipt fails portable replay",
     "NumericVerificationError | CertificateVerificationError",
 )
+PADIC_UNSUPPORTED = FailureMode(
+    "unsupported_padic_scope",
+    (
+        "the requested local-field, reduction, lifting, or descent computation is outside "
+        "the bounded finite-exact p-adic slice"
+    ),
+    "Unsupported | UnsupportedPAdicOperation",
+)
+PADIC_PRESENTATION = FailureMode(
+    "invalid_padic_presentation",
+    (
+        "a local-field, finite-precision, Frobenius, inertia, cover, reduction, lifting, "
+        "or descent witness fails strict canonical validation"
+    ),
+    "PAdicError | TypeError | ValueError",
+)
+PADIC_NONCONCLUSION = FailureMode(
+    "padic_nonconclusion",
+    (
+        "missing or incomplete exact witnesses leave certified fragments with obligations, "
+        "an explicitly unknown conclusion, or a bounded software refusal"
+    ),
+    "Partial | Unknown | Unsupported",
+)
+PADIC_VERIFICATION = FailureMode(
+    "padic_verification_failed",
+    (
+        "a finite local-field, reduction, lifting, descent, or p-adic receipt witness fails "
+        "portable replay"
+    ),
+    "PAdicVerificationError | CertificateVerificationError",
+)
 
 
 def _spec(
@@ -2618,6 +2650,459 @@ NUMERIC_OPERATION_SPECS: tuple[OperationSpec, ...] = (
 BUILTIN_OPERATION_SPECS += NUMERIC_OPERATION_SPECS
 
 
+PADIC_OPERATION_SPECS: tuple[OperationSpec, ...] = (
+    _spec(
+        "padic.frobenius",
+        "bounded finite-precision semilinear Frobenius",
+        (
+            "a canonical finite-precision p-adic module",
+            "an explicit semilinear matrix, field embedding, convention, and period",
+        ),
+        (
+            "returns a Certified[FrobeniusOperator] only after exact finite replay",
+            "returns Unknown rather than discovering a missing Frobenius datum",
+            "keeps arithmetic and geometric Frobenius conventions distinct",
+        ),
+        "finite matrix arithmetic through the declared semilinear period",
+        "arbogast.padic.PAdicReceipt nested in arbogast.cert.VerificationCertificate",
+        "frobenius(module, datum=datum)",
+        failure_modes=(INVALID_INPUT, PADIC_PRESENTATION, PADIC_NONCONCLUSION, PADIC_VERIFICATION),
+        input_types=("PAdicModule", "FrobeniusOperator | FrobeniusDatum | None"),
+        input_bundles=(
+            ("PAdicModule",),
+            ("PAdicModule", "FrobeniusOperator"),
+            ("PAdicModule", "FrobeniusDatum"),
+        ),
+        output_type="Certified[FrobeniusOperator] | Unknown",
+    ),
+    _spec(
+        "padic.slopes",
+        "exact finite-precision Newton slopes",
+        (
+            "a verified FrobeniusOperator with its convention and linearized period",
+            "optional saturated projectors bound to that exact operator",
+        ),
+        (
+            "returns a Certified[SlopeDecomposition] when every polygon vertex is determined",
+            "keeps Newton multiplicities distinct from supplied stable direct summands",
+            "returns Unknown for an ambiguous finite-precision polygon",
+        ),
+        "Newton polygon replay plus optional exact projector identities",
+        "arbogast.padic.PAdicReceipt nested in arbogast.cert.VerificationCertificate",
+        "slopes(operator, projectors=projectors)",
+        failure_modes=(INVALID_INPUT, PADIC_PRESENTATION, PADIC_NONCONCLUSION, PADIC_VERIFICATION),
+        input_types=("FrobeniusOperator", "SlopeProjectorSequence | None"),
+        input_bundles=(
+            ("FrobeniusOperator",),
+            ("FrobeniusOperator", "SlopeProjectorSequence"),
+        ),
+        output_type="Certified[SlopeDecomposition] | Unknown",
+    ),
+    _spec(
+        "padic.ordinary_part",
+        "certified slope-zero direct summand",
+        (
+            "a verified Frobenius operator or slope decomposition",
+            "an exact saturated slope-zero projector when the decomposition does not contain one",
+        ),
+        (
+            "returns only a Certified[SlopeProjector] of the full slope-zero multiplicity",
+            "does not turn Newton multiplicity data alone into a p-adic submodule",
+            "returns Unknown when the required projector is absent or the slope is ambiguous",
+        ),
+        "exact idempotence, stability, saturation, and slope replay",
+        "arbogast.padic.PAdicReceipt nested in arbogast.cert.VerificationCertificate",
+        "ordinary_part(decomposition, projector=projector)",
+        failure_modes=(INVALID_INPUT, PADIC_PRESENTATION, PADIC_NONCONCLUSION, PADIC_VERIFICATION),
+        input_types=(
+            "FrobeniusOperator | SlopeDecomposition",
+            "SlopeProjector | None",
+        ),
+        input_bundles=(
+            ("FrobeniusOperator",),
+            ("FrobeniusOperator", "SlopeProjector"),
+            ("SlopeDecomposition",),
+            ("SlopeDecomposition", "SlopeProjector"),
+        ),
+        output_type="Certified[SlopeProjector] | Unknown",
+    ),
+    _spec(
+        "padic.inertia_action",
+        "exact representation of a declared finite group presentation",
+        (
+            "an arithmetic source with a canonical identity",
+            (
+                "a fully enumerated finite group presentation, a declared group-theoretic series "
+                "satisfying the listed tame/wild quotient identities, and a matrix action table"
+            ),
+            "an optional residue characteristic agreeing with the quotient",
+        ),
+        (
+            "returns a Certified[InertiaRepresentation] after exhaustive finite group-law replay",
+            "checks the Frobenius-inertia relation only when its exact datum is supplied",
+            (
+                "records arithmetic_origin_claimed=False and "
+                "arithmetic_lower_numbering_claimed=False: no local-extension or valuation "
+                "origin, and no complete lower-numbering theorem, is asserted"
+            ),
+            "does not claim the full continuous inertia or decomposition-group action",
+        ),
+        "quadratic in the finite quotient order times bounded matrix multiplication",
+        "arbogast.padic.PAdicReceipt nested in arbogast.cert.VerificationCertificate",
+        "inertia_action(source, p, datum=datum)",
+        failure_modes=(INVALID_INPUT, PADIC_PRESENTATION, PADIC_NONCONCLUSION, PADIC_VERIFICATION),
+        input_types=(
+            "PAdicArithmeticObject",
+            "int | None",
+            "InertiaRepresentation | FiniteInertiaDatum | None",
+        ),
+        input_bundles=(
+            ("PAdicArithmeticObject",),
+            ("PAdicArithmeticObject", "int"),
+            ("PAdicArithmeticObject", "InertiaRepresentation"),
+            ("PAdicArithmeticObject", "FiniteInertiaDatum"),
+            ("PAdicArithmeticObject", "int", "InertiaRepresentation"),
+            ("PAdicArithmeticObject", "int", "FiniteInertiaDatum"),
+        ),
+        output_type="Certified[InertiaRepresentation] | Unknown",
+    ),
+    _spec(
+        "padic.good_reduction",
+        "bounded tame good reduction of a displayed three-point model",
+        (
+            "a strictly verified ThreePointCover and exact prime",
+            "the displayed normalized model, with no implicit coordinate change or extension",
+        ),
+        (
+            "certifies degree preservation and separated tame marked ramification",
+            "returns Unknown when this sufficient displayed-model test fails",
+            "never promotes failure to nonexistence of another good model",
+        ),
+        "bounded exact polynomial reduction and finite-field factor replay",
+        "arbogast.padic.PAdicReceipt nested in arbogast.cert.VerificationCertificate",
+        "good_reduction(cover, prime)",
+        failure_modes=(
+            INVALID_INPUT,
+            PADIC_PRESENTATION,
+            PADIC_NONCONCLUSION,
+            PADIC_UNSUPPORTED,
+            PADIC_VERIFICATION,
+        ),
+        input_types=("ThreePointCover", "int", "GoodReductionWitness | None"),
+        input_bundles=(
+            ("ThreePointCover", "int"),
+            ("ThreePointCover", "int", "GoodReductionWitness"),
+        ),
+        output_type="Certified[GoodReduction] | Unknown | Unsupported",
+    ),
+    _spec(
+        "padic.semistable_reduction",
+        "bounded one-component semistable reduction",
+        (
+            "a ThreePointCover with its prime or a Certified[GoodReduction]",
+            "the tame one-component good-reduction lane or a bound exact witness",
+        ),
+        (
+            "returns a Certified[SemistableReduction] with complete markings and incidence",
+            "does not advertise automatic blow-ups, extensions, or non-good discovery",
+            "returns Unsupported outside the one-component bounded lane",
+        ),
+        "exact replay of the complete marked one-component model",
+        "arbogast.padic.PAdicReceipt nested in arbogast.cert.VerificationCertificate",
+        "semistable_reduction(good)",
+        failure_modes=(
+            INVALID_INPUT,
+            PADIC_PRESENTATION,
+            PADIC_UNSUPPORTED,
+            PADIC_VERIFICATION,
+        ),
+        input_types=(
+            "ThreePointCover | Certified[GoodReduction]",
+            "int | None",
+            "SemistableReductionWitness | None",
+        ),
+        input_bundles=(
+            ("ThreePointCover", "int"),
+            ("ThreePointCover", "int", "SemistableReductionWitness"),
+            ("Certified[GoodReduction]",),
+            ("Certified[GoodReduction]", "SemistableReductionWitness"),
+        ),
+        output_type="Certified[SemistableReduction] | Unsupported",
+    ),
+    _spec(
+        "padic.stable_reduction",
+        "bounded already-stable marked reduction",
+        (
+            "a ThreePointCover with its prime or a Certified[SemistableReduction]",
+            "strictly positive marked stability indices for every component",
+        ),
+        (
+            "returns a Certified[StableReduction] only for the supported already-stable model",
+            "records that no unproved component contraction occurred",
+            "returns Unsupported outside automatic one-component stable replay",
+        ),
+        "exact component, marking, node, and stability-inequality replay",
+        "arbogast.padic.PAdicReceipt nested in arbogast.cert.VerificationCertificate",
+        "stable_reduction(semistable)",
+        failure_modes=(
+            INVALID_INPUT,
+            PADIC_PRESENTATION,
+            PADIC_UNSUPPORTED,
+            PADIC_VERIFICATION,
+        ),
+        input_types=(
+            "ThreePointCover | Certified[SemistableReduction]",
+            "int | None",
+            "StableReductionWitness | None",
+        ),
+        input_bundles=(
+            ("ThreePointCover", "int"),
+            ("ThreePointCover", "int", "StableReductionWitness"),
+            ("Certified[SemistableReduction]",),
+            ("Certified[SemistableReduction]", "StableReductionWitness"),
+        ),
+        output_type="Certified[StableReduction] | Unsupported",
+    ),
+    _spec(
+        "padic.deformation_datum",
+        "bounded Wewers deformation-datum boundary",
+        (
+            "a Certified[StableReduction]",
+            "an explicit group action, differential extraction, and theorem-profile witness",
+        ),
+        (
+            "keeps internal differential identities distinct from geometric origin",
+            (
+                "returns Unknown when extraction data are absent and Unsupported for the "
+                "current stable profile"
+            ),
+            "certifies a DeformationDatum only when every origin and component relation replays",
+        ),
+        "finite-field differential, character, signature, and origin replay",
+        "arbogast.padic.PAdicReceipt nested in arbogast.cert.VerificationCertificate",
+        "deformation_datum(stable, witness=witness)",
+        failure_modes=(
+            INVALID_INPUT,
+            PADIC_PRESENTATION,
+            PADIC_NONCONCLUSION,
+            PADIC_UNSUPPORTED,
+            PADIC_VERIFICATION,
+        ),
+        input_types=("Certified[StableReduction]", "DeformationDatumWitness | None"),
+        input_bundles=(
+            ("Certified[StableReduction]",),
+            ("Certified[StableReduction]", "DeformationDatumWitness"),
+        ),
+        output_type="Certified[DeformationDatum] | Unknown | Unsupported",
+    ),
+    _spec(
+        "padic.lift_set",
+        "exact finite lift enumeration in one pinned chart",
+        (
+            "a DeformationDatum or Certified[DeformationDatum]",
+            "one explicit finite chart and its complete exact root-exhaustion witness",
+        ),
+        (
+            "returns a Certified[LiftSet] complete only inside the pinned chart",
+            "deduplicates only literal labeled models, not unproved isomorphism classes",
+            "returns a typed non-conclusion when the chart or exhaustion is absent or over budget",
+        ),
+        "exhaustive finite-field root replay within the declared work bound",
+        "arbogast.padic.PAdicReceipt nested in arbogast.cert.VerificationCertificate",
+        "lift_set(datum, chart=chart, witness=witness)",
+        failure_modes=(
+            INVALID_INPUT,
+            PADIC_PRESENTATION,
+            PADIC_NONCONCLUSION,
+            PADIC_UNSUPPORTED,
+            PADIC_VERIFICATION,
+        ),
+        input_types=(
+            "DeformationDatum | Certified[DeformationDatum]",
+            "LiftChart | None",
+            "LiftEnumerationWitness | None",
+        ),
+        input_bundles=(
+            ("DeformationDatum",),
+            ("Certified[DeformationDatum]",),
+            ("DeformationDatum", "LiftChart", "LiftEnumerationWitness"),
+            ("Certified[DeformationDatum]", "LiftChart", "LiftEnumerationWitness"),
+        ),
+        output_type="Certified[LiftSet] | Unknown | Unsupported",
+    ),
+    _spec(
+        "padic.lift_galois_action",
+        "exact arithmetic Galois action on a finite lift set",
+        (
+            "a Certified[LiftSet] and computed-complete FiniteGaloisQuotient",
+            "one exact transport permutation for every quotient element",
+        ),
+        (
+            (
+                "returns a Certified[LiftGaloisAction] in 0.5 only for a computed-complete "
+                "trivial quotient with an explicit identity model-coordinate transport for "
+                "every lift"
+            ),
+            "keeps a declared set permutation without model maps as Unknown",
+            (
+                "returns Unknown for incomplete quotient evidence and Unsupported for a "
+                "nontrivial complete quotient"
+            ),
+        ),
+        "quadratic in the finite quotient order times the lift-set cardinality",
+        "arbogast.padic.PAdicReceipt nested in arbogast.cert.VerificationCertificate",
+        "lift_galois_action(lifts, quotient, witnesses=witnesses)",
+        failure_modes=(
+            INVALID_INPUT,
+            PADIC_PRESENTATION,
+            PADIC_NONCONCLUSION,
+            PADIC_UNSUPPORTED,
+            PADIC_VERIFICATION,
+        ),
+        input_types=(
+            "Certified[LiftSet]",
+            "FiniteGaloisQuotient",
+            "LiftTransportWitnessSequence",
+        ),
+        input_bundles=(
+            ("Certified[LiftSet]", "FiniteGaloisQuotient", "LiftTransportWitnessSequence"),
+        ),
+        output_type="Certified[LiftGaloisAction] | Unknown | Unsupported",
+    ),
+    _spec(
+        "padic.fixed_lifts",
+        "exact fixed subset of a finite lift action",
+        ("a complete FiniteLiftAction or Certified[LiftGaloisAction]",),
+        (
+            "returns a Certified[FixedLiftSet] by exhaustive finite permutation replay",
+            "marks every fixed class explicitly and makes no effective-descent claim",
+        ),
+        "linear in the complete action table and lift-set cardinality",
+        "arbogast.padic.PAdicReceipt nested in arbogast.cert.VerificationCertificate",
+        "fixed_lifts(action)",
+        failure_modes=(INVALID_INPUT, PADIC_PRESENTATION, PADIC_VERIFICATION),
+        input_types=("FiniteLiftAction | Certified[LiftGaloisAction]",),
+        input_bundles=(("FiniteLiftAction",), ("Certified[LiftGaloisAction]",)),
+        output_type="Certified[FixedLiftSet]",
+    ),
+    _spec(
+        "padic.effective_descent",
+        "rigid effective descent of one fixed lift",
+        (
+            "a Certified[FixedLiftSet] carrying an arithmetic lift action",
+            (
+                "trivial automorphisms, a complete cocycle, explicit equations, and two-sided "
+                "base change"
+            ),
+        ),
+        (
+            (
+                "returns a Certified[DescendedModel] containing the exact coefficient vector "
+                "of one rigid pinned F_p chart model only after every descent identity replays"
+            ),
+            "does not identify a fixed lift or field-of-moduli point with a descended model",
+            "does not claim a characteristic-zero or number-field cover",
+            "returns Unknown when the rigid descent witness is absent",
+        ),
+        "complete finite cocycle and explicit two-sided substitution replay",
+        "arbogast.padic.PAdicReceipt nested in arbogast.cert.VerificationCertificate",
+        "effective_descent(fixed, witness=witness)",
+        failure_modes=(INVALID_INPUT, PADIC_PRESENTATION, PADIC_NONCONCLUSION, PADIC_VERIFICATION),
+        input_types=("Certified[FixedLiftSet]", "RigidDescentWitness | None"),
+        input_bundles=(
+            ("Certified[FixedLiftSet]",),
+            ("Certified[FixedLiftSet]", "RigidDescentWitness"),
+        ),
+        output_type="Certified[DescendedModel] | Unknown",
+    ),
+    _spec(
+        "padic.local_factorization_fragment",
+        "exact displayed finite-field factorization fragment",
+        (
+            "a canonical source identity, exact prime, displayed mod-p polynomial, and unit",
+            "a complete ordered factorization into verified finite-field factors",
+        ),
+        (
+            "returns a Certified[LocalFactorizationFragment] after exact product replay",
+            "certifies only the displayed polynomial factorization over the named finite field",
+            "does not infer a reduction model, global cover, or omitted local factor",
+        ),
+        "bounded exact finite-field multiplication and irreducibility replay",
+        "arbogast.padic.PAdicReceipt nested in arbogast.cert.VerificationCertificate",
+        "local_factorization_fragment(source_id, prime, polynomial, unit, factors)",
+        failure_modes=(INVALID_INPUT, PADIC_PRESENTATION, PADIC_VERIFICATION),
+        input_types=(
+            "str",
+            "int",
+            "IntegerCoefficientSequence",
+            "int",
+            "FiniteFieldFactorSequence",
+        ),
+        input_bundles=(
+            (
+                "str",
+                "int",
+                "IntegerCoefficientSequence",
+                "int",
+                "FiniteFieldFactorSequence",
+            ),
+        ),
+        output_type="Certified[LocalFactorizationFragment]",
+    ),
+    _spec(
+        "padic.reduction_frontier",
+        "typed bounded reduction frontier",
+        (
+            "a public M23 exact dataset or Certified[LocalFactorizationFragment]",
+            "an exact prime matching the local fragment when one is supplied",
+        ),
+        (
+            "returns Partial only with a certified local fragment and explicit proof obligations",
+            (
+                "returns Unsupported for the four-point M23 fixture, which has no pinned local "
+                "equations"
+            ),
+            "never turns a bounded frontier into a global nonexistence conclusion",
+        ),
+        "finite receipt replay plus construction of a bounded obligation list",
+        "arbogast.padic.PAdicReceipt nested in arbogast.cert.VerificationCertificate",
+        "reduction_frontier(source, prime=prime)",
+        failure_modes=(
+            INVALID_INPUT,
+            PADIC_PRESENTATION,
+            PADIC_NONCONCLUSION,
+            PADIC_UNSUPPORTED,
+            PADIC_VERIFICATION,
+        ),
+        input_types=("M23ExactDataset | Certified[LocalFactorizationFragment]", "int"),
+        input_bundles=(
+            ("M23ExactDataset", "int"),
+            ("Certified[LocalFactorizationFragment]", "int"),
+        ),
+        output_type="Partial | Unknown | Unsupported",
+    ),
+    _spec(
+        "padic.verify_receipt",
+        "portable finite-exact p-adic receipt replay",
+        ("a PAdicReceipt from one of the two fixed verifier families",),
+        (
+            "replays strict canonical witnesses without a p-adic backend",
+            "preserves Certified, Partial, Unknown, and Unsupported closure literally",
+            "rejects altered dependencies, proof context, verifier family, or scope",
+        ),
+        "bounded by the canonical payload and dependency-closed finite evidence",
+        None,
+        "verify_receipt(receipt)",
+        failure_modes=(INVALID_INPUT, PADIC_PRESENTATION, PADIC_VERIFICATION),
+        input_types=("PAdicReceipt",),
+        input_bundles=(("PAdicReceipt",),),
+        output_type="tuple[str, ...]",
+    ),
+)
+
+BUILTIN_OPERATION_SPECS += PADIC_OPERATION_SPECS
+
+
 SEMANTIC_PROJECTION_OPERATION_SPECS: tuple[OperationSpec, ...] = (
     *(
         _spec(
@@ -2724,6 +3209,43 @@ SEMANTIC_PROJECTION_OPERATION_SPECS: tuple[OperationSpec, ...] = (
                 "claim_graph_for_result",
                 "ClaimGraph",
                 "returns the scoped result claim with its exact finite certificate dependencies",
+            ),
+        )
+    ),
+    *(
+        _spec(
+            f"padic.{projection}",
+            "finite-exact p-adic evidence projection",
+            ("a p-adic semantic result or receipt carrying replayable bounded evidence",),
+            (guarantee,),
+            "linear in the bounded p-adic receipt and embedded finite dependencies",
+            "arbogast.cert.VerificationCertificate",
+            f"{implementation_name}(padic_result)",
+            failure_modes=(INVALID_INPUT, PADIC_PRESENTATION, PADIC_VERIFICATION),
+            input_types=("PAdicSemanticResult | PAdicReceipt",),
+            output_type=output_type,
+        )
+        for projection, implementation_name, output_type, guarantee in (
+            (
+                "verification_certificate",
+                "verification_certificate",
+                "VerificationCertificate",
+                (
+                    "returns the central certificate bound to one of exactly two fixed verifier "
+                    "families while preserving closure, assumptions, and completeness"
+                ),
+            ),
+            (
+                "claim",
+                "claim",
+                "Claim",
+                "returns only the scoped claim justified by the p-adic receipt",
+            ),
+            (
+                "claim_graph",
+                "claim_graph",
+                "ClaimGraph",
+                "returns the scoped result claim with every exact finite dependency",
             ),
         )
     ),
@@ -3451,6 +3973,27 @@ BUILTIN_IMPLEMENTATIONS: dict[str, tuple[str, str]] = {
     "numeric.claim": ("arbogast.numeric.semantic", "claim_for_result"),
     "numeric.claim_graph": ("arbogast.numeric.semantic", "claim_graph_for_result"),
     "numeric.verify_receipt": ("arbogast.numeric", "verify_numeric_receipt"),
+    "padic.frobenius": ("arbogast.padic", "frobenius"),
+    "padic.slopes": ("arbogast.padic", "slopes"),
+    "padic.ordinary_part": ("arbogast.padic", "ordinary_part"),
+    "padic.inertia_action": ("arbogast.padic", "inertia_action"),
+    "padic.good_reduction": ("arbogast.padic", "good_reduction"),
+    "padic.semistable_reduction": ("arbogast.padic", "semistable_reduction"),
+    "padic.stable_reduction": ("arbogast.padic", "stable_reduction"),
+    "padic.deformation_datum": ("arbogast.padic", "deformation_datum"),
+    "padic.lift_set": ("arbogast.padic", "lift_set"),
+    "padic.lift_galois_action": ("arbogast.padic", "lift_galois_action"),
+    "padic.fixed_lifts": ("arbogast.padic", "fixed_lifts"),
+    "padic.effective_descent": ("arbogast.padic", "effective_descent"),
+    "padic.local_factorization_fragment": (
+        "arbogast.padic",
+        "local_factorization_fragment",
+    ),
+    "padic.reduction_frontier": ("arbogast.padic", "reduction_frontier"),
+    "padic.verification_certificate": ("arbogast.padic", "verification_certificate"),
+    "padic.claim": ("arbogast.padic", "claim"),
+    "padic.claim_graph": ("arbogast.padic", "claim_graph"),
+    "padic.verify_receipt": ("arbogast.padic", "verify_receipt"),
     "export.json": ("arbogast.export", "export_json"),
     "fleet.plan_pari_arithmetic_task": (
         "arbogast.fleet",
@@ -3540,6 +4083,7 @@ OPERATION_CONTRACT_MODULES = (
     "arbogast.arithmetic",
     "arbogast.deform",
     "arbogast.numeric",
+    "arbogast.padic",
     "arbogast.fleet",
     "arbogast.hurwitz",
 )
@@ -3657,6 +4201,26 @@ PUBLIC_FUNCTION_OPERATIONS: dict[str, dict[str, str]] = {
         "verify_numeric_receipt": "numeric.verify_receipt",
         "weighted_braid_plan": "numeric.weighted_braid_plan",
     },
+    "arbogast.padic": {
+        "claim": "padic.claim",
+        "claim_graph": "padic.claim_graph",
+        "deformation_datum": "padic.deformation_datum",
+        "effective_descent": "padic.effective_descent",
+        "fixed_lifts": "padic.fixed_lifts",
+        "frobenius": "padic.frobenius",
+        "good_reduction": "padic.good_reduction",
+        "inertia_action": "padic.inertia_action",
+        "lift_galois_action": "padic.lift_galois_action",
+        "lift_set": "padic.lift_set",
+        "local_factorization_fragment": "padic.local_factorization_fragment",
+        "ordinary_part": "padic.ordinary_part",
+        "reduction_frontier": "padic.reduction_frontier",
+        "semistable_reduction": "padic.semistable_reduction",
+        "slopes": "padic.slopes",
+        "stable_reduction": "padic.stable_reduction",
+        "verification_certificate": "padic.verification_certificate",
+        "verify_receipt": "padic.verify_receipt",
+    },
     "arbogast.fleet": {
         "plan_pari_arithmetic_task": "fleet.plan_pari_arithmetic_task",
         "plan_python_certificate_replay_task": ("fleet.plan_python_certificate_replay_task"),
@@ -3669,6 +4233,11 @@ PUBLIC_FUNCTION_OPERATIONS: dict[str, dict[str, str]] = {
 }
 
 PUBLIC_NON_OPERATION_HELPERS: dict[str, dict[str, str]] = {
+    "arbogast.padic": {
+        "certified_result": (
+            "constructs the proof-bearing result envelope used by documented exact fixtures"
+        ),
+    },
     "arbogast.fleet": {
         "automatic_local_worker_pool": "constructs runtime worker inventory, not mathematics",
         "default_fleet_operation_registry": "constructs the trusted runtime registry",

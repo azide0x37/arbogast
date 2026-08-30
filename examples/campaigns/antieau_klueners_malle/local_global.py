@@ -78,6 +78,18 @@ def golden_field() -> NumberField:
     return NumberField(FIELD_POLYNOMIAL, generator_name="t")
 
 
+def _norm_target(target: int) -> TargetSpec:
+    """Return the canonical campaign identity for one exact norm target."""
+
+    return TargetSpec(
+        f"golden-norm-{target}",
+        {"field_id": golden_field().field_id, "target": target},
+        importance=4,
+        label=f"Is {target} a norm from Q(t)/(t^2-t-1)?",
+        metadata={"extension_squareclass": EXTENSION_SQUARECLASS},
+    )
+
+
 def _prime_factors(value: int) -> tuple[int, ...]:
     remaining = abs(value)
     factors: list[int] = []
@@ -409,6 +421,10 @@ def _verify_common(certificate: VerificationCertificate) -> tuple[dict[str, obje
         raise CertificateVerificationError("certificate names another defining polynomial")
     if witness.get("field_id") != golden_field().field_id:
         raise CertificateVerificationError("certificate names another pinned field")
+    if target_id != _norm_target(target).target_id:
+        raise CertificateVerificationError(
+            "certificate target_id does not identify its exact integer norm target"
+        )
     if certificate.subject != closure_subject(target_id, outcome, scope):
         raise CertificateVerificationError("certificate subject does not bind outcome scope")
     return witness, target
@@ -614,16 +630,7 @@ LOCAL_TO_GLOBAL = DerivationRule(
 
 
 def build_campaign(output: Path) -> Campaign:
-    targets = tuple(
-        TargetSpec(
-            f"golden-norm-{target}",
-            {"field_id": golden_field().field_id, "target": target},
-            importance=4,
-            label=f"Is {target} a norm from Q(t)/(t^2-t-1)?",
-            metadata={"extension_squareclass": EXTENSION_SQUARECLASS},
-        )
-        for target in TARGETS
-    )
+    targets = tuple(_norm_target(target) for target in TARGETS)
     strategy = Strategy(
         LOCAL_STRATEGY,
         LOCAL_OPERATION,
