@@ -1769,13 +1769,24 @@ DEFORMATION_OPERATION_SPECS: tuple[OperationSpec, ...] = (
             DEFORMATION_VERIFICATION,
         ),
         input_types=(
-            "DeformationComplex | DeformationPresentation | DeformationProblem",
+            (
+                "DeformationComplex | DeformationPresentation | DeformationProblem | "
+                "InvariantDeformations"
+            ),
             "Framing | None",
         ),
         input_bundles=(
-            ("DeformationComplex | DeformationPresentation | DeformationProblem",),
             (
-                "DeformationComplex | DeformationPresentation | DeformationProblem",
+                (
+                    "DeformationComplex | DeformationPresentation | DeformationProblem | "
+                    "InvariantDeformations"
+                ),
+            ),
+            (
+                (
+                    "DeformationComplex | DeformationPresentation | DeformationProblem | "
+                    "InvariantDeformations"
+                ),
                 "Framing",
             ),
         ),
@@ -1793,7 +1804,12 @@ DEFORMATION_OPERATION_SPECS: tuple[OperationSpec, ...] = (
         "arbogast.deform.DeformationReceipt nested in arbogast.cert.VerificationCertificate",
         "gauge(problem)",
         failure_modes=(INVALID_INPUT, DEFORMATION_PRESENTATION, DEFORMATION_VERIFICATION),
-        input_types=("DeformationComplex | DeformationPresentation | DeformationProblem",),
+        input_types=(
+            (
+                "DeformationComplex | DeformationPresentation | DeformationProblem | "
+                "InvariantDeformations"
+            ),
+        ),
         output_type="GaugeSpace",
     ),
     _spec(
@@ -1808,7 +1824,12 @@ DEFORMATION_OPERATION_SPECS: tuple[OperationSpec, ...] = (
         "arbogast.deform.DeformationReceipt nested in arbogast.cert.VerificationCertificate",
         "tangent(problem)",
         failure_modes=(INVALID_INPUT, DEFORMATION_PRESENTATION, DEFORMATION_VERIFICATION),
-        input_types=("DeformationComplex | DeformationPresentation | DeformationProblem",),
+        input_types=(
+            (
+                "DeformationComplex | DeformationPresentation | DeformationProblem | "
+                "InvariantDeformations"
+            ),
+        ),
         output_type="TangentSpace",
     ),
     _spec(
@@ -1823,7 +1844,12 @@ DEFORMATION_OPERATION_SPECS: tuple[OperationSpec, ...] = (
         "arbogast.deform.DeformationReceipt nested in arbogast.cert.VerificationCertificate",
         "obstructions(problem)",
         failure_modes=(INVALID_INPUT, DEFORMATION_PRESENTATION, DEFORMATION_VERIFICATION),
-        input_types=("DeformationComplex | DeformationPresentation | DeformationProblem",),
+        input_types=(
+            (
+                "DeformationComplex | DeformationPresentation | DeformationProblem | "
+                "InvariantDeformations"
+            ),
+        ),
         output_type="ObstructionSpace",
     ),
     _spec(
@@ -1848,7 +1874,10 @@ DEFORMATION_OPERATION_SPECS: tuple[OperationSpec, ...] = (
             DEFORMATION_VERIFICATION,
         ),
         input_types=(
-            "DeformationComplex | DeformationPresentation | DeformationProblem",
+            (
+                "DeformationComplex | DeformationPresentation | DeformationProblem | "
+                "InvariantDeformations"
+            ),
             "Framing",
         ),
         output_type="DeformationProblem",
@@ -1877,7 +1906,10 @@ DEFORMATION_OPERATION_SPECS: tuple[OperationSpec, ...] = (
             DEFORMATION_VERIFICATION,
         ),
         input_types=(
-            "DeformationComplex | DeformationPresentation | DeformationProblem",
+            (
+                "DeformationComplex | DeformationPresentation | DeformationProblem | "
+                "InvariantDeformations"
+            ),
             "DeformationAction",
         ),
         output_type="EquivariantDeformation",
@@ -1971,7 +2003,10 @@ DEFORMATION_OPERATION_SPECS: tuple[OperationSpec, ...] = (
             DEFORMATION_VERIFICATION,
         ),
         input_types=(
-            "LiftDatum | DeformationComplex | DeformationPresentation | DeformationProblem",
+            (
+                "LiftDatum | DeformationComplex | DeformationPresentation | "
+                "DeformationProblem | InvariantDeformations"
+            ),
             "SmallExtension | None",
             "Vector | None",
             "Vector | None",
@@ -1982,16 +2017,25 @@ DEFORMATION_OPERATION_SPECS: tuple[OperationSpec, ...] = (
         input_bundles=(
             ("LiftDatum",),
             (
-                "DeformationComplex | DeformationPresentation | DeformationProblem",
+                (
+                    "DeformationComplex | DeformationPresentation | DeformationProblem | "
+                    "InvariantDeformations"
+                ),
                 "SmallExtension",
             ),
             (
-                "DeformationComplex | DeformationPresentation | DeformationProblem",
+                (
+                    "DeformationComplex | DeformationPresentation | DeformationProblem | "
+                    "InvariantDeformations"
+                ),
                 "SmallExtension",
                 "Vector",
             ),
             (
-                "DeformationComplex | DeformationPresentation | DeformationProblem",
+                (
+                    "DeformationComplex | DeformationPresentation | DeformationProblem | "
+                    "InvariantDeformations"
+                ),
                 "SmallExtension",
                 "Vector",
                 "Vector",
@@ -2032,7 +2076,7 @@ DEFORMATION_OPERATION_SPECS: tuple[OperationSpec, ...] = (
             (
                 "LiftDatum | LiftFamily | LiftObstructed | LiftUnknown | "
                 "UnsupportedDeformation | DeformationComplex | DeformationPresentation | "
-                "DeformationProblem"
+                "DeformationProblem | InvariantDeformations"
             ),
             "SmallExtension | None",
             "Vector | None",
@@ -2044,16 +2088,25 @@ DEFORMATION_OPERATION_SPECS: tuple[OperationSpec, ...] = (
         input_bundles=(
             ("LiftDatum | LiftFamily | LiftObstructed | LiftUnknown | UnsupportedDeformation",),
             (
-                "DeformationComplex | DeformationPresentation | DeformationProblem",
+                (
+                    "DeformationComplex | DeformationPresentation | DeformationProblem | "
+                    "InvariantDeformations"
+                ),
                 "SmallExtension",
             ),
             (
-                "DeformationComplex | DeformationPresentation | DeformationProblem",
+                (
+                    "DeformationComplex | DeformationPresentation | DeformationProblem | "
+                    "InvariantDeformations"
+                ),
                 "SmallExtension",
                 "Vector",
             ),
             (
-                "DeformationComplex | DeformationPresentation | DeformationProblem",
+                (
+                    "DeformationComplex | DeformationPresentation | DeformationProblem | "
+                    "InvariantDeformations"
+                ),
                 "SmallExtension",
                 "Vector",
                 "Vector",
@@ -2125,7 +2178,12 @@ DEFORMATION_OPERATION_SPECS: tuple[OperationSpec, ...] = (
         "arbogast.deform.DeformationReceipt nested in arbogast.cert.VerificationCertificate",
         "rigid(problem)",
         failure_modes=(INVALID_INPUT, DEFORMATION_PRESENTATION, DEFORMATION_VERIFICATION),
-        input_types=("DeformationComplex | DeformationPresentation | DeformationProblem",),
+        input_types=(
+            (
+                "DeformationComplex | DeformationPresentation | DeformationProblem | "
+                "InvariantDeformations"
+            ),
+        ),
         output_type="Rigid | NonRigid",
     ),
 )

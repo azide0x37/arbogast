@@ -12,6 +12,7 @@ from arbogast.deform.equivariant import (
     invariant_deformations,
 )
 from arbogast.deform.errors import DeformationVerificationError, UnsupportedDeformation
+from arbogast.deform.framing import Framing, frame
 from arbogast.deform.problem import gauge, obstructions, tangent
 from arbogast.deform.semantic import receipt_for_result
 from arbogast.linalg import DenseMatrix, PrimeField
@@ -56,6 +57,31 @@ def test_c2_over_f3_invariant_subcomplex_has_exact_dimensions() -> None:
     assert obstructions(invariant).dimension == 1
     assert gauge(invariant).problem is invariant.problem
     assert invariant.identifies_invariant_cohomology is False
+
+
+def test_invariant_wrapper_is_substitutable_for_frame_and_equivariant() -> None:
+    invariant = invariant_deformations(_semisimple_equivariant())
+    field = invariant.complex.field
+
+    framing = Framing(DenseMatrix.identity(field, invariant.complex.degree0_dimension))
+    framed = frame(invariant, framing)
+
+    assert framed.verify()
+    assert framed.presentation is invariant.problem.presentation
+    assert framed.framing is framing
+
+    group = CyclicGroup(2)
+    representations = tuple(
+        Representation.trivial(group, field, dimension)
+        for dimension in invariant.complex.dimensions
+    )
+    rebound = equivariant(
+        invariant,
+        DeformationAction(invariant.complex, *representations),
+    )
+
+    assert rebound.verify()
+    assert rebound.problem is invariant.problem
 
 
 def test_supplied_semisimple_projectors_give_a_complete_chain_decomposition() -> None:

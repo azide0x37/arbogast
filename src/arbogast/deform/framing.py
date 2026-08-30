@@ -19,6 +19,7 @@ from .complex import DeformationComplex
 from .errors import DeformationError, DeformationVerificationError
 
 if TYPE_CHECKING:
+    from .equivariant import InvariantDeformations
     from .problem import DeformationPresentation, DeformationProblem
 
 
@@ -126,15 +127,21 @@ class Framing(DeformationSemanticObject):
 
 
 def frame(
-    source: DeformationComplex | DeformationPresentation | DeformationProblem,
+    source: (
+        DeformationComplex | DeformationPresentation | DeformationProblem | InvariantDeformations
+    ),
     framing: Framing,
 ) -> DeformationProblem:
     """Return the deformation problem with its degree-zero gauges restricted."""
 
+    from .equivariant import InvariantDeformations
     from .problem import DeformationPresentation, DeformationProblem
     from .problem import deformation_problem as make_problem
 
-    if not isinstance(source, (DeformationComplex, DeformationPresentation, DeformationProblem)):
+    if not isinstance(
+        source,
+        (DeformationComplex, DeformationPresentation, DeformationProblem, InvariantDeformations),
+    ):
         raise TypeError("source must be a deformation complex, presentation, or problem")
     if not isinstance(framing, Framing):
         raise TypeError("framing must be a Framing")

@@ -274,6 +274,7 @@ _DEPENDENT_OUTPUTS_BY_INPUTS: dict[str, dict[tuple[str, ...], tuple[str, ...]]] 
         ("DeformationComplex", "SmallExtension"): ("UnsupportedDeformation",),
         ("DeformationPresentation", "SmallExtension"): ("UnsupportedDeformation",),
         ("DeformationProblem", "SmallExtension"): ("UnsupportedDeformation",),
+        ("InvariantDeformations", "SmallExtension"): ("UnsupportedDeformation",),
         ("DeformationComplex", "SmallExtension", "Vector"): (
             "LiftFamily",
             "LiftObstructed",
@@ -283,6 +284,10 @@ _DEPENDENT_OUTPUTS_BY_INPUTS: dict[str, dict[tuple[str, ...], tuple[str, ...]]] 
             "LiftObstructed",
         ),
         ("DeformationProblem", "SmallExtension", "Vector"): (
+            "LiftFamily",
+            "LiftObstructed",
+        ),
+        ("InvariantDeformations", "SmallExtension", "Vector"): (
             "LiftFamily",
             "LiftObstructed",
         ),
@@ -306,6 +311,15 @@ _DEPENDENT_OUTPUTS_BY_INPUTS: dict[str, dict[tuple[str, ...], tuple[str, ...]]] 
         ): ("LiftFamily", "LiftObstructed"),
         (
             "DeformationProblem",
+            "SmallExtension",
+            "Vector",
+            "Vector",
+            "DenseMatrix",
+            "DenseMatrix",
+            "str",
+        ): ("LiftFamily", "LiftObstructed"),
+        (
+            "InvariantDeformations",
             "SmallExtension",
             "Vector",
             "Vector",
@@ -323,6 +337,7 @@ _DEPENDENT_OUTPUTS_BY_INPUTS: dict[str, dict[tuple[str, ...], tuple[str, ...]]] 
         ("DeformationComplex", "SmallExtension"): ("UnsupportedDeformation",),
         ("DeformationPresentation", "SmallExtension"): ("UnsupportedDeformation",),
         ("DeformationProblem", "SmallExtension"): ("UnsupportedDeformation",),
+        ("InvariantDeformations", "SmallExtension"): ("UnsupportedDeformation",),
         ("DeformationComplex", "SmallExtension", "Vector"): (
             "UniqueLift",
             "NonUniqueLift",
@@ -334,6 +349,11 @@ _DEPENDENT_OUTPUTS_BY_INPUTS: dict[str, dict[tuple[str, ...], tuple[str, ...]]] 
             "LiftObstructed",
         ),
         ("DeformationProblem", "SmallExtension", "Vector"): (
+            "UniqueLift",
+            "NonUniqueLift",
+            "LiftObstructed",
+        ),
+        ("InvariantDeformations", "SmallExtension", "Vector"): (
             "UniqueLift",
             "NonUniqueLift",
             "LiftObstructed",
@@ -358,6 +378,15 @@ _DEPENDENT_OUTPUTS_BY_INPUTS: dict[str, dict[tuple[str, ...], tuple[str, ...]]] 
         ): ("UniqueLift", "NonUniqueLift", "LiftObstructed"),
         (
             "DeformationProblem",
+            "SmallExtension",
+            "Vector",
+            "Vector",
+            "DenseMatrix",
+            "DenseMatrix",
+            "str",
+        ): ("UniqueLift", "NonUniqueLift", "LiftObstructed"),
+        (
+            "InvariantDeformations",
             "SmallExtension",
             "Vector",
             "Vector",

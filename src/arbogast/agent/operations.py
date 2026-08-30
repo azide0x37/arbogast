@@ -38,28 +38,58 @@ _BUILTIN_TYPE_PORTS: dict[str, tuple[tuple[str, ...], tuple[str, ...]]] = {
         ("BoundaryTuple | BoundaryIncidence",),
     ),
     "deform.deformation_problem": (
-        ("DeformationComplex | DeformationPresentation | DeformationProblem", "Framing | None"),
+        (
+            (
+                "DeformationComplex | DeformationPresentation | DeformationProblem | "
+                "InvariantDeformations"
+            ),
+            "Framing | None",
+        ),
         ("DeformationProblem",),
     ),
     "deform.gauge": (
-        ("DeformationComplex | DeformationPresentation | DeformationProblem",),
+        (
+            (
+                "DeformationComplex | DeformationPresentation | DeformationProblem | "
+                "InvariantDeformations"
+            ),
+        ),
         ("GaugeSpace",),
     ),
     "deform.tangent": (
-        ("DeformationComplex | DeformationPresentation | DeformationProblem",),
+        (
+            (
+                "DeformationComplex | DeformationPresentation | DeformationProblem | "
+                "InvariantDeformations"
+            ),
+        ),
         ("TangentSpace",),
     ),
     "deform.obstructions": (
-        ("DeformationComplex | DeformationPresentation | DeformationProblem",),
+        (
+            (
+                "DeformationComplex | DeformationPresentation | DeformationProblem | "
+                "InvariantDeformations"
+            ),
+        ),
         ("ObstructionSpace",),
     ),
     "deform.frame": (
-        ("DeformationComplex | DeformationPresentation | DeformationProblem", "Framing"),
+        (
+            (
+                "DeformationComplex | DeformationPresentation | DeformationProblem | "
+                "InvariantDeformations"
+            ),
+            "Framing",
+        ),
         ("DeformationProblem",),
     ),
     "deform.equivariant": (
         (
-            "DeformationComplex | DeformationPresentation | DeformationProblem",
+            (
+                "DeformationComplex | DeformationPresentation | DeformationProblem | "
+                "InvariantDeformations"
+            ),
             "DeformationAction",
         ),
         ("EquivariantDeformation",),
@@ -74,7 +104,10 @@ _BUILTIN_TYPE_PORTS: dict[str, tuple[tuple[str, ...], tuple[str, ...]]] = {
     ),
     "deform.lift": (
         (
-            "LiftDatum | DeformationComplex | DeformationPresentation | DeformationProblem",
+            (
+                "LiftDatum | DeformationComplex | DeformationPresentation | "
+                "DeformationProblem | InvariantDeformations"
+            ),
             "SmallExtension | None",
             "Vector | None",
             "Vector | None",
@@ -89,7 +122,7 @@ _BUILTIN_TYPE_PORTS: dict[str, tuple[tuple[str, ...], tuple[str, ...]]] = {
             (
                 "LiftDatum | LiftFamily | LiftObstructed | LiftUnknown | "
                 "UnsupportedDeformation | DeformationComplex | DeformationPresentation | "
-                "DeformationProblem"
+                "DeformationProblem | InvariantDeformations"
             ),
             "SmallExtension | None",
             "Vector | None",
@@ -109,7 +142,12 @@ _BUILTIN_TYPE_PORTS: dict[str, tuple[tuple[str, ...], tuple[str, ...]]] = {
         ("FixedLift | LiftObstructed | LiftUnknown | UnsupportedDeformation",),
     ),
     "deform.rigid": (
-        ("DeformationComplex | DeformationPresentation | DeformationProblem",),
+        (
+            (
+                "DeformationComplex | DeformationPresentation | DeformationProblem | "
+                "InvariantDeformations"
+            ),
+        ),
         ("Rigid | NonRigid",),
     ),
     "deform.verification_certificate": (

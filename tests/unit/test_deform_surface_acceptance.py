@@ -5,6 +5,7 @@ from arbogast.agent import (
     DEFAULT_CODE_DEPENDENCIES,
     CapabilityGraph,
     compact_context,
+    describe_operation,
     module_manifest,
     operation_descriptions,
 )
@@ -42,6 +43,18 @@ EXPECTED_HAZARDS = {
     "deform.equivariant_decomposition": ("deform.modular-action-vs-projector-decomposition"),
     "deform.rigid": "deform.tangent-zero-vs-unscoped-rigidity",
     "deform.fixed_lift": "deform.unique-lift-vs-canonical-fixed-lift",
+}
+
+PROBLEM_SOURCE_OPERATIONS = {
+    "deform.deformation_problem",
+    "deform.equivariant",
+    "deform.frame",
+    "deform.gauge",
+    "deform.lift",
+    "deform.obstructions",
+    "deform.rigid",
+    "deform.tangent",
+    "deform.unique_lift",
 }
 
 
@@ -92,6 +105,37 @@ def test_capability_graph_and_module_profile_close_the_deformation_surface() -> 
     } <= set(manifest.primary_types)
     assert any("H0, H1, and H2" in invariant for invariant in manifest.invariants)
     assert any("H(C^G)" in invariant for invariant in manifest.invariants)
+
+
+def test_invariant_wrapper_is_declared_on_every_problem_source_port() -> None:
+    for operation_name in PROBLEM_SOURCE_OPERATIONS:
+        spec = default_operations.spec(operation_name)
+        description = describe_operation(operation_name)
+
+        assert any("InvariantDeformations" in item for item in spec.input_types)
+        assert any("InvariantDeformations" in item for item in description.inputs)
+
+    graph = CapabilityGraph.from_operations(operation_descriptions())
+    edges = {
+        (edge.operation, edge.required_inputs, edge.target)
+        for edge in graph.edges
+        if "InvariantDeformations" in edge.required_inputs
+    }
+    assert (
+        "deform.frame",
+        ("InvariantDeformations", "Framing"),
+        "DeformationProblem",
+    ) in edges
+    assert (
+        "deform.equivariant",
+        ("InvariantDeformations", "DeformationAction"),
+        "EquivariantDeformation",
+    ) in edges
+    assert (
+        "deform.lift",
+        ("InvariantDeformations", "SmallExtension", "Vector"),
+        "LiftFamily",
+    ) in edges
 
 
 def test_deformation_hazards_are_selected_by_their_public_operations() -> None:

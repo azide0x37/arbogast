@@ -6,6 +6,11 @@ import pytest
 
 from arbogast.deform.certificate import DeformationReceipt
 from arbogast.deform.complex import DeformationComplex
+from arbogast.deform.equivariant import (
+    DeformationAction,
+    equivariant,
+    invariant_deformations,
+)
 from arbogast.deform.errors import (
     DeformationVerificationError,
     UnsupportedDeformation,
@@ -29,6 +34,7 @@ from arbogast.deform.problem import deformation_problem
 from arbogast.deform.rings import ArtinRing, ArtinRingMap, SmallExtension
 from arbogast.deform.semantic import receipt_for_result
 from arbogast.linalg import DenseMatrix, PrimeField
+from arbogast.rep import CyclicGroup, Representation
 
 F3 = PrimeField(3)
 
@@ -255,6 +261,29 @@ def test_higher_dimensional_kernel_needs_an_explicit_chart_in_convenience_api() 
     assert result.requested.to_dict()["kernel_dimension"] == 2
     with pytest.raises(UnsupportedDeformationOperation, match="higher-dimensional kernels"):
         LiftDatum(complex_, extension, (0,))
+
+
+def test_lift_convenience_accepts_an_invariant_deformations_wrapper() -> None:
+    complex_ = DeformationComplex(
+        F3,
+        DenseMatrix.zeros(F3, 1, 1),
+        DenseMatrix.zeros(F3, 1, 1),
+        name="invariant lift source",
+    )
+    group = CyclicGroup(2)
+    trivial = Representation.trivial(group, F3)
+    invariant = invariant_deformations(
+        equivariant(complex_, DeformationAction(complex_, trivial, trivial, trivial))
+    )
+
+    result = lift(invariant, _dual_number_extension(), target=(0,))
+    uniqueness = unique_lift(invariant, _dual_number_extension(), target=(0,))
+
+    assert isinstance(result, LiftFamily)
+    assert result.verify()
+    assert result.datum.problem is invariant.problem
+    assert isinstance(uniqueness, NonUniqueLift)
+    assert uniqueness.verify()
 
 
 def test_tampered_lift_and_fixed_point_witnesses_fail_replay() -> None:

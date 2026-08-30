@@ -39,7 +39,6 @@ from .problem import (
     deformation_problem,
 )
 
-ProblemSource: TypeAlias = DeformationComplex | DeformationPresentation | DeformationProblem
 ProjectorTriple: TypeAlias = tuple[DenseMatrix, DenseMatrix, DenseMatrix]
 MAX_EQUIVARIANT_COMPONENTS = 3 * MAX_DIMENSION
 
@@ -317,7 +316,12 @@ class EquivariantDeformation(DeformationSemanticObject):
         }
 
 
-def equivariant(source: ProblemSource, action: DeformationAction) -> EquivariantDeformation:
+def equivariant(
+    source: (
+        DeformationComplex | DeformationPresentation | DeformationProblem | InvariantDeformations
+    ),
+    action: DeformationAction,
+) -> EquivariantDeformation:
     """Bind a checked chain action to a normalized deformation problem."""
 
     if not isinstance(action, DeformationAction):

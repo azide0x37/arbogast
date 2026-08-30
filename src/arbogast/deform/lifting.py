@@ -40,6 +40,7 @@ from ._schema import (
     _canonical_vector,
 )
 from .complex import DeformationComplex
+from .equivariant import InvariantDeformations
 from .errors import (
     DeformationError,
     DeformationVerificationError,
@@ -55,7 +56,9 @@ from .problem import (
 )
 from .rings import SmallExtension
 
-ProblemSource: TypeAlias = DeformationComplex | DeformationPresentation | DeformationProblem
+ProblemSource: TypeAlias = (
+    DeformationComplex | DeformationPresentation | DeformationProblem | InvariantDeformations
+)
 
 
 def _label(value: str | None, name: str) -> str | None:
@@ -494,7 +497,10 @@ def _lift_datum_from_call(
         ):
             raise DeformationError("a pinned LiftDatum cannot be combined with chart arguments")
         return source
-    if not isinstance(source, (DeformationComplex, DeformationPresentation, DeformationProblem)):
+    if not isinstance(
+        source,
+        (DeformationComplex, DeformationPresentation, DeformationProblem, InvariantDeformations),
+    ):
         raise TypeError("source must be a LiftDatum or deformation problem source")
     if not isinstance(extension, SmallExtension):
         raise TypeError("extension must be supplied with a deformation problem")
