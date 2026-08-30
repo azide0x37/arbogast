@@ -4,8 +4,8 @@ build-backend = "hatchling.build"
 
 [project]
 name = "arbogast"
-version = "0.4.0"
-description = "Certificate-first exact and validated numerical computational mathematics"
+version = "0.5.0"
+description = "Certificate-first exact, validated numerical, and bounded p-adic mathematics"
 readme = "README.md"
 requires-python = ">=3.11"
 authors = [{ name = "azide0x37" }]
@@ -16,6 +16,7 @@ keywords = [
   "hurwitz-spaces",
   "number-theory",
   "numerical-algebraic-geometry",
+  "p-adic-arithmetic",
   "selmer-groups",
   "certificates",
 ]

@@ -1,9 +1,9 @@
 cff-version: 1.2.0
 message: >-
-  If you use Arbogast, please cite the 0.4.0 release and the software repository.
-title: "Arbogast: certificate-first exact and validated numerical computational mathematics"
+  If you use Arbogast, please cite the 0.5.0 release and the software repository.
+title: "Arbogast: certificate-first exact, validated numerical, and bounded p-adic mathematics"
 type: software
-version: 0.4.0
+version: 0.5.0
 date-released: 2026-08-30
 authors:
   - name: azide0x37
@@ -16,12 +16,14 @@ keywords:
   - Hurwitz spaces
   - number fields
   - numerical algebraic geometry
+  - p-adic arithmetic
   - Selmer groups
   - certificates
 abstract: >-
   Arbogast is a certificate-first computational mathematics library for finite exact
   cohomology, pinned number-field arithmetic, finite Kummer and 2-Selmer problems, finite exact
-  deformation theory, validated numerical algebraic geometry, symmetry, and Hurwitz arithmetic.
-  Its bounded numeric-to-exact bridge keeps enclosures, recognition candidates, exactification,
-  and generic-degree witnesses at distinct proof levels. It separates discovery from verification
-  and records mathematical results in provenance-preserving claim graphs.
+  deformation theory, validated numerical algebraic geometry, bounded finite-precision p-adic
+  arithmetic, symmetry, and Hurwitz arithmetic. Its proof boundaries keep finite residue classes,
+  numerical evidence, recognition candidates, exactification, local reduction fragments, and
+  exact scoped conclusions at distinct levels. It separates discovery from verification and
+  records mathematical results in provenance-preserving claim graphs.

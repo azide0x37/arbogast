@@ -4,7 +4,8 @@
 
 <p align="center">
   <strong>Certificate-first computational mathematics for finite cohomology,
-  deformation, validated numerics, symmetry, and Hurwitz arithmetic.</strong>
+  deformation, validated numerics, bounded p-adic arithmetic, symmetry, and Hurwitz
+  arithmetic.</strong>
 </p>
 
 > “What does this?” she said at last. She’d meant it as a rhetorical question. Of course there
@@ -204,9 +205,11 @@ is only a declared finite group-theoretic series satisfying its listed tame/wild
 identities: it records that neither arithmetic origin nor a valuation-derived complete lower
 numbering is claimed.
 
-Every operation returns a proof-bearing `Certified`, `Partial`, `Unknown`, or `Unsupported`
-boundary. Good, semistable, and stable reduction remain distinct. A complete factorization of one
-displayed mod-\(p\) polynomial is only a `LocalFactorizationFragment`, not a local cover model.
+Every claim-producing p-adic computation returns a proof-bearing `Certified`, `Partial`,
+`Unknown`, or `Unsupported` boundary. Semantic projections and receipt replay expose their own
+fixed verification interfaces. Good, semistable, and stable reduction remain distinct. A
+complete factorization of one displayed mod-\(p\) polynomial is only a
+`LocalFactorizationFragment`, not a local cover model.
 Lift enumeration is complete only in one pinned finite chart; the supported arithmetic lift action
 uses a computed-complete trivial quotient and explicit identity transports on every exact model.
 A fixed lift does not prove descent, and the positive rigid descent result is only an exact
@@ -248,11 +251,11 @@ See [the theorem boundary](docs/theorem-boundaries.md) for the exact epistemic c
 
 ## Install
 
-Arbogast 0.4.0 requires Python 3.11 or newer. Pin the exact GitHub source tag with
+Arbogast 0.5.0 requires Python 3.11 or newer. Pin the exact GitHub source tag with
 [uv](https://docs.astral.sh/uv/):
 
 ```bash
-uv add "arbogast @ git+https://github.com/azide0x37/arbogast.git@v0.4.0"
+uv add "arbogast @ git+https://github.com/azide0x37/arbogast.git@v0.5.0"
 ```
 
 For a contributor checkout:
@@ -266,14 +269,16 @@ uv run arbogast version
 
 No external algebra backend is required for the portable examples. If an operation can use an
 external backend, install that system independently and inspect capability discovery before
-depending on it. The 0.4.0 surface retains the narrow FLINT matrix and GAP permutation-group
+depending on it. The 0.5.0 surface retains the narrow FLINT matrix and GAP permutation-group
 discovery adapters, the closed operation-specific PARI arithmetic adapter, the portable
-finite-exact deformation layer, and the backend-free validated numeric-to-exact bridge. The PARI
-path keeps explicit portable-versus-pinned verification
+finite-exact deformation layer, the backend-free validated numeric-to-exact bridge, and bounded
+finite-precision p-adic arithmetic with portable exact replay. The PARI path keeps explicit
+portable-versus-pinned verification
 requirements; see [Optional backends](docs/optional-backends.md),
 [Certified arithmetic](docs/certified-arithmetic.md), and
 [Certified deformation](docs/deformation.md), and
-[Certified numeric-to-exact bridge](docs/numeric.md).
+[Certified numeric-to-exact bridge](docs/numeric.md), and
+[Certified bounded p-adic arithmetic](docs/padic.md).
 
 ## Thirty-second tour
 
@@ -391,7 +396,7 @@ preconditions hold; missing transformations are reported as missing capabilities
 Campaign files serialize specifications, their campaign-owned `ClaimGraph`, and the authoritative
 event ledger, never executable Python callables. With the default `--fleet off`, `run` fails
 closed if the current runtime has no injected implementation for a named operation.
-`--fleet auto` creates an audited local worker pool and registry. In 0.4.0 that registry contains
+`--fleet auto` creates an audited local worker pool and registry. In 0.5.0 that registry contains
 the non-closing `fleet.echo.v1` plumbing plus declared local-`H^1`, localization, Selmer assembly,
 PARI replay, and portable Python certificate-replay tasks. Registry membership never turns a
 scheduler outcome into mathematics or executes a callable named by JSON. The runnable campaign
@@ -526,14 +531,15 @@ The 0.4 examples are portable and require no external numerical or algebra backe
 
 ## Bounded p-adic journeys
 
-The five p-adic examples are portable finite replays and require no external p-adic backend.
+The five 0.5 p-adic examples are portable finite replays and require no external p-adic backend.
 
-- [`frobenius_slopes`](examples/padic/frobenius_slopes/) certifies a supplied arithmetic
-  Frobenius and its Newton multiplicities, then keeps the ordinary summand `Unknown` until an exact
-  saturated projector is supplied.
+- [`frobenius_slopes`](examples/padic/frobenius_slopes/) certifies a supplied semilinear Frobenius
+  operator under the arithmetic convention and its Newton multiplicities, then keeps the ordinary
+  summand `Unknown` until an exact saturated projector is supplied.
 - [`three_point_good_reduction`](examples/padic/three_point_good_reduction/) certifies the displayed
-  tame beta model at \(p=5\) through good, semistable, and stable reduction, while other primes
-  remain `Unsupported` rather than proofs of bad reduction.
+  tame beta model at \(p=5\) as good; that one-component good model also supplies the displayed
+  semistable and stable results without general stable-model discovery. Other primes remain
+  `Unsupported` rather than proofs of bad reduction.
 - [`special_deformation_datum`](examples/padic/special_deformation_datum/) separates certified
   componentwise formal identities from an unproved geometric Wewers extraction.
 - [`lifts_rigid_descent`](examples/padic/lifts_rigid_descent/) exhausts one pinned chart, rejects a
@@ -617,7 +623,7 @@ additional permission.
 
 ## Status and citation
 
-Arbogast 0.4.0 is alpha research software. Certificate verification is intended to be small
+Arbogast 0.5.0 is alpha research software. Certificate verification is intended to be small
 and inspectable, but users remain responsible for auditing the hypotheses and imported facts
 of any theorem they rely on. See [SECURITY.md](SECURITY.md) for reporting integrity or
 parser issues and [CITATION.cff](CITATION.cff) for citation metadata.

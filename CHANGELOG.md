@@ -6,6 +6,56 @@ All notable changes to Arbogast are documented here. The project follows
 
 ## [Unreleased]
 
+## [0.5.0] - 2026-08-30
+
+### Added
+
+- Canonical rational, unramified, and Eisenstein local-field presentations; exact finite rings
+  \(\mathcal O_K/\pi^N\), elements, residue-class balls, embeddings, automorphisms, matrices,
+  modules, and canonical scalar-closed submodules with preimage-HNF witnesses.
+- Supplied semilinear Frobenius operators with finite-precision valuation intervals, certified
+  Newton-slope multiplicities, and ordinary parts only from explicit saturated projectors.
+- Explicit finite inertia quotients, declared group-theoretic filtrations, and exhaustively
+  checked matrix actions without claiming continuous inertia or recovered arithmetic
+  ramification filtrations.
+- Exact normalized three-point covers and one automatic tame reduction lane for
+  \(\beta(z)=27z^2(1-z)/4\) at \(p=5\), with separately typed good, semistable, and stable
+  reduction results.
+- Rank-one logarithmic special-deformation identities, finite chart-local lift enumeration,
+  checked finite lift actions, fixed classes, and a deliberately narrow arithmetic action for a
+  computed-complete trivial finite Galois quotient.
+- Effective descent in one pinned \(\mathbf F_p\) labeled-chart model category from explicit
+  automorphism, cocycle, coefficient, and two-sided base-change witnesses.
+- Proof-bearing `Certified`, `Partial`, `Unknown`, and `Unsupported` outcomes; independently
+  versioned p-adic receipts nested in the existing central certificates and claim graphs; and
+  exactly two portable verifier families, `padic.finite-exact.v1` and
+  `padic.three-point-exact.v1`.
+- Five portable journeys for Frobenius slopes, tame three-point reduction, special-deformation
+  boundaries, finite lifts and rigid descent, and the non-closing M23 local frontier.
+- A content-addressed 0.4.0 compatibility fixture binding the published release identity, all three
+  public assets, API and CLI contracts, schema catalog, and representative numerical and exact
+  certificate records.
+
+### Proof and compatibility boundaries
+
+- A `PAdicBall` is a residue class in a pinned finite quotient, not a selected infinite p-adic
+  number. Finite precision that leaves a Newton vertex ambiguous returns `Unknown`.
+- The automatic geometry lane neither discovers general stable reduction nor infers bad
+  reduction outside the exact beta-at-five profile.
+- Certified componentwise logarithmic, Cartier, character, and signature identities do not
+  extract Wewers data from a stable cover; the differential-to-signature geometric comparison
+  remains unclaimed.
+- Automatic arithmetic lift actions are limited to the trivial finite quotient with explicit
+  identity transports. Nontrivial arithmetic actions remain `Unsupported`.
+- A fixed lift is not descent. The positive descent result is an exact coefficient vector only
+  in the pinned finite-field chart category, not characteristic-zero, number-field, or geometric
+  cover descent.
+- The public four-point M23 finite dataset supplies no cover equation or local model. It remains
+  `Unsupported` at the automatic reduction boundary; a separately certified local factorization
+  is only `Partial` with explicit obligations.
+- Every 0.1 through 0.4 published fixture remains additive and replayable. No earlier API,
+  schema, certificate ID, CLI contract, or release asset is rebuilt as a 0.5 artifact.
+
 ## [0.4.0] - 2026-08-30
 
 ### Added
@@ -169,7 +219,8 @@ All notable changes to Arbogast are documented here. The project follows
   successors suspend. SSH, Slurm, cloud provisioning, and remote-license automation are extension
   points rather than bundled 0.1.0 features.
 
-[Unreleased]: https://github.com/azide0x37/arbogast/compare/v0.4.0...HEAD
+[Unreleased]: https://github.com/azide0x37/arbogast/compare/v0.5.0...HEAD
+[0.5.0]: https://github.com/azide0x37/arbogast/compare/v0.4.0...v0.5.0
 [0.4.0]: https://github.com/azide0x37/arbogast/compare/v0.3.0...v0.4.0
 [0.3.0]: https://github.com/azide0x37/arbogast/compare/v0.2.0...v0.3.0
 [0.2.0]: https://github.com/azide0x37/arbogast/compare/v0.1.0...v0.2.0
