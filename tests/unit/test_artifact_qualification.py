@@ -26,6 +26,25 @@ QualificationError = cast(type[ValueError], QUALIFIER["QualificationError"])
 wheel_required = cast(tuple[str, ...], QUALIFIER["WHEEL_REQUIRED"])
 sdist_required = cast(tuple[str, ...], QUALIFIER["SDIST_REQUIRED"])
 source_required = cast(tuple[str, ...], QUALIFIER["SOURCE_ARCHIVE_REQUIRED"])
+deformation_wheel_required = cast(
+    tuple[str, ...],
+    QUALIFIER["DEFORMATION_WHEEL_REQUIRED"],
+)
+deformation_sdist_required = cast(
+    tuple[str, ...],
+    QUALIFIER["DEFORMATION_SDIST_REQUIRED"],
+)
+compatibility_index = cast(str, QUALIFIER["COMPATIBILITY_INDEX"])
+required_wheel_paths = cast(Callable[[str], tuple[str, ...]], QUALIFIER["required_wheel_paths"])
+required_sdist_paths = cast(Callable[..., tuple[str, ...]], QUALIFIER["required_sdist_paths"])
+required_source_archive_paths = cast(
+    Callable[..., tuple[str, ...]],
+    QUALIFIER["required_source_archive_paths"],
+)
+packaged_example_commands = cast(
+    Callable[..., tuple[tuple[str, ...], ...]],
+    QUALIFIER["_packaged_example_commands"],
+)
 compare_pari_anchors = cast(Callable[[Path], None], PARI_ANCHOR["compare_directory"])
 build_source_archive = cast(Callable[..., Path], SOURCE_BUILDER["build_source_archive"])
 cross_artifact_consistency = cast(
@@ -34,10 +53,22 @@ cross_artifact_consistency = cast(
 )
 
 
-def _wheel(tmp_path: Path, *, version: str = "0.2.0", unsafe: bool = False) -> Path:
+def _at_least_030(version: str) -> bool:
+    return tuple(int(part) for part in version.split(".")) >= (0, 3, 0)
+
+
+def _wheel(
+    tmp_path: Path,
+    *,
+    version: str = "0.2.0",
+    unsafe: bool = False,
+    omit: str | None = None,
+) -> Path:
     path = tmp_path / f"arbogast-{version}-py3-none-any.whl"
     with zipfile.ZipFile(path, "w") as archive:
-        for name in wheel_required:
+        for name in required_wheel_paths(version):
+            if name == omit:
+                continue
             payload = (
                 f'__version__ = "{version}"\n'.encode()
                 if name == "arbogast/__init__.py"
@@ -72,31 +103,49 @@ def _sdist(
     *,
     version: str = "0.2.0",
     metadata_version: str | None = None,
+    omit: str | None = None,
 ) -> Path:
     path = tmp_path / f"arbogast-{version}.tar.gz"
     prefix = f"arbogast-{version}"
     payloads: dict[str, bytes] = {relative: b"fixture\n" for relative in sdist_required}
-    payloads.update({f"src/{relative}": b"fixture\n" for relative in wheel_required})
+    if _at_least_030(version):
+        payloads[compatibility_index] = (PROJECT_ROOT / compatibility_index).read_bytes()
+    for relative in required_sdist_paths(payloads, version):
+        payloads.setdefault(relative, b"fixture\n")
+    payloads.update({f"src/{relative}": b"fixture\n" for relative in required_wheel_paths(version)})
     payloads["pyproject.toml"] = f'[project]\nname = "arbogast"\nversion = "{version}"\n'.encode()
     payloads["src/arbogast/__init__.py"] = f'__version__ = "{version}"\n'.encode()
     payloads[f"docs/release-notes-{version}.md"] = b"release notes\n"
     payloads["PKG-INFO"] = (
         f"Metadata-Version: 2.4\nName: arbogast\nVersion: {metadata_version or version}\n"
     ).encode()
+    if omit is not None:
+        payloads.pop(omit, None)
     with tarfile.open(path, "w:gz") as archive:
         for relative, payload in sorted(payloads.items()):
             _tar_member(archive, f"{prefix}/{relative}", payload)
     return path
 
 
-def _source_archive(tmp_path: Path, *, version: str = "0.2.0") -> Path:
+def _source_archive(
+    tmp_path: Path,
+    *,
+    version: str = "0.2.0",
+    omit: str | None = None,
+) -> Path:
     path = tmp_path / f"arbogast-{version}-source.tar.gz"
     prefix = f"arbogast-{version}"
     payloads: dict[str, bytes] = {relative: b"fixture\n" for relative in source_required}
-    payloads.update({f"src/{relative}": b"fixture\n" for relative in wheel_required})
+    if _at_least_030(version):
+        payloads[compatibility_index] = (PROJECT_ROOT / compatibility_index).read_bytes()
+    for relative in required_source_archive_paths(payloads, version):
+        payloads.setdefault(relative, b"fixture\n")
+    payloads.update({f"src/{relative}": b"fixture\n" for relative in required_wheel_paths(version)})
     payloads["pyproject.toml"] = f'[project]\nname = "arbogast"\nversion = "{version}"\n'.encode()
     payloads["src/arbogast/__init__.py"] = f'__version__ = "{version}"\n'.encode()
     payloads[f"docs/release-notes-{version}.md"] = b"release notes\n"
+    if omit is not None:
+        payloads.pop(omit, None)
     with tarfile.open(path, "w:gz", pax_headers={"comment": "a" * 40}) as archive:
         for relative, payload in sorted(payloads.items()):
             _tar_member(archive, f"{prefix}/{relative}", payload)
@@ -120,6 +169,153 @@ def test_release_archives_are_inspected_and_content_addressed(tmp_path: Path) ->
         assert cast(str, record["sha256"]).startswith("sha256:")
         assert cast(str, record["payload_sha256"]).startswith("sha256:")
         assert cast(int, record["bytes"]) > 0
+
+
+def test_pre_deformation_release_surfaces_remain_unchanged() -> None:
+    assert required_wheel_paths("0.1.0") == wheel_required
+    assert required_wheel_paths("0.2.0") == wheel_required
+    for version in ("0.1.0", "0.2.0"):
+        required = required_sdist_paths({}, version)
+        assert set(sdist_required).issubset(required)
+        assert f"docs/release-notes-{version}.md" in required
+        assert compatibility_index not in required
+        assert not set(deformation_sdist_required).intersection(required)
+
+
+def test_v030_release_trio_requires_and_binds_the_deformation_surface(tmp_path: Path) -> None:
+    wheel_path = _wheel(tmp_path, version="0.3.0")
+    sdist_path = _sdist(tmp_path, version="0.3.0")
+    source_path = _source_archive(tmp_path, version="0.3.0")
+
+    inspect_wheel(wheel_path, "0.3.0")
+    inspect_sdist(sdist_path, "0.3.0")
+    inspect_source_archive(source_path, "0.3.0")
+    cross_artifact_consistency(wheel_path, sdist_path, source_path, "0.3.0")
+
+    assert set(deformation_wheel_required).issubset(required_wheel_paths("0.3.0"))
+    with tarfile.open(sdist_path, "r:gz") as archive:
+        names = {member.name.removeprefix("arbogast-0.3.0/") for member in archive}
+    assert set(deformation_sdist_required).issubset(names)
+
+
+def test_v030_release_trio_rejects_missing_deformation_and_prior_contracts(
+    tmp_path: Path,
+) -> None:
+    missing_wheel = deformation_wheel_required[-1]
+    with pytest.raises(QualificationError, match=missing_wheel):
+        inspect_wheel(_wheel(tmp_path, version="0.3.0", omit=missing_wheel), "0.3.0")
+
+    missing_documentation = "docs/deformation.md"
+    with pytest.raises(QualificationError, match=missing_documentation):
+        inspect_sdist(
+            _sdist(tmp_path, version="0.3.0", omit=missing_documentation),
+            "0.3.0",
+        )
+
+    missing_prior_fixture = "tests/fixtures/compat/v0.2.0/semantic-contracts.json"
+    with pytest.raises(QualificationError, match=missing_prior_fixture):
+        inspect_sdist(
+            _sdist(tmp_path, version="0.3.0", omit=missing_prior_fixture),
+            "0.3.0",
+        )
+
+    missing_journey = "examples/deformation/finite_lifts/run.py"
+    with pytest.raises(QualificationError, match=missing_journey):
+        inspect_source_archive(
+            _source_archive(tmp_path, version="0.3.0", omit=missing_journey),
+            "0.3.0",
+        )
+
+
+def test_prior_compatibility_surface_is_derived_from_the_packaged_index() -> None:
+    payload = (PROJECT_ROOT / compatibility_index).read_bytes()
+    index = json.loads(payload)
+    required = set(required_sdist_paths({compatibility_index: payload}, "0.3.0"))
+
+    for release in index["releases"]:
+        assert release["release_notes"]["path"] in required
+        for fixture in release["fixture_files"]:
+            assert fixture["path"] in required
+    assert "docs/release-notes-0.3.0.md" in required
+
+
+def test_future_minor_release_adds_newly_indexed_prior_contracts() -> None:
+    index = json.loads((PROJECT_ROOT / compatibility_index).read_text(encoding="utf-8"))
+    index["releases"].append(
+        {
+            "fixture_files": [
+                {"path": "tests/fixtures/compat/v0.3.0/release.json"},
+                {"path": "tests/fixtures/compat/v0.3.0/deformation-contracts.json"},
+            ],
+            "release_notes": {"path": "docs/release-notes-0.3.0.md"},
+            "version": "0.3.0",
+        }
+    )
+    payload = json.dumps(index).encode()
+    required = set(required_sdist_paths({compatibility_index: payload}, "0.4.0"))
+
+    assert "tests/fixtures/compat/v0.3.0/release.json" in required
+    assert "tests/fixtures/compat/v0.3.0/deformation-contracts.json" in required
+    assert "docs/release-notes-0.3.0.md" in required
+    assert "docs/release-notes-0.4.0.md" in required
+    assert set(deformation_sdist_required).issubset(required)
+
+
+def test_packaged_deformation_journeys_begin_with_v030(tmp_path: Path) -> None:
+    python = tmp_path / "venv" / "bin" / "python"
+    v020 = packaged_example_commands(
+        python,
+        tmp_path / "v020",
+        version="0.2.0",
+        require_gp=False,
+    )
+    v030 = packaged_example_commands(
+        python,
+        tmp_path / "v030",
+        version="0.3.0",
+        require_gp=False,
+    )
+    v040_with_gp = packaged_example_commands(
+        python,
+        tmp_path / "v040",
+        version="0.4.0",
+        require_gp=True,
+    )
+
+    v020_scripts = {command[1] for command in v020}
+    v030_scripts = {command[1] for command in v030}
+    v040_scripts = {command[1] for command in v040_with_gp}
+    deformation_scripts = {
+        "examples/deformation/exact_spaces/run.py",
+        "examples/deformation/finite_lifts/run.py",
+    }
+    assert v020_scripts.isdisjoint(deformation_scripts)
+    assert deformation_scripts.issubset(v030_scripts)
+    assert deformation_scripts.issubset(v040_scripts)
+    assert any("--with-pari" in command for command in v040_with_gp)
+
+
+def test_release_workflow_derives_candidate_identity_and_preserves_ci_anchors() -> None:
+    workflow = (PROJECT_ROOT / ".github/workflows/ci.yml").read_text(encoding="utf-8")
+
+    assert "0.2.0" not in workflow
+    assert 'python-version: ["3.11", "3.12", "3.13", "3.14"]' in workflow
+    assert "command -v gp" in workflow
+    assert "candidate_name=arbogast-{version}-candidates" in workflow
+    assert 're.fullmatch(r"[0-9]+\\.[0-9]+\\.[0-9]+", version)' in workflow
+    assert "needs.release-qualification.outputs.candidate_name" in workflow
+    assert "needs.release-qualification.outputs.version" in workflow
+    assert "pari-2.15.5.tar.gz" in workflow
+    assert "pari-2.17.4.tar.gz" in workflow
+    assert "scripts/pari_anchor_payload.py" in workflow
+    assert "tests/integration/test_pari_live.py" in workflow
+    assert "--require-gp" in workflow
+
+
+@pytest.mark.parametrize("version", ("0.3", "v0.3.0", "0.3.0.dev1", "../../0.3.0"))
+def test_release_version_must_be_a_safe_final_version(version: str) -> None:
+    with pytest.raises(QualificationError, match=r"final X\.Y\.Z version"):
+        required_wheel_paths(version)
 
 
 def test_source_builder_binds_one_commit_and_rejects_implicit_dirty_mix(tmp_path: Path) -> None:

@@ -6,7 +6,32 @@ All notable changes to Arbogast are documented here. The project follows
 
 ## [Unreleased]
 
-No user-visible changes have been recorded since 0.2.0.
+## [0.3.0] - 2026-08-30
+
+### Added
+
+- A bounded exact deformation layer over prime fields with pinned finite Artin rings, ring maps,
+  small extensions, three-term deformation complexes, and explicit deformation presentations.
+- Certified gauge, tangent, and obstruction spaces; explicit framing; finite equivariant actions,
+  invariant deformations, and supplied-projector decompositions.
+- Finite lift outcomes that distinguish checked affine families, literal obstructions, and typed
+  unknown results, together with separate uniqueness and rigidity computations.
+- Certified fixed lifts from explicit endomorphisms and replayable contraction witnesses.
+- Portable deformation examples covering exact spaces, framing and equivariance, solved and
+  obstructed lifts, unique and non-unique branches, rigidity, fixed lifts, and claim graphs.
+
+### Boundaries
+
+- The deformation input is an explicit finite presentation. Arbogast does not infer a deformation
+  complex, automorphism action, or obstruction theory from a general geometric object.
+- A computed obstruction space is the obstruction space of the supplied complex; it is not an
+  assertion that every geometric obstruction is represented without an additional comparison
+  theorem.
+- Fixed-lift certification requires a checked finite contraction witness. Convergence observed by
+  iteration, numerical recognition, formal schemes, complete local rings, and general
+  characteristic-zero or p-adic deformation theory remain outside this release.
+- Deformation operations remain non-shardable because the supported kernels, quotients, and lift
+  systems are globally coupled finite computations.
 
 ## [0.2.0] - 2026-08-29
 
@@ -103,6 +128,7 @@ No user-visible changes have been recorded since 0.2.0.
   successors suspend. SSH, Slurm, cloud provisioning, and remote-license automation are extension
   points rather than bundled 0.1.0 features.
 
-[Unreleased]: https://github.com/azide0x37/arbogast/compare/v0.2.0...HEAD
+[Unreleased]: https://github.com/azide0x37/arbogast/compare/v0.3.0...HEAD
+[0.3.0]: https://github.com/azide0x37/arbogast/compare/v0.2.0...v0.3.0
 [0.2.0]: https://github.com/azide0x37/arbogast/compare/v0.1.0...v0.2.0
 [0.1.0]: https://github.com/azide0x37/arbogast/releases/tag/v0.1.0

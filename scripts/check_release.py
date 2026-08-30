@@ -86,6 +86,36 @@ REQUIRED_PATHS: Final = (
     "examples/certificates/prove_without_search/discover.py",
     "examples/certificates/prove_without_search/verify.py",
 )
+DEFORMATION_INTRODUCED: Final = (0, 3, 0)
+DEFORMATION_REQUIRED_PATHS: Final = (
+    "docs/deformation.md",
+    "src/arbogast/deform/__init__.py",
+    "src/arbogast/deform/_schema.py",
+    "src/arbogast/deform/certificate.py",
+    "src/arbogast/deform/complex.py",
+    "src/arbogast/deform/equivariant.py",
+    "src/arbogast/deform/errors.py",
+    "src/arbogast/deform/framing.py",
+    "src/arbogast/deform/lifting.py",
+    "src/arbogast/deform/plans.py",
+    "src/arbogast/deform/problem.py",
+    "src/arbogast/deform/rings.py",
+    "src/arbogast/deform/semantic.py",
+    "examples/deformation/exact_spaces/README.md",
+    "examples/deformation/exact_spaces/run.py",
+    "examples/deformation/finite_lifts/README.md",
+    "examples/deformation/finite_lifts/run.py",
+    "tests/integration/test_deform_examples_acceptance.py",
+    "tests/integration/test_deform_fresh_process_acceptance.py",
+    "tests/unit/test_deform_artin_rings_acceptance.py",
+    "tests/unit/test_deform_certificate_acceptance.py",
+    "tests/unit/test_deform_complex_acceptance.py",
+    "tests/unit/test_deform_equivariant_acceptance.py",
+    "tests/unit/test_deform_lifting_acceptance.py",
+    "tests/unit/test_deform_schema_acceptance.py",
+    "tests/unit/test_deform_semantic_acceptance.py",
+    "tests/unit/test_deform_surface_acceptance.py",
+)
 TEXT_SUFFIXES: Final = {".cff", ".json", ".md", ".py", ".toml", ".yaml", ".yml"}
 SKIP_PARTS: Final = {".git", ".mypy_cache", ".pytest_cache", ".ruff_cache", ".venv"}
 UNRESOLVED_MARKERS: Final = ("TODO", "FIXME", "will be filled in")
@@ -197,6 +227,13 @@ def _project_version(root: Path) -> str | None:
 EXPECTED_VERSION: Final = _project_version(PROJECT_ROOT) or ""
 
 
+def _deformation_release(version: str) -> bool:
+    if FINAL_VERSION_RE.fullmatch(version) is None:
+        return False
+    major, minor, patch = (int(part) for part in version.split("."))
+    return (major, minor, patch) >= DEFORMATION_INTRODUCED
+
+
 def required_paths(version: str, *, root: Path = PROJECT_ROOT) -> tuple[str, ...]:
     """Return the release surface for ``version`` without forgetting old fixtures."""
 
@@ -220,7 +257,13 @@ def required_paths(version: str, *, root: Path = PROJECT_ROOT) -> tuple[str, ...
                     for record in fixtures
                     if isinstance(record, dict) and isinstance(record.get("path"), str)
                 )
-    paths = (*REQUIRED_PATHS, *indexed, f"docs/release-notes-{version}.md")
+    additive = DEFORMATION_REQUIRED_PATHS if _deformation_release(version) else ()
+    paths = (
+        *REQUIRED_PATHS,
+        *indexed,
+        *additive,
+        f"docs/release-notes-{version}.md",
+    )
     return tuple(dict.fromkeys(paths))
 
 
@@ -1053,15 +1096,7 @@ def _check_live_pari_matrix(root: Path, failures: list[str]) -> None:
             failures.append(f"live-PARI CI matrix omits {required!r}")
 
 
-def check(root: Path, *, expected_version: str | None = None) -> dict[str, object]:
-    failures: list[str] = []
-    declared_version = _project_version(root)
-    version = expected_version or declared_version or ""
-    if not version or FINAL_VERSION_RE.fullmatch(version) is None:
-        failures.append(f"release version must be final X.Y.Z, found {version!r}")
-    if expected_version is not None and declared_version != expected_version:
-        failures.append(f"pyproject version must be {expected_version}, found {declared_version!r}")
-
+def _check_required_paths(root: Path, failures: list[str], version: str) -> None:
     for relative in required_paths(version, root=root):
         required = root / relative
         if not required.exists():
@@ -1072,6 +1107,18 @@ def check(root: Path, *, expected_version: str | None = None) -> dict[str, objec
             and required.stat().st_size == 0
         ):
             failures.append(f"required file is empty: {relative}")
+
+
+def check(root: Path, *, expected_version: str | None = None) -> dict[str, object]:
+    failures: list[str] = []
+    declared_version = _project_version(root)
+    version = expected_version or declared_version or ""
+    if not version or FINAL_VERSION_RE.fullmatch(version) is None:
+        failures.append(f"release version must be final X.Y.Z, found {version!r}")
+    if expected_version is not None and declared_version != expected_version:
+        failures.append(f"pyproject version must be {expected_version}, found {declared_version!r}")
+
+    _check_required_paths(root, failures, version)
 
     pyproject_path = root / "pyproject.toml"
     if pyproject_path.exists():

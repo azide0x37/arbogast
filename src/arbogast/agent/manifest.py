@@ -323,6 +323,72 @@ _MODULE_PROFILES = {
             ),
         ),
     ),
+    "arbogast.deform": _ModuleProfile(
+        (
+            "Certified finite Artin-ring deformation complexes, tangent/gauge/obstruction "
+            "spaces, equivariance, framing, lifting, and scoped rigidity."
+        ),
+        (
+            "ArtinRing",
+            "ArtinRingElement",
+            "ArtinRingMap",
+            "SmallExtension",
+            "DeformationComplex",
+            "DeformationPresentation",
+            "DeformationProblem",
+            "GaugeSpace",
+            "TangentSpace",
+            "ObstructionSpace",
+            "ObstructionClass",
+            "Framing",
+            "DeformationAction",
+            "EquivariantDeformation",
+            "InvariantDeformations",
+            "EquivariantDecomposition",
+            "LiftDatum",
+            "LiftFamily",
+            "LiftObstructed",
+            "LiftUnknown",
+            "UniqueLift",
+            "NonUniqueLift",
+            "LiftEndomorphism",
+            "ContractionCertificate",
+            "FixedLift",
+            "Rigid",
+            "NonRigid",
+            "UnsupportedDeformation",
+            "DeformationReceipt",
+        ),
+        (
+            "Every deformation complex exactly satisfies d1*d0 = 0 over a prime field.",
+            (
+                "Gauge, tangent, and obstruction spaces are exactly H0, H1, and H2 of the "
+                "pinned complex."
+            ),
+            "Framing restricts degree-zero gauge directions through an explicit kernel.",
+            (
+                "InvariantDeformations constructs C^G and explicitly does not identify "
+                "H(C^G) with H(C)^G."
+            ),
+            (
+                "Lift obstruction, unknown, uniqueness, fixed-point, and rigidity outcomes "
+                "retain literal finite witnesses and scoped conclusions."
+            ),
+        ),
+        (
+            "Do not infer a geometric deformation complex from an arbitrary input object.",
+            (
+                "Do not use averaging or claim an equivariant decomposition in modular "
+                "characteristic without supplied verified projectors."
+            ),
+            "Do not turn a zero obstruction space into construction of a lift.",
+            "Do not turn zero tangent dimension into unscoped formal or geometric rigidity.",
+            (
+                "Do not call a lift canonical or fixed without a bound endomorphism and "
+                "checked contraction certificate."
+            ),
+        ),
+    ),
     "arbogast.hurwitz": _ModuleProfile(
         "Finite Nielsen classes, braid actions, real structures, and component invariants.",
         ("BraidAction", "HurwitzComponent", "NielsenClass", "NielsenTuple"),

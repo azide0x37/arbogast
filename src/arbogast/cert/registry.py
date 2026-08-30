@@ -175,6 +175,7 @@ _BUILTIN_VERIFIER_MODULES = {
     "cohom.induced_map.v1": "arbogast.cohom.map_certificate",
     "cohom.inflation_restriction.v1": "arbogast.cohom.five_term",
     "cohom.normalized_bar.v1": "arbogast.cohom.semantic",
+    "deform.finite-exact.v1": "arbogast.deform.semantic",
     "galois.kummer.v1": "arbogast.galois.semantic",
     "galois.finite_quotient.v1": "arbogast.galois.groups",
     "galois.local_h1.v1": "arbogast.galois.semantic",

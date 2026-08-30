@@ -66,6 +66,69 @@ LOCAL_CONDITION_RECEIPT_SCHEMA: Final = "arbogast.local-condition/v1"
 LOCAL_PAIRING_RECEIPT_SCHEMA: Final = "arbogast.local-pairing/v1"
 SELMER_RECEIPT_SCHEMA: Final = "arbogast.selmer/v1"
 
+# Finite-exact deformation identities introduced in 0.3.0.  As with the
+# arithmetic schemas above, release versions and interchange versions are
+# independent: later releases must continue to recognize these exact v1
+# documents unless a new schema identifier is explicitly introduced.
+DEFORM_ARTIN_RING_SCHEMA_V1: Final = "arbogast.deform.artin-ring/v1"
+DEFORM_ARTIN_RING_ELEMENT_SCHEMA_V1: Final = "arbogast.deform.artin-ring-element/v1"
+DEFORM_ARTIN_RING_MAP_SCHEMA_V1: Final = "arbogast.deform.artin-ring-map/v1"
+DEFORM_SMALL_EXTENSION_SCHEMA_V1: Final = "arbogast.deform.small-extension/v1"
+DEFORM_COMPLEX_SCHEMA_V1: Final = "arbogast.deform.complex/v1"
+DEFORM_PRESENTATION_SCHEMA_V1: Final = "arbogast.deform.presentation/v1"
+DEFORM_PROBLEM_SCHEMA_V1: Final = "arbogast.deform.problem/v1"
+DEFORM_FRAMING_SCHEMA_V1: Final = "arbogast.deform.framing/v1"
+DEFORM_ACTION_SCHEMA_V1: Final = "arbogast.deform.action/v1"
+DEFORM_EQUIVARIANT_SCHEMA_V1: Final = "arbogast.deform.equivariant/v1"
+DEFORM_INVARIANT_DEFORMATIONS_SCHEMA_V1: Final = "arbogast.deform.invariant-deformations/v1"
+DEFORM_EQUIVARIANT_COMPONENT_SCHEMA_V1: Final = "arbogast.deform.equivariant-component/v1"
+DEFORM_EQUIVARIANT_DECOMPOSITION_SCHEMA_V1: Final = "arbogast.deform.equivariant-decomposition/v1"
+DEFORM_GAUGE_SPACE_SCHEMA_V1: Final = "arbogast.deform.gauge-space/v1"
+DEFORM_TANGENT_SPACE_SCHEMA_V1: Final = "arbogast.deform.tangent-space/v1"
+DEFORM_OBSTRUCTION_SPACE_SCHEMA_V1: Final = "arbogast.deform.obstruction-space/v1"
+DEFORM_OBSTRUCTION_CLASS_SCHEMA_V1: Final = "arbogast.deform.obstruction-class/v1"
+DEFORM_LIFT_DATUM_SCHEMA_V1: Final = "arbogast.deform.lift-datum/v1"
+DEFORM_LIFT_FAMILY_SCHEMA_V1: Final = "arbogast.deform.lift-family/v1"
+DEFORM_LIFT_OBSTRUCTED_SCHEMA_V1: Final = "arbogast.deform.lift-obstructed/v1"
+DEFORM_LIFT_UNKNOWN_SCHEMA_V1: Final = "arbogast.deform.lift-unknown/v1"
+DEFORM_UNIQUE_LIFT_SCHEMA_V1: Final = "arbogast.deform.unique-lift/v1"
+DEFORM_NONUNIQUE_LIFT_SCHEMA_V1: Final = "arbogast.deform.nonunique-lift/v1"
+DEFORM_LIFT_ENDOMORPHISM_SCHEMA_V1: Final = "arbogast.deform.lift-endomorphism/v1"
+DEFORM_CONTRACTION_CERTIFICATE_SCHEMA_V1: Final = "arbogast.deform.contraction-certificate/v1"
+DEFORM_FIXED_LIFT_SCHEMA_V1: Final = "arbogast.deform.fixed-lift/v1"
+DEFORM_RIGID_SCHEMA_V1: Final = "arbogast.deform.rigid/v1"
+DEFORM_NONRIGID_SCHEMA_V1: Final = "arbogast.deform.nonrigid/v1"
+DEFORM_UNSUPPORTED_SCHEMA_V1: Final = "arbogast.deform.unsupported/v1"
+
+# Each deformation proving receipt evolves independently while sharing the
+# same portable verifier and central VerificationCertificate envelope.
+DEFORM_ARTIN_RING_RECEIPT_SCHEMA_V1: Final = "arbogast.deform.artin-ring-receipt/v1"
+DEFORM_ARTIN_MAP_RECEIPT_SCHEMA_V1: Final = "arbogast.deform.artin-map-receipt/v1"
+DEFORM_SMALL_EXTENSION_RECEIPT_SCHEMA_V1: Final = "arbogast.deform.small-extension-receipt/v1"
+DEFORM_COMPLEX_RECEIPT_SCHEMA_V1: Final = "arbogast.deform.complex-receipt/v1"
+DEFORM_PROBLEM_RECEIPT_SCHEMA_V1: Final = "arbogast.deform.problem-receipt/v1"
+DEFORM_GAUGE_RECEIPT_SCHEMA_V1: Final = "arbogast.deform.gauge-receipt/v1"
+DEFORM_TANGENT_RECEIPT_SCHEMA_V1: Final = "arbogast.deform.tangent-receipt/v1"
+DEFORM_OBSTRUCTION_SPACE_RECEIPT_SCHEMA_V1: Final = "arbogast.deform.obstruction-space-receipt/v1"
+DEFORM_OBSTRUCTION_CLASS_RECEIPT_SCHEMA_V1: Final = "arbogast.deform.obstruction-class-receipt/v1"
+DEFORM_FRAMING_RECEIPT_SCHEMA_V1: Final = "arbogast.deform.framing-receipt/v1"
+DEFORM_ACTION_RECEIPT_SCHEMA_V1: Final = "arbogast.deform.action-receipt/v1"
+DEFORM_EQUIVARIANT_RECEIPT_SCHEMA_V1: Final = "arbogast.deform.equivariant-receipt/v1"
+DEFORM_INVARIANT_COMPLEX_RECEIPT_SCHEMA_V1: Final = "arbogast.deform.invariant-complex-receipt/v1"
+DEFORM_DECOMPOSITION_RECEIPT_SCHEMA_V1: Final = "arbogast.deform.decomposition-receipt/v1"
+DEFORM_LIFT_DATUM_RECEIPT_SCHEMA_V1: Final = "arbogast.deform.lift-datum-receipt/v1"
+DEFORM_LIFT_FAMILY_RECEIPT_SCHEMA_V1: Final = "arbogast.deform.lift-family-receipt/v1"
+DEFORM_LIFT_OBSTRUCTED_RECEIPT_SCHEMA_V1: Final = "arbogast.deform.lift-obstructed-receipt/v1"
+DEFORM_LIFT_UNKNOWN_RECEIPT_SCHEMA_V1: Final = "arbogast.deform.lift-unknown-receipt/v1"
+DEFORM_UNIQUE_LIFT_RECEIPT_SCHEMA_V1: Final = "arbogast.deform.unique-lift-receipt/v1"
+DEFORM_NONUNIQUE_LIFT_RECEIPT_SCHEMA_V1: Final = "arbogast.deform.nonunique-lift-receipt/v1"
+DEFORM_LIFT_ENDOMORPHISM_RECEIPT_SCHEMA_V1: Final = "arbogast.deform.lift-endomorphism-receipt/v1"
+DEFORM_CONTRACTION_RECEIPT_SCHEMA_V1: Final = "arbogast.deform.contraction-receipt/v1"
+DEFORM_FIXED_LIFT_RECEIPT_SCHEMA_V1: Final = "arbogast.deform.fixed-lift-receipt/v1"
+DEFORM_RIGID_RECEIPT_SCHEMA_V1: Final = "arbogast.deform.rigid-receipt/v1"
+DEFORM_NONRIGID_RECEIPT_SCHEMA_V1: Final = "arbogast.deform.nonrigid-receipt/v1"
+DEFORM_UNSUPPORTED_RECEIPT_SCHEMA_V1: Final = "arbogast.deform.unsupported-receipt/v1"
+
 
 class SchemaError(ValueError):
     """Raised for an unknown schema or structurally invalid document."""
@@ -350,6 +413,246 @@ _DEFINITIONS: Final = {
                 (LOCAL_CONDITION_RECEIPT_SCHEMA, "Local condition receipt"),
                 (LOCAL_PAIRING_RECEIPT_SCHEMA, "Local pairing receipt"),
                 (SELMER_RECEIPT_SCHEMA, "Selmer receipt"),
+            )
+        ),
+        SchemaDefinition(
+            DEFORM_ARTIN_RING_SCHEMA_V1,
+            (
+                "basis_names",
+                "dimension",
+                "field",
+                "maximal_ideal_powers",
+                "residue",
+                "structure_constants",
+                "type",
+                "unit",
+            ),
+            "Pinned finite local Artin ring",
+        ),
+        SchemaDefinition(
+            DEFORM_ARTIN_RING_ELEMENT_SCHEMA_V1,
+            ("coordinates", "ring_id", "type"),
+            "Pinned Artin-ring element",
+        ),
+        SchemaDefinition(
+            DEFORM_ARTIN_RING_MAP_SCHEMA_V1,
+            ("codomain_id", "domain_id", "matrix", "type"),
+            "Explicit Artin-ring map",
+        ),
+        SchemaDefinition(
+            DEFORM_SMALL_EXTENSION_SCHEMA_V1,
+            ("inclusion", "kernel_basis", "projection_id", "type"),
+            "Pinned small extension",
+        ),
+        SchemaDefinition(
+            DEFORM_COMPLEX_SCHEMA_V1,
+            ("d0", "d1", "dimensions", "field", "name", "type"),
+            "Three-term deformation complex",
+        ),
+        SchemaDefinition(
+            DEFORM_PRESENTATION_SCHEMA_V1,
+            ("complex", "name", "source_id", "type"),
+            "Pinned deformation presentation",
+        ),
+        SchemaDefinition(
+            DEFORM_PROBLEM_SCHEMA_V1,
+            ("effective_complex", "framing", "presentation", "type"),
+            "Finite deformation problem",
+        ),
+        SchemaDefinition(
+            DEFORM_FRAMING_SCHEMA_V1,
+            ("allowed_gauge", "ambient_dimension", "constraints", "label", "type"),
+            "Exact deformation framing",
+        ),
+        SchemaDefinition(
+            DEFORM_ACTION_SCHEMA_V1,
+            (
+                "complex_id",
+                "degree_matrices",
+                "group_order",
+                "identity_index",
+                "multiplication_table",
+                "type",
+            ),
+            "Exact finite chain action on a deformation complex",
+        ),
+        SchemaDefinition(
+            DEFORM_EQUIVARIANT_SCHEMA_V1,
+            ("action", "problem_id", "type"),
+            "Equivariant deformation problem",
+        ),
+        SchemaDefinition(
+            DEFORM_INVARIANT_DEFORMATIONS_SCHEMA_V1,
+            ("equivariant_id", "identifies_invariant_cohomology", "problem", "type"),
+            "Invariant deformation subcomplex",
+        ),
+        SchemaDefinition(
+            DEFORM_EQUIVARIANT_COMPONENT_SCHEMA_V1,
+            ("ambient_id", "complex", "label", "projectors", "subspaces", "type"),
+            "Equivariant deformation summand",
+        ),
+        SchemaDefinition(
+            DEFORM_EQUIVARIANT_DECOMPOSITION_SCHEMA_V1,
+            ("complete", "components", "equivariant_id", "type"),
+            "Complete equivariant deformation decomposition",
+        ),
+        SchemaDefinition(
+            DEFORM_GAUGE_SPACE_SCHEMA_V1,
+            ("complex_id", "problem_id", "space", "type"),
+            "Infinitesimal gauge space",
+        ),
+        SchemaDefinition(
+            DEFORM_TANGENT_SPACE_SCHEMA_V1,
+            ("complex_id", "problem_id", "quotient", "type"),
+            "Deformation tangent space",
+        ),
+        SchemaDefinition(
+            DEFORM_OBSTRUCTION_SPACE_SCHEMA_V1,
+            ("complex_id", "problem_id", "quotient", "type"),
+            "Deformation obstruction space",
+        ),
+        SchemaDefinition(
+            DEFORM_OBSTRUCTION_CLASS_SCHEMA_V1,
+            ("ambient_vector", "class_coordinates", "is_zero", "space_id", "type"),
+            "Pinned obstruction class",
+        ),
+        SchemaDefinition(
+            DEFORM_LIFT_DATUM_SCHEMA_V1,
+            (
+                "base_point",
+                "correction_matrix",
+                "extension_id",
+                "gauge_matrix",
+                "label",
+                "problem_id",
+                "target",
+                "type",
+            ),
+            "Finite Artin-ring lift datum",
+        ),
+        SchemaDefinition(
+            DEFORM_LIFT_FAMILY_SCHEMA_V1,
+            (
+                "datum_id",
+                "directions",
+                "gauge_directions",
+                "mod_gauge",
+                "particular",
+                "representative",
+                "type",
+            ),
+            "Complete affine lift family",
+        ),
+        SchemaDefinition(
+            DEFORM_LIFT_OBSTRUCTED_SCHEMA_V1,
+            ("datum_id", "obstruction_class", "separating_witness", "type"),
+            "Obstructed lift result",
+        ),
+        SchemaDefinition(
+            DEFORM_LIFT_UNKNOWN_SCHEMA_V1,
+            ("datum_id", "reason", "type"),
+            "Unknown lift result",
+        ),
+        SchemaDefinition(
+            DEFORM_UNIQUE_LIFT_SCHEMA_V1,
+            ("family_id", "representative", "type"),
+            "Unique lift result",
+        ),
+        SchemaDefinition(
+            DEFORM_NONUNIQUE_LIFT_SCHEMA_V1,
+            ("family_id", "first", "second", "separating_class_coordinates", "type"),
+            "Non-unique lift result",
+        ),
+        SchemaDefinition(
+            DEFORM_LIFT_ENDOMORPHISM_SCHEMA_V1,
+            ("family_id", "linear", "translation", "type"),
+            "Lift-family endomorphism",
+        ),
+        SchemaDefinition(
+            DEFORM_CONTRACTION_CERTIFICATE_SCHEMA_V1,
+            ("endomorphism_id", "exponent", "type"),
+            "Finite contraction certificate",
+        ),
+        SchemaDefinition(
+            DEFORM_FIXED_LIFT_SCHEMA_V1,
+            ("contraction_id", "endomorphism_id", "family_id", "representative", "type"),
+            "Distinguished fixed lift",
+        ),
+        SchemaDefinition(
+            DEFORM_RIGID_SCHEMA_V1,
+            ("problem_id", "tangent_id", "type"),
+            "Rigid deformation result",
+        ),
+        SchemaDefinition(
+            DEFORM_NONRIGID_SCHEMA_V1,
+            ("problem_id", "tangent_id", "type", "witness"),
+            "Non-rigid deformation result",
+        ),
+        SchemaDefinition(
+            DEFORM_UNSUPPORTED_SCHEMA_V1,
+            ("operation", "reason", "requested", "supported", "type"),
+            "Unsupported deformation result",
+        ),
+        *(
+            SchemaDefinition(
+                identifier,
+                (
+                    "assumptions",
+                    "completeness",
+                    "dependencies",
+                    "kind",
+                    "layer",
+                    "payload",
+                    "verifier_trust",
+                ),
+                title,
+                marker="schema_version",
+            )
+            for identifier, title in (
+                (DEFORM_ARTIN_RING_RECEIPT_SCHEMA_V1, "Artin-ring deformation receipt"),
+                (DEFORM_ARTIN_MAP_RECEIPT_SCHEMA_V1, "Artin-map deformation receipt"),
+                (
+                    DEFORM_SMALL_EXTENSION_RECEIPT_SCHEMA_V1,
+                    "Small-extension deformation receipt",
+                ),
+                (DEFORM_COMPLEX_RECEIPT_SCHEMA_V1, "Deformation-complex receipt"),
+                (DEFORM_PROBLEM_RECEIPT_SCHEMA_V1, "Deformation-problem receipt"),
+                (DEFORM_GAUGE_RECEIPT_SCHEMA_V1, "Gauge-space receipt"),
+                (DEFORM_TANGENT_RECEIPT_SCHEMA_V1, "Tangent-space receipt"),
+                (
+                    DEFORM_OBSTRUCTION_SPACE_RECEIPT_SCHEMA_V1,
+                    "Obstruction-space receipt",
+                ),
+                (
+                    DEFORM_OBSTRUCTION_CLASS_RECEIPT_SCHEMA_V1,
+                    "Obstruction-class receipt",
+                ),
+                (DEFORM_FRAMING_RECEIPT_SCHEMA_V1, "Deformation-framing receipt"),
+                (DEFORM_ACTION_RECEIPT_SCHEMA_V1, "Deformation-action receipt"),
+                (DEFORM_EQUIVARIANT_RECEIPT_SCHEMA_V1, "Equivariant deformation receipt"),
+                (
+                    DEFORM_INVARIANT_COMPLEX_RECEIPT_SCHEMA_V1,
+                    "Invariant-complex deformation receipt",
+                ),
+                (
+                    DEFORM_DECOMPOSITION_RECEIPT_SCHEMA_V1,
+                    "Equivariant-decomposition receipt",
+                ),
+                (DEFORM_LIFT_DATUM_RECEIPT_SCHEMA_V1, "Lift-datum receipt"),
+                (DEFORM_LIFT_FAMILY_RECEIPT_SCHEMA_V1, "Lift-family receipt"),
+                (DEFORM_LIFT_OBSTRUCTED_RECEIPT_SCHEMA_V1, "Obstructed-lift receipt"),
+                (DEFORM_LIFT_UNKNOWN_RECEIPT_SCHEMA_V1, "Unknown-lift receipt"),
+                (DEFORM_UNIQUE_LIFT_RECEIPT_SCHEMA_V1, "Unique-lift receipt"),
+                (DEFORM_NONUNIQUE_LIFT_RECEIPT_SCHEMA_V1, "Non-unique-lift receipt"),
+                (
+                    DEFORM_LIFT_ENDOMORPHISM_RECEIPT_SCHEMA_V1,
+                    "Lift-endomorphism receipt",
+                ),
+                (DEFORM_CONTRACTION_RECEIPT_SCHEMA_V1, "Lift-contraction receipt"),
+                (DEFORM_FIXED_LIFT_RECEIPT_SCHEMA_V1, "Fixed-lift receipt"),
+                (DEFORM_RIGID_RECEIPT_SCHEMA_V1, "Rigid-deformation receipt"),
+                (DEFORM_NONRIGID_RECEIPT_SCHEMA_V1, "Non-rigid-deformation receipt"),
+                (DEFORM_UNSUPPORTED_RECEIPT_SCHEMA_V1, "Unsupported-deformation receipt"),
             )
         ),
     )

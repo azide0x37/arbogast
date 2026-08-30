@@ -345,6 +345,89 @@ DEFAULT_HAZARDS = HazardRegistry(
             severity=HazardSeverity.ERROR,
         ),
         Hazard(
+            id="deform.finite-complex-vs-geometric-presentation",
+            triggered_by=("DeformationComplex", "deform.deformation_problem"),
+            message=(
+                "A supplied finite three-term complex is not an automatically constructed "
+                "geometric cotangent or deformation complex."
+            ),
+            remediation=(
+                "Pin the source and presentation explicitly; treat automatic geometric "
+                "presentation outside the bounded finite-exact slice as unsupported."
+            ),
+            severity=HazardSeverity.ERROR,
+        ),
+        Hazard(
+            id="deform.obstruction-space-vs-lift-existence",
+            triggered_by=(
+                "ObstructionSpace",
+                "deform.lift",
+                "deform.obstructions",
+            ),
+            message="A zero obstruction space does not itself construct a deformation lift.",
+            remediation=(
+                "Return a lift only from a checked correction solution; return obstruction "
+                "only with a literal separating witness."
+            ),
+            severity=HazardSeverity.ERROR,
+        ),
+        Hazard(
+            id="deform.invariant-complex-vs-invariant-cohomology",
+            triggered_by=(
+                "InvariantDeformations",
+                "deform.equivariant_decomposition",
+                "deform.invariant_deformations",
+            ),
+            message="The cohomology of C^G is not silently the invariant part of H(C).",
+            remediation=(
+                "Keep the invariant subcomplex claim separate and require additional exact "
+                "hypotheses before identifying invariant cohomology."
+            ),
+            severity=HazardSeverity.ERROR,
+        ),
+        Hazard(
+            id="deform.modular-action-vs-projector-decomposition",
+            triggered_by=(
+                "DeformationAction",
+                "EquivariantDecomposition",
+                "deform.equivariant_decomposition",
+            ),
+            message="A finite action does not imply a semisimple projector decomposition.",
+            remediation=(
+                "Supply and replay complete orthogonal chain projectors; otherwise return the "
+                "typed unsupported result."
+            ),
+            severity=HazardSeverity.ERROR,
+        ),
+        Hazard(
+            id="deform.tangent-zero-vs-unscoped-rigidity",
+            triggered_by=("Rigid", "deform.rigid"),
+            message=(
+                "Zero tangent dimension proves only the declared finite infinitesimal rigidity "
+                "criterion."
+            ),
+            remediation=(
+                "Retain the pinned problem scope and do not promote to formal, algebraic, or "
+                "geometric rigidity without additional theorems."
+            ),
+            severity=HazardSeverity.ERROR,
+        ),
+        Hazard(
+            id="deform.unique-lift-vs-canonical-fixed-lift",
+            triggered_by=(
+                "FixedLift",
+                "UniqueLift",
+                "deform.fixed_lift",
+                "deform.unique_lift",
+            ),
+            message="Uniqueness modulo gauge does not supply a canonical fixed lift.",
+            remediation=(
+                "Bind an affine lift endomorphism and replay a contraction certificate before "
+                "naming a distinguished fixed lift."
+            ),
+            severity=HazardSeverity.ERROR,
+        ),
+        Hazard(
             id="fleet.pari-and-python-verification-task-separation",
             triggered_by=(
                 "backends.pari.arithmetic.v1",

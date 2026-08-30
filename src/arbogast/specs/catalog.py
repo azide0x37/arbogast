@@ -148,6 +148,35 @@ ARITHMETIC_SEMANTIC_RESULT_TYPES = (
     "Obstructed",
     "Unknown",
 )
+DEFORMATION_SEMANTIC_RESULT_TYPES = (
+    "ArtinRing",
+    "ArtinRingMap",
+    "SmallExtension",
+    "DeformationComplex",
+    "DeformationProblem",
+    "GaugeSpace",
+    "TangentSpace",
+    "ObstructionSpace",
+    "ObstructionClass",
+    "Framing",
+    "DeformationAction",
+    "EquivariantDeformation",
+    "InvariantDeformations",
+    "EquivariantDecomposition",
+    "LiftDatum",
+    "LiftFamily",
+    "LiftObstructed",
+    "LiftUnknown",
+    "UniqueLift",
+    "NonUniqueLift",
+    "LiftEndomorphism",
+    "ContractionCertificate",
+    "FixedLift",
+    "Rigid",
+    "NonRigid",
+    "UnsupportedDeformation",
+    "DeformationReceipt",
+)
 IO_OR_SCHEMA = FailureMode(
     "dataset_io_or_schema",
     "the imported dataset cannot be read or does not match the strict typed schema",
@@ -195,6 +224,32 @@ BACKEND_BUDGET = FailureMode(
     "backend_unknown_or_budget_exhausted",
     "the optional arithmetic backend is absent, unsupported, malformed, timed out, or capped",
     "BackendUnavailableError | PariBackendError",
+)
+DEFORMATION_UNSUPPORTED = FailureMode(
+    "unsupported_deformation_scope",
+    (
+        "automatic geometric presentation, projector discovery, or canonical-lift theorem "
+        "is outside the bounded finite-exact deformation slice"
+    ),
+    "UnsupportedDeformation | LiftUnknown | UnsupportedDeformationOperation",
+)
+DEFORMATION_PRESENTATION = FailureMode(
+    "invalid_deformation_presentation",
+    (
+        "a ring, complex, framing, action, projector, lift datum, or endomorphism fails exact "
+        "finite validation"
+    ),
+    "DeformationError | TypeError | ValueError",
+)
+DEFORMATION_VERIFICATION = FailureMode(
+    "deformation_verification_failed",
+    "a finite deformation identity, quotient, obstruction, or receipt fails exact replay",
+    "DeformationVerificationError | CertificateVerificationError",
+)
+DEFORMATION_CONTRACTION = FailureMode(
+    "contraction_not_certified",
+    "the supplied affine lift operator is not certified contracting on all lift differences",
+    "DeformationError | DeformationVerificationError | LiftUnknown",
 )
 
 
@@ -1689,6 +1744,416 @@ ARITHMETIC_OPERATION_SPECS: tuple[OperationSpec, ...] = (
 BUILTIN_OPERATION_SPECS += ARITHMETIC_OPERATION_SPECS
 
 
+DEFORMATION_OPERATION_SPECS: tuple[OperationSpec, ...] = (
+    _spec(
+        "deform.deformation_problem",
+        "finite exact deformation problems",
+        (
+            "a pinned three-term prime-field deformation complex or presentation",
+            "an optional exact degree-zero framing with matching field and ambient dimension",
+        ),
+        (
+            "returns the canonical pinned deformation problem and its effective complex",
+            "replays d1*d0 = 0 and every supplied framing restriction exactly",
+            "does not infer a geometric cotangent complex from an arbitrary object",
+        ),
+        "finite matrix validation and, when framed, one exact kernel restriction",
+        "arbogast.deform.DeformationReceipt nested in arbogast.cert.VerificationCertificate",
+        "deformation_problem(complex_)",
+        failure_modes=(
+            INVALID_INPUT,
+            FIELD_MISMATCH,
+            DIMENSION_MISMATCH,
+            DEFORMATION_PRESENTATION,
+            DEFORMATION_UNSUPPORTED,
+            DEFORMATION_VERIFICATION,
+        ),
+        input_types=(
+            "DeformationComplex | DeformationPresentation | DeformationProblem",
+            "Framing | None",
+        ),
+        input_bundles=(
+            ("DeformationComplex | DeformationPresentation | DeformationProblem",),
+            (
+                "DeformationComplex | DeformationPresentation | DeformationProblem",
+                "Framing",
+            ),
+        ),
+        output_type="DeformationProblem",
+    ),
+    _spec(
+        "deform.gauge",
+        "infinitesimal deformation gauge",
+        ("a verified finite deformation complex, presentation, or problem",),
+        (
+            "returns exactly T0 = ker(d0) in the effective complex",
+            "binds the gauge space to the pinned problem and complex identities",
+        ),
+        "one exact prime-field nullspace computation",
+        "arbogast.deform.DeformationReceipt nested in arbogast.cert.VerificationCertificate",
+        "gauge(problem)",
+        failure_modes=(INVALID_INPUT, DEFORMATION_PRESENTATION, DEFORMATION_VERIFICATION),
+        input_types=("DeformationComplex | DeformationPresentation | DeformationProblem",),
+        output_type="GaugeSpace",
+    ),
+    _spec(
+        "deform.tangent",
+        "first-order deformation space",
+        ("a verified finite deformation complex, presentation, or problem",),
+        (
+            "returns exactly T1 = ker(d1)/im(d0)",
+            "retains canonical quotient representatives and the effective problem binding",
+        ),
+        "exact kernel, image, and quotient-space computations",
+        "arbogast.deform.DeformationReceipt nested in arbogast.cert.VerificationCertificate",
+        "tangent(problem)",
+        failure_modes=(INVALID_INPUT, DEFORMATION_PRESENTATION, DEFORMATION_VERIFICATION),
+        input_types=("DeformationComplex | DeformationPresentation | DeformationProblem",),
+        output_type="TangentSpace",
+    ),
+    _spec(
+        "deform.obstructions",
+        "finite deformation obstruction space",
+        ("a verified finite deformation complex, presentation, or problem",),
+        (
+            "returns exactly T2 = C2/im(d1)",
+            "does not claim that a zero obstruction space constructs a geometric lift",
+        ),
+        "one exact image and quotient-space computation",
+        "arbogast.deform.DeformationReceipt nested in arbogast.cert.VerificationCertificate",
+        "obstructions(problem)",
+        failure_modes=(INVALID_INPUT, DEFORMATION_PRESENTATION, DEFORMATION_VERIFICATION),
+        input_types=("DeformationComplex | DeformationPresentation | DeformationProblem",),
+        output_type="ObstructionSpace",
+    ),
+    _spec(
+        "deform.frame",
+        "exact deformation framing",
+        (
+            "a verified finite deformation complex, presentation, or unframed problem",
+            "a degree-zero constraint matrix over the same prime field",
+        ),
+        (
+            "restricts degree-zero gauges to the exact kernel of the framing constraints",
+            "preserves the pinned presentation and independently replays the effective complex",
+        ),
+        "one nullspace and one differential restriction",
+        "arbogast.deform.DeformationReceipt nested in arbogast.cert.VerificationCertificate",
+        "frame(problem, framing)",
+        failure_modes=(
+            INVALID_INPUT,
+            FIELD_MISMATCH,
+            DIMENSION_MISMATCH,
+            DEFORMATION_PRESENTATION,
+            DEFORMATION_VERIFICATION,
+        ),
+        input_types=(
+            "DeformationComplex | DeformationPresentation | DeformationProblem",
+            "Framing",
+        ),
+        output_type="DeformationProblem",
+    ),
+    _spec(
+        "deform.equivariant",
+        "finite equivariant deformation problems",
+        (
+            "a verified finite deformation problem",
+            "a fully enumerated finite-group action by chain automorphisms in degrees 0 through 2",
+        ),
+        (
+            "checks the group law, identities, inverses, and chain-map equations exactly",
+            "binds the checked action to the effective deformation complex",
+        ),
+        "complete finite action-table and chain-map replay",
+        "arbogast.deform.DeformationReceipt nested in arbogast.cert.VerificationCertificate",
+        "equivariant(problem, action)",
+        failure_modes=(
+            INVALID_INPUT,
+            INVALID_GROUP,
+            INVALID_ACTION,
+            FIELD_MISMATCH,
+            DIMENSION_MISMATCH,
+            DEFORMATION_PRESENTATION,
+            DEFORMATION_VERIFICATION,
+        ),
+        input_types=(
+            "DeformationComplex | DeformationPresentation | DeformationProblem",
+            "DeformationAction",
+        ),
+        output_type="EquivariantDeformation",
+    ),
+    _spec(
+        "deform.invariant_deformations",
+        "invariant deformation subcomplexes",
+        ("an exactly verified equivariant deformation problem",),
+        (
+            "restricts every degree and differential to the exact invariant subspaces",
+            "returns a pinned invariant subcomplex deformation problem",
+            "does not silently identify H(C^G) with H(C)^G",
+        ),
+        "one invariant-space computation in each degree and two exact restrictions",
+        "arbogast.deform.DeformationReceipt nested in arbogast.cert.VerificationCertificate",
+        "invariant_deformations(equivariant_problem)",
+        failure_modes=(
+            INVALID_INPUT,
+            INVALID_ACTION,
+            DEFORMATION_PRESENTATION,
+            DEFORMATION_VERIFICATION,
+        ),
+        input_types=("EquivariantDeformation",),
+        output_type="InvariantDeformations",
+    ),
+    _spec(
+        "deform.equivariant_decomposition",
+        "supplied-projector equivariant decomposition",
+        (
+            "an exactly verified equivariant deformation problem",
+            "a supplied labeled family of degreewise chain projectors, or no projectors",
+        ),
+        (
+            (
+                "certifies idempotence, action commutation, chain compatibility, orthogonality, "
+                "and completeness"
+            ),
+            "returns typed UnsupportedDeformation when automatic projector discovery is requested",
+            "does not infer a semisimple decomposition in modular characteristic",
+        ),
+        "complete finite projector replay in every degree",
+        "arbogast.deform.DeformationReceipt nested in arbogast.cert.VerificationCertificate",
+        "equivariant_decomposition(equivariant_problem, projectors)",
+        failure_modes=(
+            INVALID_INPUT,
+            INVALID_ACTION,
+            FIELD_MISMATCH,
+            DIMENSION_MISMATCH,
+            NONSEMISIMPLE,
+            DEFORMATION_UNSUPPORTED,
+            DEFORMATION_VERIFICATION,
+        ),
+        input_types=("EquivariantDeformation", "ProjectorMapping | None"),
+        input_bundles=(
+            ("EquivariantDeformation",),
+            ("EquivariantDeformation", "ProjectorMapping"),
+        ),
+        output_type="EquivariantDecomposition | UnsupportedDeformation",
+    ),
+    _spec(
+        "deform.lift",
+        "finite Artin-ring lifting",
+        (
+            (
+                "a verified LiftDatum, or a finite deformation problem with a pinned small "
+                "Artin-ring extension"
+            ),
+            "an explicit object-specific target before any correction equation is solved",
+            (
+                "a one-dimensional square-zero kernel for the default d1/d0 chart, or explicit "
+                "correction and gauge matrices for every higher-dimensional kernel"
+            ),
+        ),
+        (
+            "returns the complete affine lift family modulo exact gauge when consistent",
+            "returns a literal left-nullspace separator when obstructed",
+            (
+                "returns UnsupportedDeformation rather than inventing an object-specific target "
+                "from a complex and extension alone"
+            ),
+        ),
+        "one exact linear solve, kernel, image, and quotient computation",
+        "arbogast.deform.DeformationReceipt nested in arbogast.cert.VerificationCertificate",
+        "lift(problem, extension, target=target)",
+        failure_modes=(
+            INVALID_INPUT,
+            FIELD_MISMATCH,
+            DIMENSION_MISMATCH,
+            DEFORMATION_PRESENTATION,
+            DEFORMATION_UNSUPPORTED,
+            DEFORMATION_VERIFICATION,
+        ),
+        input_types=(
+            "LiftDatum | DeformationComplex | DeformationPresentation | DeformationProblem",
+            "SmallExtension | None",
+            "Vector | None",
+            "Vector | None",
+            "DenseMatrix | None",
+            "DenseMatrix | None",
+            "str | None",
+        ),
+        input_bundles=(
+            ("LiftDatum",),
+            (
+                "DeformationComplex | DeformationPresentation | DeformationProblem",
+                "SmallExtension",
+            ),
+            (
+                "DeformationComplex | DeformationPresentation | DeformationProblem",
+                "SmallExtension",
+                "Vector",
+            ),
+            (
+                "DeformationComplex | DeformationPresentation | DeformationProblem",
+                "SmallExtension",
+                "Vector",
+                "Vector",
+                "DenseMatrix",
+                "DenseMatrix",
+                "str",
+            ),
+        ),
+        output_type="LiftFamily | LiftObstructed | LiftUnknown | UnsupportedDeformation",
+    ),
+    _spec(
+        "deform.unique_lift",
+        "uniqueness modulo deformation gauge",
+        (
+            "a verified lift datum, exact lift outcome, or explicit problem/extension lift call",
+            (
+                "a one-dimensional square-zero kernel for the default chart, or explicit "
+                "correction and gauge matrices for every higher-dimensional kernel"
+            ),
+        ),
+        (
+            "returns UniqueLift exactly when the lift-family quotient by gauge has dimension zero",
+            "returns two gauge-inequivalent representatives when uniqueness fails",
+            "preserves obstructed, unknown, and unsupported outcomes without strengthening them",
+        ),
+        "one lift computation or exact quotient-dimension and witness replay",
+        "arbogast.deform.DeformationReceipt nested in arbogast.cert.VerificationCertificate",
+        "unique_lift(problem, extension, target=target)",
+        failure_modes=(
+            INVALID_INPUT,
+            FIELD_MISMATCH,
+            DIMENSION_MISMATCH,
+            DEFORMATION_PRESENTATION,
+            DEFORMATION_UNSUPPORTED,
+            DEFORMATION_VERIFICATION,
+        ),
+        input_types=(
+            (
+                "LiftDatum | LiftFamily | LiftObstructed | LiftUnknown | "
+                "UnsupportedDeformation | DeformationComplex | DeformationPresentation | "
+                "DeformationProblem"
+            ),
+            "SmallExtension | None",
+            "Vector | None",
+            "Vector | None",
+            "DenseMatrix | None",
+            "DenseMatrix | None",
+            "str | None",
+        ),
+        input_bundles=(
+            ("LiftDatum | LiftFamily | LiftObstructed | LiftUnknown | UnsupportedDeformation",),
+            (
+                "DeformationComplex | DeformationPresentation | DeformationProblem",
+                "SmallExtension",
+            ),
+            (
+                "DeformationComplex | DeformationPresentation | DeformationProblem",
+                "SmallExtension",
+                "Vector",
+            ),
+            (
+                "DeformationComplex | DeformationPresentation | DeformationProblem",
+                "SmallExtension",
+                "Vector",
+                "Vector",
+                "DenseMatrix",
+                "DenseMatrix",
+                "str",
+            ),
+        ),
+        output_type=(
+            "UniqueLift | NonUniqueLift | LiftObstructed | LiftUnknown | UnsupportedDeformation"
+        ),
+    ),
+    _spec(
+        "deform.fixed_lift",
+        "contracting fixed lifts",
+        (
+            "a verified lift datum or exact lift outcome, including typed unsupported outcomes",
+            "a bound affine lift-family endomorphism",
+            "a checked contraction certificate or explicit finite exponent",
+        ),
+        (
+            "returns an explicit fixed representative only after exact contraction replay",
+            (
+                "preserves obstruction and unsupported outcomes and returns LiftUnknown when "
+                "contraction data is absent"
+            ),
+            "does not claim a general canonical-lift theorem",
+        ),
+        "one lift solve plus bounded exact affine iteration and nilpotence replay",
+        "arbogast.deform.DeformationReceipt nested in arbogast.cert.VerificationCertificate",
+        "fixed_lift(family, endomorphism, contraction=certificate)",
+        failure_modes=(
+            INVALID_INPUT,
+            DIMENSION_MISMATCH,
+            DEFORMATION_PRESENTATION,
+            DEFORMATION_CONTRACTION,
+            DEFORMATION_UNSUPPORTED,
+            DEFORMATION_VERIFICATION,
+        ),
+        input_types=(
+            "LiftDatum | LiftFamily | LiftObstructed | LiftUnknown | UnsupportedDeformation",
+            "LiftEndomorphism | None",
+            "ContractionCertificate | int | None",
+        ),
+        input_bundles=(
+            ("LiftDatum | LiftFamily | LiftObstructed | LiftUnknown | UnsupportedDeformation",),
+            (
+                "LiftDatum | LiftFamily | LiftObstructed | LiftUnknown | UnsupportedDeformation",
+                "LiftEndomorphism",
+            ),
+            (
+                "LiftDatum | LiftFamily | LiftObstructed | LiftUnknown | UnsupportedDeformation",
+                "LiftEndomorphism",
+                "ContractionCertificate | int",
+            ),
+        ),
+        output_type="FixedLift | LiftObstructed | LiftUnknown | UnsupportedDeformation",
+    ),
+    _spec(
+        "deform.rigid",
+        "infinitesimal deformation rigidity",
+        ("a verified finite deformation complex, presentation, or problem",),
+        (
+            "returns Rigid exactly when the pinned effective tangent space is zero",
+            "otherwise returns NonRigid with a literal nonzero tangent-class witness",
+            "makes no formal or geometric rigidity claim beyond this finite tangent criterion",
+        ),
+        "one exact tangent-space computation and optional witness selection",
+        "arbogast.deform.DeformationReceipt nested in arbogast.cert.VerificationCertificate",
+        "rigid(problem)",
+        failure_modes=(INVALID_INPUT, DEFORMATION_PRESENTATION, DEFORMATION_VERIFICATION),
+        input_types=("DeformationComplex | DeformationPresentation | DeformationProblem",),
+        output_type="Rigid | NonRigid",
+    ),
+)
+
+BUILTIN_OPERATION_SPECS += DEFORMATION_OPERATION_SPECS
+
+
+DEFORMATION_VERIFICATION_OPERATION_SPECS: tuple[OperationSpec, ...] = (
+    _spec(
+        "deform.verify_receipt",
+        "portable finite deformation receipt replay",
+        ("an independently versioned DeformationReceipt with dependency-closed evidence",),
+        (
+            "replays the complete advertised finite witness using exact prime-field arithmetic",
+            "rejects backend-local handles and preserves assumptions, completeness, and trust axes",
+        ),
+        "bounded by the explicit finite dimensions and dependency receipt closure",
+        None,
+        "verify_deformation_receipt(receipt)",
+        failure_modes=(INVALID_INPUT, DEFORMATION_VERIFICATION),
+        input_types=("DeformationReceipt",),
+        output_type="tuple[str, ...]",
+    ),
+)
+
+BUILTIN_OPERATION_SPECS += DEFORMATION_VERIFICATION_OPERATION_SPECS
+
+
 SEMANTIC_PROJECTION_OPERATION_SPECS: tuple[OperationSpec, ...] = (
     *(
         _spec(
@@ -1721,6 +2186,40 @@ SEMANTIC_PROJECTION_OPERATION_SPECS: tuple[OperationSpec, ...] = (
                 "claim_graph_for_result",
                 "ClaimGraph",
                 "returns the result claim with its exact certificate dependencies",
+            ),
+        )
+    ),
+    *(
+        _spec(
+            f"deform.{projection}",
+            "finite deformation evidence projection",
+            ("a deformation result or receipt carrying replayable finite exact evidence",),
+            (guarantee,),
+            "linear in the bound deformation receipt serialization",
+            "arbogast.cert.VerificationCertificate",
+            f"{implementation_name}(deformation_result)",
+            failure_modes=(INVALID_INPUT, DEFORMATION_VERIFICATION),
+            input_types=(" | ".join(DEFORMATION_SEMANTIC_RESULT_TYPES),),
+            output_type=output_type,
+        )
+        for projection, implementation_name, output_type, guarantee in (
+            (
+                "verification_certificate",
+                "verification_certificate_for_result",
+                "VerificationCertificate",
+                "returns the central certificate bound to the exact deformation receipt",
+            ),
+            (
+                "claim",
+                "claim_for_result",
+                "Claim",
+                "returns only the mathematical claim justified by that exact finite receipt",
+            ),
+            (
+                "claim_graph",
+                "claim_graph_for_result",
+                "ClaimGraph",
+                "returns the result claim with its exact proving-certificate dependencies",
             ),
         )
     ),
@@ -2410,6 +2909,28 @@ BUILTIN_IMPLEMENTATIONS: dict[str, tuple[str, str]] = {
         "arbogast.arithmetic.semantic",
         "claim_graph_for_result",
     ),
+    "deform.deformation_problem": ("arbogast.deform", "deformation_problem"),
+    "deform.gauge": ("arbogast.deform", "gauge"),
+    "deform.tangent": ("arbogast.deform", "tangent"),
+    "deform.obstructions": ("arbogast.deform", "obstructions"),
+    "deform.frame": ("arbogast.deform", "frame"),
+    "deform.equivariant": ("arbogast.deform", "equivariant"),
+    "deform.invariant_deformations": ("arbogast.deform", "invariant_deformations"),
+    "deform.equivariant_decomposition": (
+        "arbogast.deform",
+        "equivariant_decomposition",
+    ),
+    "deform.lift": ("arbogast.deform", "lift"),
+    "deform.unique_lift": ("arbogast.deform", "unique_lift"),
+    "deform.fixed_lift": ("arbogast.deform", "fixed_lift"),
+    "deform.rigid": ("arbogast.deform", "rigid"),
+    "deform.verification_certificate": (
+        "arbogast.deform.semantic",
+        "verification_certificate_for_result",
+    ),
+    "deform.claim": ("arbogast.deform.semantic", "claim_for_result"),
+    "deform.claim_graph": ("arbogast.deform.semantic", "claim_graph_for_result"),
+    "deform.verify_receipt": ("arbogast.deform", "verify_deformation_receipt"),
     "export.json": ("arbogast.export", "export_json"),
     "fleet.plan_pari_arithmetic_task": (
         "arbogast.fleet",
@@ -2497,6 +3018,7 @@ OPERATION_CONTRACT_MODULES = (
     "arbogast.cohom",
     "arbogast.galois",
     "arbogast.arithmetic",
+    "arbogast.deform",
     "arbogast.fleet",
     "arbogast.hurwitz",
 )
@@ -2580,6 +3102,24 @@ PUBLIC_FUNCTION_OPERATIONS: dict[str, dict[str, str]] = {
         "local_pairing": "arithmetic.local_pairing",
         "selmer": "arithmetic.selmer",
         "unique": "arithmetic.unique",
+    },
+    "arbogast.deform": {
+        "deformation_problem": "deform.deformation_problem",
+        "claim_for_result": "deform.claim",
+        "claim_graph_for_result": "deform.claim_graph",
+        "equivariant": "deform.equivariant",
+        "equivariant_decomposition": "deform.equivariant_decomposition",
+        "fixed_lift": "deform.fixed_lift",
+        "frame": "deform.frame",
+        "gauge": "deform.gauge",
+        "invariant_deformations": "deform.invariant_deformations",
+        "lift": "deform.lift",
+        "obstructions": "deform.obstructions",
+        "rigid": "deform.rigid",
+        "tangent": "deform.tangent",
+        "unique_lift": "deform.unique_lift",
+        "verification_certificate_for_result": "deform.verification_certificate",
+        "verify_deformation_receipt": "deform.verify_receipt",
     },
     "arbogast.fleet": {
         "plan_pari_arithmetic_task": "fleet.plan_pari_arithmetic_task",

@@ -32,6 +32,8 @@ from typing import Final
 PROJECT_ROOT: Final = Path(__file__).resolve().parents[1]
 COMMAND_TIMEOUT_SECONDS: Final = 300
 ARCHIVE_SCHEMA: Final = "arbogast.release-qualification/v1"
+COMPATIBILITY_INDEX: Final = "tests/fixtures/compat/index.json"
+DEFORMATION_INTRODUCED: Final = (0, 3, 0)
 WHEEL_REQUIRED: Final = (
     "arbogast/__init__.py",
     "arbogast/py.typed",
@@ -83,6 +85,32 @@ SOURCE_ARCHIVE_REQUIRED: Final = (
     "tests/integration/test_pari_live.py",
     "tests/unit/test_artifact_qualification.py",
 )
+DEFORMATION_WHEEL_REQUIRED: Final = (
+    "arbogast/deform/__init__.py",
+    "arbogast/deform/_schema.py",
+    "arbogast/deform/certificate.py",
+    "arbogast/deform/complex.py",
+    "arbogast/deform/equivariant.py",
+    "arbogast/deform/errors.py",
+    "arbogast/deform/framing.py",
+    "arbogast/deform/lifting.py",
+    "arbogast/deform/plans.py",
+    "arbogast/deform/problem.py",
+    "arbogast/deform/rings.py",
+    "arbogast/deform/semantic.py",
+)
+DEFORMATION_SDIST_REQUIRED: Final = (
+    "docs/deformation.md",
+    "examples/deformation/exact_spaces/README.md",
+    "examples/deformation/exact_spaces/run.py",
+    "examples/deformation/finite_lifts/README.md",
+    "examples/deformation/finite_lifts/run.py",
+    *(f"src/{relative}" for relative in DEFORMATION_WHEEL_REQUIRED),
+)
+POST_V020_COMPATIBILITY_REQUIRED: Final = (
+    COMPATIBILITY_INDEX,
+    "tests/integration/test_release_compatibility_index.py",
+)
 
 
 class QualificationError(ValueError):
@@ -118,6 +146,151 @@ def _safe_member_name(name: str, *, label: str) -> PurePosixPath:
     if not path.parts or any(part in {"", "."} for part in path.parts):
         raise QualificationError(f"{label} contains a non-canonical member name: {name!r}")
     return path
+
+
+def _version_key(version: str, *, label: str = "version") -> tuple[int, int, int]:
+    parts = version.split(".")
+    if len(parts) != 3 or any(
+        not part or not part.isascii() or not part.isdecimal() for part in parts
+    ):
+        raise QualificationError(f"{label} must be a final X.Y.Z version, found {version!r}")
+    major, minor, patch = (int(part) for part in parts)
+    return major, minor, patch
+
+
+def _unique_json_object(pairs: list[tuple[str, object]]) -> dict[str, object]:
+    value: dict[str, object] = {}
+    for key, item in pairs:
+        if key in value:
+            raise QualificationError(f"duplicate JSON key {key!r}")
+        value[key] = item
+    return value
+
+
+def _prior_compatibility_paths(
+    payloads: Mapping[str, bytes],
+    version: str,
+    *,
+    label: str,
+) -> tuple[str, ...]:
+    payload = payloads.get(COMPATIBILITY_INDEX)
+    if payload is None:
+        return ()
+    try:
+        value = json.loads(
+            payload.decode("utf-8"),
+            object_pairs_hook=_unique_json_object,
+        )
+    except (UnicodeDecodeError, json.JSONDecodeError, QualificationError) as error:
+        raise QualificationError(f"cannot read {label} {COMPATIBILITY_INDEX}: {error}") from error
+    if not isinstance(value, dict):
+        raise QualificationError(f"{label} {COMPATIBILITY_INDEX} must contain a JSON object")
+    if value.get("schema_version") != "arbogast.compatibility-index/v1":
+        raise QualificationError(f"{label} {COMPATIBILITY_INDEX} has the wrong schema")
+    releases = value.get("releases")
+    if not isinstance(releases, list) or not releases:
+        raise QualificationError(f"{label} {COMPATIBILITY_INDEX}.releases must be nonempty")
+
+    candidate = _version_key(version, label="candidate version")
+    required: list[str] = []
+    previous: tuple[int, int, int] | None = None
+    seen_versions: set[str] = set()
+    for index, release in enumerate(releases):
+        release_label = f"{label} {COMPATIBILITY_INDEX}.releases[{index}]"
+        if not isinstance(release, dict):
+            raise QualificationError(f"{release_label} must be a JSON object")
+        release_version = release.get("version")
+        if not isinstance(release_version, str):
+            raise QualificationError(f"{release_label}.version must be a string")
+        release_key = _version_key(release_version, label=f"{release_label}.version")
+        if release_version in seen_versions or (previous is not None and release_key <= previous):
+            raise QualificationError(
+                f"{label} compatibility releases must be unique and sorted by version"
+            )
+        seen_versions.add(release_version)
+        previous = release_key
+
+        release_notes = release.get("release_notes")
+        if not isinstance(release_notes, dict) or not isinstance(release_notes.get("path"), str):
+            raise QualificationError(f"{release_label}.release_notes.path must be a string")
+        notes_path = _safe_member_name(
+            release_notes["path"],
+            label=f"{release_label}.release_notes.path",
+        ).as_posix()
+        expected_notes = f"docs/release-notes-{release_version}.md"
+        if notes_path != expected_notes:
+            raise QualificationError(
+                f"{release_label}.release_notes.path must be {expected_notes!r}"
+            )
+
+        fixture_records = release.get("fixture_files")
+        if not isinstance(fixture_records, list) or not fixture_records:
+            raise QualificationError(f"{release_label}.fixture_files must be nonempty")
+        fixture_paths: list[str] = []
+        expected_prefix = f"tests/fixtures/compat/v{release_version}/"
+        for fixture_index, record in enumerate(fixture_records):
+            fixture_label = f"{release_label}.fixture_files[{fixture_index}]"
+            if not isinstance(record, dict) or not isinstance(record.get("path"), str):
+                raise QualificationError(f"{fixture_label}.path must be a string")
+            fixture_path = _safe_member_name(
+                record["path"],
+                label=f"{fixture_label}.path",
+            ).as_posix()
+            if not fixture_path.startswith(expected_prefix):
+                raise QualificationError(f"{fixture_label}.path must be below {expected_prefix!r}")
+            fixture_paths.append(fixture_path)
+        manifest = f"{expected_prefix}release.json"
+        if manifest not in fixture_paths:
+            raise QualificationError(f"{release_label}.fixture_files omits {manifest!r}")
+
+        if release_key < candidate:
+            required.append(notes_path)
+            required.extend(fixture_paths)
+    return tuple(dict.fromkeys(required))
+
+
+def required_wheel_paths(version: str) -> tuple[str, ...]:
+    """Return the wheel surface appropriate for one final release version."""
+
+    version_key = _version_key(version)
+    additive = DEFORMATION_WHEEL_REQUIRED if version_key >= DEFORMATION_INTRODUCED else ()
+    return tuple(dict.fromkeys((*WHEEL_REQUIRED, *additive)))
+
+
+def required_sdist_paths(
+    payloads: Mapping[str, bytes],
+    version: str,
+    *,
+    label: str = "sdist",
+) -> tuple[str, ...]:
+    """Return the sdist surface, including every indexed prior release contract."""
+
+    version_key = _version_key(version)
+    additive: tuple[str, ...] = ()
+    compatibility: tuple[str, ...] = ()
+    if version_key >= DEFORMATION_INTRODUCED:
+        additive = (*POST_V020_COMPATIBILITY_REQUIRED, *DEFORMATION_SDIST_REQUIRED)
+        compatibility = _prior_compatibility_paths(payloads, version, label=label)
+    return tuple(
+        dict.fromkeys(
+            (
+                *SDIST_REQUIRED,
+                *additive,
+                *compatibility,
+                f"docs/release-notes-{version}.md",
+            )
+        )
+    )
+
+
+def required_source_archive_paths(
+    payloads: Mapping[str, bytes],
+    version: str,
+) -> tuple[str, ...]:
+    """Return the complete Git archive surface for one release version."""
+
+    sdist_paths = required_sdist_paths(payloads, version, label="source archive")
+    return tuple(dict.fromkeys((*SOURCE_ARCHIVE_REQUIRED, *sdist_paths)))
 
 
 def _metadata_fields(payload: bytes, *, label: str) -> Mapping[str, str]:
@@ -194,6 +367,7 @@ def _artifact_record(
 def inspect_wheel(path: Path, version: str) -> dict[str, object]:
     """Inspect one exact pure-Python wheel without importing it."""
 
+    required = required_wheel_paths(version)
     expected_name = f"arbogast-{version}-py3-none-any.whl"
     if path.name != expected_name:
         raise QualificationError(f"wheel must be named {expected_name!r}, found {path.name!r}")
@@ -219,7 +393,7 @@ def inspect_wheel(path: Path, version: str) -> dict[str, object]:
             payloads[normalized] = payload
             records.append((normalized, payload))
 
-    missing = sorted(set(WHEEL_REQUIRED) - payloads.keys())
+    missing = sorted(set(required) - payloads.keys())
     if missing:
         raise QualificationError(f"wheel omits required files: {', '.join(missing)}")
     metadata_paths = sorted(name for name in payloads if name.endswith(".dist-info/METADATA"))
@@ -247,6 +421,7 @@ def inspect_wheel(path: Path, version: str) -> dict[str, object]:
 
 
 def _sdist_payloads(path: Path, version: str) -> tuple[dict[str, bytes], int]:
+    _version_key(version)
     expected_name = f"arbogast-{version}.tar.gz"
     if path.name != expected_name:
         raise QualificationError(f"sdist must be named {expected_name!r}, found {path.name!r}")
@@ -281,10 +456,7 @@ def inspect_sdist(path: Path, version: str) -> dict[str, object]:
     """Inspect one source distribution and bind its complete regular-file payload."""
 
     payloads, member_count = _sdist_payloads(path, version)
-    missing = sorted(set(SDIST_REQUIRED) - payloads.keys())
-    notes = f"docs/release-notes-{version}.md"
-    if notes not in payloads:
-        missing.append(notes)
+    missing = sorted(set(required_sdist_paths(payloads, version)) - payloads.keys())
     if missing:
         raise QualificationError(f"sdist omits required files: {', '.join(sorted(missing))}")
     metadata_paths = sorted(name for name in payloads if name == "PKG-INFO")
@@ -319,6 +491,7 @@ def inspect_source_archive(path: Path, version: str) -> dict[str, object]:
     record so neither artifact can be mistaken for the other.
     """
 
+    _version_key(version)
     expected_name = f"arbogast-{version}-source.tar.gz"
     if path.name != expected_name:
         raise QualificationError(
@@ -357,10 +530,7 @@ def inspect_source_archive(path: Path, version: str) -> dict[str, object]:
                 raise QualificationError(f"cannot read source archive member: {normalized}")
             relative = PurePosixPath(*parts[1:]).as_posix()
             payloads[relative] = stream.read()
-    missing = sorted(set(SOURCE_ARCHIVE_REQUIRED) - payloads.keys())
-    notes = f"docs/release-notes-{version}.md"
-    if notes not in payloads:
-        missing.append(notes)
+    missing = sorted(set(required_source_archive_paths(payloads, version)) - payloads.keys())
     if missing:
         raise QualificationError(
             f"source archive omits required files: {', '.join(sorted(missing))}"
@@ -560,17 +730,17 @@ def _extract_sdist(path: Path, version: str, destination: Path) -> Path:
     return root
 
 
-def _run_packaged_examples(
+def _packaged_example_commands(
     python: Path,
-    source_root: Path,
     scratch: Path,
     *,
+    version: str,
     require_gp: bool,
-) -> None:
+) -> tuple[tuple[str, ...], ...]:
     quadratic = [str(python), "examples/arithmetic/quadratic_field/run.py"]
     if require_gp:
         quadratic.append("--with-pari")
-    commands: tuple[tuple[str, ...], ...] = (
+    commands: list[tuple[str, ...]] = [
         (str(python), "examples/arithmetic/aim_a_cocycle/run.py"),
         (str(python), "examples/arithmetic/inflation_restriction/run.py"),
         (str(python), "examples/arithmetic/nonabelian_twists/run.py"),
@@ -611,8 +781,31 @@ def _run_packaged_examples(
             "examples/hurwitz/m23_real_component/verify.py",
             str(scratch / "m23-claims.json"),
         ),
-    )
-    for command in commands:
+    ]
+    if _version_key(version) >= DEFORMATION_INTRODUCED:
+        commands.extend(
+            (
+                (str(python), "examples/deformation/exact_spaces/run.py"),
+                (str(python), "examples/deformation/finite_lifts/run.py"),
+            )
+        )
+    return tuple(commands)
+
+
+def _run_packaged_examples(
+    python: Path,
+    source_root: Path,
+    scratch: Path,
+    *,
+    version: str,
+    require_gp: bool,
+) -> None:
+    for command in _packaged_example_commands(
+        python,
+        scratch,
+        version=version,
+        require_gp=require_gp,
+    ):
         _run(command, cwd=source_root)
 
 
@@ -668,6 +861,7 @@ def qualify_installs(
                     python,
                     source_root,
                     base / f"example-output-{index}",
+                    version=version,
                     require_gp=require_gp,
                 )
                 reports[index]["packaged_examples"] = "passed"

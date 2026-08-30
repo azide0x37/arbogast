@@ -37,6 +37,94 @@ _BUILTIN_TYPE_PORTS: dict[str, tuple[tuple[str, ...], tuple[str, ...]]] = {
         ("NielsenTuple", "HurwitzComponent"),
         ("BoundaryTuple | BoundaryIncidence",),
     ),
+    "deform.deformation_problem": (
+        ("DeformationComplex | DeformationPresentation | DeformationProblem", "Framing | None"),
+        ("DeformationProblem",),
+    ),
+    "deform.gauge": (
+        ("DeformationComplex | DeformationPresentation | DeformationProblem",),
+        ("GaugeSpace",),
+    ),
+    "deform.tangent": (
+        ("DeformationComplex | DeformationPresentation | DeformationProblem",),
+        ("TangentSpace",),
+    ),
+    "deform.obstructions": (
+        ("DeformationComplex | DeformationPresentation | DeformationProblem",),
+        ("ObstructionSpace",),
+    ),
+    "deform.frame": (
+        ("DeformationComplex | DeformationPresentation | DeformationProblem", "Framing"),
+        ("DeformationProblem",),
+    ),
+    "deform.equivariant": (
+        (
+            "DeformationComplex | DeformationPresentation | DeformationProblem",
+            "DeformationAction",
+        ),
+        ("EquivariantDeformation",),
+    ),
+    "deform.invariant_deformations": (
+        ("EquivariantDeformation",),
+        ("InvariantDeformations",),
+    ),
+    "deform.equivariant_decomposition": (
+        ("EquivariantDeformation", "ProjectorMapping | None"),
+        ("EquivariantDecomposition | UnsupportedDeformation",),
+    ),
+    "deform.lift": (
+        (
+            "LiftDatum | DeformationComplex | DeformationPresentation | DeformationProblem",
+            "SmallExtension | None",
+            "Vector | None",
+            "Vector | None",
+            "DenseMatrix | None",
+            "DenseMatrix | None",
+            "str | None",
+        ),
+        ("LiftFamily | LiftObstructed | LiftUnknown | UnsupportedDeformation",),
+    ),
+    "deform.unique_lift": (
+        (
+            (
+                "LiftDatum | LiftFamily | LiftObstructed | LiftUnknown | "
+                "UnsupportedDeformation | DeformationComplex | DeformationPresentation | "
+                "DeformationProblem"
+            ),
+            "SmallExtension | None",
+            "Vector | None",
+            "Vector | None",
+            "DenseMatrix | None",
+            "DenseMatrix | None",
+            "str | None",
+        ),
+        ("UniqueLift | NonUniqueLift | LiftObstructed | LiftUnknown | UnsupportedDeformation",),
+    ),
+    "deform.fixed_lift": (
+        (
+            "LiftDatum | LiftFamily | LiftObstructed | LiftUnknown | UnsupportedDeformation",
+            "LiftEndomorphism | None",
+            "ContractionCertificate | int | None",
+        ),
+        ("FixedLift | LiftObstructed | LiftUnknown | UnsupportedDeformation",),
+    ),
+    "deform.rigid": (
+        ("DeformationComplex | DeformationPresentation | DeformationProblem",),
+        ("Rigid | NonRigid",),
+    ),
+    "deform.verification_certificate": (
+        ("DeformationSemanticResult | DeformationReceipt",),
+        ("VerificationCertificate",),
+    ),
+    "deform.claim": (
+        ("DeformationSemanticResult | DeformationReceipt",),
+        ("Claim",),
+    ),
+    "deform.claim_graph": (
+        ("DeformationSemanticResult | DeformationReceipt",),
+        ("ClaimGraph",),
+    ),
+    "deform.verify_receipt": (("DeformationReceipt",), ("tuple[str, ...]",)),
 }
 
 

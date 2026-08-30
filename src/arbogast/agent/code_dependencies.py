@@ -697,6 +697,67 @@ DEFAULT_CODE_DEPENDENCIES = CodeDependencyRegistry(
             ),
         ),
         *_declarations(
+            (
+                "deform.deformation_problem",
+                "deform.fixed_lift",
+                "deform.frame",
+                "deform.gauge",
+                "deform.lift",
+                "deform.obstructions",
+                "deform.rigid",
+                "deform.tangent",
+                "deform.unique_lift",
+            ),
+            "arbogast.deform",
+            (
+                "arbogast.cert",
+                "arbogast.claims",
+                "arbogast.core",
+                "arbogast.formats",
+                "arbogast.linalg",
+            ),
+        ),
+        *_declarations(
+            (
+                "deform.equivariant",
+                "deform.equivariant_decomposition",
+                "deform.invariant_deformations",
+            ),
+            "arbogast.deform",
+            (
+                "arbogast.cert",
+                "arbogast.claims",
+                "arbogast.core",
+                "arbogast.formats",
+                "arbogast.linalg",
+                "arbogast.rep",
+            ),
+        ),
+        *_declarations(
+            (
+                "deform.claim",
+                "deform.claim_graph",
+                "deform.verification_certificate",
+            ),
+            "arbogast.deform.semantic",
+            (
+                "arbogast.cert",
+                "arbogast.claims",
+                "arbogast.deform",
+                "arbogast.formats",
+            ),
+        ),
+        *_declarations(
+            ("deform.verify_receipt",),
+            "arbogast.deform.certificate",
+            (
+                "arbogast.cert",
+                "arbogast.core",
+                "arbogast.formats",
+                "arbogast.linalg",
+            ),
+        ),
+        *_declarations(
             ("export.json",),
             "arbogast.export",
             (

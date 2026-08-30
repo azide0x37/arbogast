@@ -4,7 +4,7 @@
 
 <p align="center">
   <strong>Certificate-first computational mathematics for finite cohomology,
-  symmetry, and Hurwitz arithmetic.</strong>
+  deformation, symmetry, and Hurwitz arithmetic.</strong>
 </p>
 
 > “What does this?” she said at last. She’d meant it as a rhetorical question. Of course there
@@ -138,6 +138,27 @@ Their versioned proving receipt is nested inside the existing central
 Read [Certified arithmetic](docs/certified-arithmetic.md) for the complete theorem and trust
 boundary.
 
+## Certified deformation in 0.3
+
+Arbogast 0.3 adds a bounded finite-exact deformation slice. It starts from an
+explicit three-term complex over a prime field and a pinned finite presentation; Arbogast then
+computes gauge, tangent, and obstruction spaces by exact linear algebra. Framing and equivariance
+are supplied as explicit maps, so a result never infers an automorphism action or a geometric
+deformation problem from an opaque Python object.
+
+Finite lifting problems are similarly literal. A small extension, base lift, linearized lift map,
+and target are part of the input. The result is a checked affine lift family, a checked
+left-nullspace obstruction, or a typed refusal. Uniqueness is a separate computation. A fixed
+lift is certified only from an explicit endomorphism and a replayed contraction witness; merely
+iterating to an apparent fixed point is not proof.
+
+Every substantial result within the portable receipt limits retains the established `verify()`,
+`certificate`, `claim()`, and `claim_graph()` boundary. The 0.3 operations are intentionally
+non-shardable: the implemented problems are small globally coupled finite linear systems, and
+splitting them would not create independently meaningful proof tasks. Read
+[Certified deformation](docs/deformation.md) for the exact numeric limits, supported inputs, and
+deferrals.
+
 ## What 0.1.0 is—and is not
 
 Arbogast 0.1.0 is an alpha **finite exact core**. It provides canonical finite objects, exact
@@ -166,11 +187,11 @@ See [the theorem boundary](docs/theorem-boundaries.md) for the exact epistemic c
 
 ## Install
 
-Arbogast 0.2.0 requires Python 3.11 or newer. Pin the exact GitHub source tag with
+Arbogast 0.3.0 requires Python 3.11 or newer. Pin the exact GitHub source tag with
 [uv](https://docs.astral.sh/uv/):
 
 ```bash
-uv add "arbogast @ git+https://github.com/azide0x37/arbogast.git@v0.2.0"
+uv add "arbogast @ git+https://github.com/azide0x37/arbogast.git@v0.3.0"
 ```
 
 For a contributor checkout:
@@ -184,10 +205,12 @@ uv run arbogast version
 
 No external algebra backend is required for the portable examples. If an operation can use an
 external backend, install that system independently and inspect capability discovery before
-depending on it. The 0.2.0 surface retains the narrow FLINT matrix and GAP permutation-group
-discovery adapters and adds a closed, operation-specific PARI arithmetic adapter with explicit
-portable-versus-pinned verification requirements; see [Optional backends](docs/optional-backends.md)
-and [Certified arithmetic](docs/certified-arithmetic.md).
+depending on it. The 0.3.0 surface retains the narrow FLINT matrix and GAP permutation-group
+discovery adapters, the closed operation-specific PARI arithmetic adapter, and the portable
+finite-exact deformation layer. The PARI path keeps explicit portable-versus-pinned verification
+requirements; see [Optional backends](docs/optional-backends.md),
+[Certified arithmetic](docs/certified-arithmetic.md), and
+[Certified deformation](docs/deformation.md).
 
 ## Thirty-second tour
 
@@ -305,7 +328,7 @@ preconditions hold; missing transformations are reported as missing capabilities
 Campaign files serialize specifications, their campaign-owned `ClaimGraph`, and the authoritative
 event ledger, never executable Python callables. With the default `--fleet off`, `run` fails
 closed if the current runtime has no injected implementation for a named operation.
-`--fleet auto` creates an audited local worker pool and registry. In 0.2.0 that registry contains
+`--fleet auto` creates an audited local worker pool and registry. In 0.3.0 that registry contains
 the non-closing `fleet.echo.v1` plumbing plus declared local-`H^1`, localization, Selmer assembly,
 PARI replay, and portable Python certificate-replay tasks. Registry membership never turns a
 scheduler outcome into mathematics or executes a callable named by JSON. The runnable campaign
@@ -326,6 +349,7 @@ The public surface is organized by mathematical layer:
 | `arbogast.cohom` | Cochain complexes and explicit \(H^0\), \(H^1\), \(H^2\) results |
 | `arbogast.galois` | Pinned number fields, places, finite Galois quotients, Kummer spaces, local cohomology, and twist classes |
 | `arbogast.arithmetic` | Local conditions, Selmer kernels and groups, duality, aiming, and elementary descent outcomes |
+| `arbogast.deform` | Explicit finite deformation complexes, framed/equivariant spaces, finite lifts, rigidity, and certified fixed lifts |
 | `arbogast.hurwitz` | Nielsen classes, braid orbits, real structures, and components |
 | `arbogast.claims` | Typed claims, theorem dependencies, and epistemic status |
 | `arbogast.cert` | Discovery receipts and independent verification certificates |
@@ -407,6 +431,18 @@ the same data, the portable lane replays the normalized witness rather than reru
   cheap local obstruction tasks before provenance-driven global aiming. “Locally unobstructed”
   remains non-closing; failed search, timeout, and missing capabilities remain `Unknown`.
 
+## Exact deformation journeys
+
+The 0.3 development examples are portable finite computations and require no external algebra
+backend.
+
+- [`exact_spaces`](examples/deformation/exact_spaces/) constructs a three-term deformation
+  complex, verifies its gauge, tangent, and obstruction spaces, then checks framing,
+  equivariance, invariant deformations, rigidity, and the resulting claim graphs.
+- [`finite_lifts`](examples/deformation/finite_lifts/) exercises a solved affine lift family, a
+  literal obstruction, separate unique and non-unique outcomes, and a fixed lift backed by an
+  explicit contraction certificate.
+
 ## Reproducibility and theorem boundaries
 
 Arbogast distinguishes these layers:
@@ -482,7 +518,7 @@ additional permission.
 
 ## Status and citation
 
-Arbogast 0.2.0 is alpha research software. Certificate verification is intended to be small
+Arbogast 0.3.0 is alpha research software. Certificate verification is intended to be small
 and inspectable, but users remain responsible for auditing the hypotheses and imported facts
 of any theorem they rely on. See [SECURITY.md](SECURITY.md) for reporting integrity or
 parser issues and [CITATION.cff](CITATION.cff) for citation metadata.

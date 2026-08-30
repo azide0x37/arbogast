@@ -12,12 +12,18 @@ PROJECT_ROOT = Path(__file__).resolve().parents[2]
 CHECKER = runpy.run_path(str(PROJECT_ROOT / "scripts/check_release.py"))
 CheckSection = Callable[[Path, list[str]], None]
 CheckReleaseMetadata = Callable[[Path, list[str], str], None]
+CheckRequiredPaths = Callable[[Path, list[str], str], None]
 check_release_metadata = cast(CheckReleaseMetadata, CHECKER["_check_release_metadata"])
+check_required_paths = cast(CheckRequiredPaths, CHECKER["_check_required_paths"])
 check_m23_fixture = cast(CheckSection, CHECKER["_check_m23_fixture"])
 check_compatibility_index = cast(CheckSection, CHECKER["_check_compatibility_index"])
 check_v010_compatibility = cast(CheckSection, CHECKER["_check_v010_compatibility"])
 check_live_pari_matrix = cast(CheckSection, CHECKER["_check_live_pari_matrix"])
 required_paths = cast(tuple[str, ...], CHECKER["REQUIRED_PATHS"])
+deformation_required_paths = cast(
+    tuple[str, ...],
+    CHECKER["DEFORMATION_REQUIRED_PATHS"],
+)
 release_required_paths = cast(Callable[[str], tuple[str, ...]], CHECKER["required_paths"])
 
 
@@ -104,6 +110,54 @@ def test_release_surface_requires_ci_campaign_and_exact_m23_inputs() -> None:
     assert "docs/release-notes-0.1.0.md" in release_required_paths("0.3.0")
     assert "docs/release-notes-0.2.0.md" in release_required_paths("0.3.0")
     assert "tests/integration/test_v010_compatibility.py" in required_paths
+
+
+def test_deformation_release_surface_is_additive_from_v030() -> None:
+    legacy = set(release_required_paths("0.2.0"))
+    v030 = set(release_required_paths("0.3.0"))
+    future = set(release_required_paths("0.4.0"))
+
+    assert len(deformation_required_paths) == 27
+    assert legacy.isdisjoint(deformation_required_paths)
+    assert set(deformation_required_paths).issubset(v030)
+    assert set(deformation_required_paths).issubset(future)
+    assert (
+        len(
+            [path for path in deformation_required_paths if path.startswith("src/arbogast/deform/")]
+        )
+        == 12
+    )
+
+
+def test_every_deformation_release_path_fails_closed_when_deleted(tmp_path: Path) -> None:
+    for relative in deformation_required_paths:
+        _write(tmp_path / relative, "release-boundary fixture\n")
+
+    failures: list[str] = []
+    check_required_paths(tmp_path, failures, "0.3.0")
+    deformation_failures = [
+        failure
+        for failure in failures
+        if any(relative in failure for relative in deformation_required_paths)
+    ]
+    assert deformation_failures == []
+
+    for relative in deformation_required_paths:
+        path = tmp_path / relative
+        path.unlink()
+        failures = []
+        check_required_paths(tmp_path, failures, "0.3.0")
+        assert f"missing required path: {relative}" in failures
+        _write(path, "release-boundary fixture\n")
+
+    failures = []
+    for relative in deformation_required_paths:
+        (tmp_path / relative).unlink()
+    check_required_paths(tmp_path, failures, "0.2.0")
+    assert all(
+        f"missing required path: {relative}" not in failures
+        for relative in deformation_required_paths
+    )
 
 
 def test_release_gate_pins_both_supported_live_pari_anchors(tmp_path: Path) -> None:

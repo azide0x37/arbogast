@@ -268,6 +268,139 @@ _DEPENDENT_OUTPUTS_BY_SOURCE: dict[str, dict[str, tuple[str, ...]]] = {
     },
 }
 
+_DEPENDENT_OUTPUTS_BY_INPUTS: dict[str, dict[tuple[str, ...], tuple[str, ...]]] = {
+    "deform.lift": {
+        ("LiftDatum",): ("LiftFamily", "LiftObstructed"),
+        ("DeformationComplex", "SmallExtension"): ("UnsupportedDeformation",),
+        ("DeformationPresentation", "SmallExtension"): ("UnsupportedDeformation",),
+        ("DeformationProblem", "SmallExtension"): ("UnsupportedDeformation",),
+        ("DeformationComplex", "SmallExtension", "Vector"): (
+            "LiftFamily",
+            "LiftObstructed",
+        ),
+        ("DeformationPresentation", "SmallExtension", "Vector"): (
+            "LiftFamily",
+            "LiftObstructed",
+        ),
+        ("DeformationProblem", "SmallExtension", "Vector"): (
+            "LiftFamily",
+            "LiftObstructed",
+        ),
+        (
+            "DeformationComplex",
+            "SmallExtension",
+            "Vector",
+            "Vector",
+            "DenseMatrix",
+            "DenseMatrix",
+            "str",
+        ): ("LiftFamily", "LiftObstructed"),
+        (
+            "DeformationPresentation",
+            "SmallExtension",
+            "Vector",
+            "Vector",
+            "DenseMatrix",
+            "DenseMatrix",
+            "str",
+        ): ("LiftFamily", "LiftObstructed"),
+        (
+            "DeformationProblem",
+            "SmallExtension",
+            "Vector",
+            "Vector",
+            "DenseMatrix",
+            "DenseMatrix",
+            "str",
+        ): ("LiftFamily", "LiftObstructed"),
+    },
+    "deform.unique_lift": {
+        ("LiftDatum",): ("UniqueLift", "NonUniqueLift", "LiftObstructed"),
+        ("LiftFamily",): ("UniqueLift", "NonUniqueLift"),
+        ("LiftObstructed",): ("LiftObstructed",),
+        ("LiftUnknown",): ("LiftUnknown",),
+        ("UnsupportedDeformation",): ("UnsupportedDeformation",),
+        ("DeformationComplex", "SmallExtension"): ("UnsupportedDeformation",),
+        ("DeformationPresentation", "SmallExtension"): ("UnsupportedDeformation",),
+        ("DeformationProblem", "SmallExtension"): ("UnsupportedDeformation",),
+        ("DeformationComplex", "SmallExtension", "Vector"): (
+            "UniqueLift",
+            "NonUniqueLift",
+            "LiftObstructed",
+        ),
+        ("DeformationPresentation", "SmallExtension", "Vector"): (
+            "UniqueLift",
+            "NonUniqueLift",
+            "LiftObstructed",
+        ),
+        ("DeformationProblem", "SmallExtension", "Vector"): (
+            "UniqueLift",
+            "NonUniqueLift",
+            "LiftObstructed",
+        ),
+        (
+            "DeformationComplex",
+            "SmallExtension",
+            "Vector",
+            "Vector",
+            "DenseMatrix",
+            "DenseMatrix",
+            "str",
+        ): ("UniqueLift", "NonUniqueLift", "LiftObstructed"),
+        (
+            "DeformationPresentation",
+            "SmallExtension",
+            "Vector",
+            "Vector",
+            "DenseMatrix",
+            "DenseMatrix",
+            "str",
+        ): ("UniqueLift", "NonUniqueLift", "LiftObstructed"),
+        (
+            "DeformationProblem",
+            "SmallExtension",
+            "Vector",
+            "Vector",
+            "DenseMatrix",
+            "DenseMatrix",
+            "str",
+        ): ("UniqueLift", "NonUniqueLift", "LiftObstructed"),
+    },
+    "deform.equivariant_decomposition": {
+        ("EquivariantDeformation",): ("UnsupportedDeformation",),
+        ("EquivariantDeformation", "ProjectorMapping"): ("EquivariantDecomposition",),
+    },
+    "deform.fixed_lift": {
+        ("LiftDatum",): ("LiftObstructed", "LiftUnknown"),
+        ("LiftFamily",): ("LiftUnknown",),
+        ("LiftObstructed",): ("LiftObstructed",),
+        ("LiftUnknown",): ("LiftUnknown",),
+        ("UnsupportedDeformation",): ("UnsupportedDeformation",),
+        ("LiftDatum", "LiftEndomorphism"): ("LiftObstructed", "LiftUnknown"),
+        ("LiftFamily", "LiftEndomorphism"): ("LiftUnknown",),
+        ("LiftObstructed", "LiftEndomorphism"): ("LiftObstructed",),
+        ("LiftUnknown", "LiftEndomorphism"): ("LiftUnknown",),
+        ("UnsupportedDeformation", "LiftEndomorphism"): ("UnsupportedDeformation",),
+        ("LiftDatum", "LiftEndomorphism", "ContractionCertificate"): (
+            "FixedLift",
+            "LiftObstructed",
+        ),
+        ("LiftDatum", "LiftEndomorphism", "int"): ("FixedLift", "LiftObstructed"),
+        ("LiftFamily", "LiftEndomorphism", "ContractionCertificate"): ("FixedLift",),
+        ("LiftFamily", "LiftEndomorphism", "int"): ("FixedLift",),
+        ("LiftObstructed", "LiftEndomorphism", "ContractionCertificate"): ("LiftObstructed",),
+        ("LiftObstructed", "LiftEndomorphism", "int"): ("LiftObstructed",),
+        ("LiftUnknown", "LiftEndomorphism", "ContractionCertificate"): ("LiftUnknown",),
+        ("LiftUnknown", "LiftEndomorphism", "int"): ("LiftUnknown",),
+        (
+            "UnsupportedDeformation",
+            "LiftEndomorphism",
+            "ContractionCertificate",
+        ): ("UnsupportedDeformation",),
+        ("UnsupportedDeformation", "LiftEndomorphism", "int"): ("UnsupportedDeformation",),
+    },
+}
+
 
 def _targets_for_inputs(
     operation: OperationDescription,
@@ -279,6 +412,22 @@ def _targets_for_inputs(
     for output in operation.outputs:
         declared_targets.extend(_type_alternatives(output))
     declared = tuple(declared_targets)
+    by_inputs = _DEPENDENT_OUTPUTS_BY_INPUTS.get(operation.name)
+    if by_inputs is not None:
+        try:
+            selected = by_inputs[required_inputs]
+        except KeyError as error:
+            raise ValueError(
+                f"dependent capability operation {operation.name!r} has no route for "
+                f"{required_inputs!r}"
+            ) from error
+        missing = set(selected) - set(declared)
+        if missing:
+            raise ValueError(
+                f"dependent capability operation {operation.name!r} omits declared targets: "
+                + ", ".join(sorted(missing))
+            )
+        return selected
     by_source = _DEPENDENT_OUTPUTS_BY_SOURCE.get(operation.name)
     if by_source is None:
         return declared
