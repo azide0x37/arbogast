@@ -1,0 +1,463 @@
+{
+  "builtin_verifier_ids": [
+    "campaign.claim-closure.v1",
+    "cohom.normalized_bar.v1",
+    "hurwitz.boundary",
+    "hurwitz.braid_action",
+    "hurwitz.components",
+    "hurwitz.cusps",
+    "hurwitz.nielsen_class",
+    "hurwitz.real_census",
+    "hurwitz.real_structure",
+    "hurwitz.reduced"
+  ],
+  "cli": {
+    "campaign_commands": [
+      "init"
+    ],
+    "commands": [
+      "campaign",
+      "claims",
+      "describe",
+      "export",
+      "harvest",
+      "plan",
+      "proof-gap",
+      "route",
+      "run",
+      "status",
+      "target",
+      "verify",
+      "version"
+    ]
+  },
+  "functions": {
+    "arbogast.cohom": {
+      "H0": {
+        "operation": "cohom.h0",
+        "qualified_name": "arbogast.cohom.results.h0",
+        "signature": "(group_or_complex: 'Any', module: 'Any | None' = None, *, limits: 'ComplexityLimits | None' = None) -> 'H0Result'"
+      },
+      "H1": {
+        "operation": "cohom.h1",
+        "qualified_name": "arbogast.cohom.results.h1",
+        "signature": "(group_or_complex: 'Any', module: 'Any | None' = None, *, limits: 'ComplexityLimits | None' = None) -> 'H1Result'"
+      },
+      "H2": {
+        "operation": "cohom.h2",
+        "qualified_name": "arbogast.cohom.results.h2",
+        "signature": "(group_or_complex: 'Any', module: 'Any | None' = None, *, limits: 'ComplexityLimits | None' = None) -> 'H2Result'"
+      },
+      "class_of": {
+        "operation": "cohom.class_of",
+        "qualified_name": "arbogast.cohom.results.class_of",
+        "signature": "(cochain: 'Cochain', result: 'CohomologyResult | None' = None) -> 'CohomologyClass'"
+      },
+      "coboundaries": {
+        "operation": "cohom.coboundaries",
+        "qualified_name": "arbogast.cohom.results.coboundaries",
+        "signature": "(complex_: 'CochainComplex', degree: 'int') -> 'CochainSubspace'"
+      },
+      "cochain_complex": {
+        "operation": "cohom.cochain_complex",
+        "qualified_name": "arbogast.cohom.complex.cochain_complex",
+        "signature": "(group: 'Any', module: 'Any', degree: 'int', *, limits: 'ComplexityLimits | None' = None) -> 'CochainComplex'"
+      },
+      "cocycles": {
+        "operation": "cohom.cocycles",
+        "qualified_name": "arbogast.cohom.results.cocycles",
+        "signature": "(complex_: 'CochainComplex', degree: 'int') -> 'CochainSubspace'"
+      },
+      "cohomology": {
+        "operation": "cohom.cohomology",
+        "qualified_name": "arbogast.cohom.results.cohomology",
+        "signature": "(complex_: 'CochainComplex', degree: 'int') -> 'CohomologyResult'"
+      },
+      "h0": {
+        "operation": "cohom.h0",
+        "qualified_name": "arbogast.cohom.results.h0",
+        "signature": "(group_or_complex: 'Any', module: 'Any | None' = None, *, limits: 'ComplexityLimits | None' = None) -> 'H0Result'"
+      },
+      "h1": {
+        "operation": "cohom.h1",
+        "qualified_name": "arbogast.cohom.results.h1",
+        "signature": "(group_or_complex: 'Any', module: 'Any | None' = None, *, limits: 'ComplexityLimits | None' = None) -> 'H1Result'"
+      },
+      "h2": {
+        "operation": "cohom.h2",
+        "qualified_name": "arbogast.cohom.results.h2",
+        "signature": "(group_or_complex: 'Any', module: 'Any | None' = None, *, limits: 'ComplexityLimits | None' = None) -> 'H2Result'"
+      },
+      "inflate": {
+        "operation": "cohom.inflate",
+        "qualified_name": "arbogast.cohom.maps.inflate",
+        "signature": "(value: 'Cochain | CohomologyClass', group_or_extension: 'Any', projection: 'Any | None' = None, *, limits: 'ComplexityLimits | None' = None) -> 'Cochain | CohomologyClass'"
+      },
+      "is_coboundary": {
+        "operation": "cohom.is_coboundary",
+        "qualified_name": "arbogast.cohom.results.is_coboundary",
+        "signature": "(cochain: 'Cochain', result: 'CohomologyResult | None' = None) -> 'CoboundaryWitness'"
+      },
+      "is_cocycle": {
+        "operation": "cohom.is_cocycle",
+        "qualified_name": "arbogast.cohom.results.is_cocycle",
+        "signature": "(cochain: 'Cochain') -> 'bool'"
+      },
+      "restrict": {
+        "operation": "cohom.restrict",
+        "qualified_name": "arbogast.cohom.maps.restrict",
+        "signature": "(value: 'Cochain | CohomologyClass', subgroup: 'Any', inclusion: 'Any | None' = None, *, limits: 'ComplexityLimits | None' = None) -> 'Cochain | CohomologyClass'"
+      }
+    },
+    "arbogast.hurwitz": {
+      "apply_braid_word": {
+        "operation": "hurwitz.apply_braid_word",
+        "qualified_name": "arbogast.hurwitz.braid.apply_braid_word",
+        "signature": "(value: 'NielsenTuple', word: 'BraidWord | Iterable[BraidMove | tuple[int, bool] | int]') -> 'NielsenTuple'"
+      },
+      "apply_braid_word_entries": {
+        "operation": "hurwitz.apply_braid_word_entries",
+        "qualified_name": "arbogast.hurwitz.braid.apply_braid_word_entries",
+        "signature": "(context: 'ConcreteGroupContext', entries: 'Sequence[Element]', word: 'BraidWord | Iterable[BraidMove | tuple[int, bool] | int]') -> 'tuple[Element, ...]'"
+      },
+      "boundary": {
+        "operation": "hurwitz.boundary",
+        "qualified_name": "arbogast.hurwitz.boundary.boundary",
+        "signature": "(value: 'NielsenTuple | HurwitzComponent', collision: 'Collision | tuple[int, int]') -> 'BoundaryTuple | BoundaryIncidence'"
+      },
+      "boundary_incidence": {
+        "operation": "hurwitz.boundary_incidence",
+        "qualified_name": "arbogast.hurwitz.boundary.boundary_incidence",
+        "signature": "(component: 'HurwitzComponent', collisions: 'Collision | tuple[int, int] | Sequence[Collision | tuple[int, int]]') -> 'BoundaryIncidence'"
+      },
+      "braid_action": {
+        "operation": "hurwitz.braid_action",
+        "qualified_name": "arbogast.hurwitz.braid.braid_action",
+        "signature": "(nielsen_class: 'NielsenClass', *, mode: 'str' = 'full', generators: 'Sequence[NamedBraidGenerator | tuple[str, BraidWord | Iterable[BraidMove | tuple[int, bool] | int]]] | None' = None) -> 'BraidAction'"
+      },
+      "braid_distance": {
+        "operation": "hurwitz.braid_distance",
+        "qualified_name": "arbogast.hurwitz.braid.braid_distance",
+        "signature": "(action: 'BraidAction', source: 'int | NielsenTuple', target: 'int | NielsenTuple') -> 'BraidPath'"
+      },
+      "claim_for": {
+        "operation": "hurwitz.claim",
+        "qualified_name": "arbogast.hurwitz.claims.claim_for",
+        "signature": "(value: 'object', *, claim_id: 'str | None' = None) -> 'Claim'"
+      },
+      "claim_graph_for": {
+        "operation": "hurwitz.claim_graph",
+        "qualified_name": "arbogast.hurwitz.claims.claim_graph_for",
+        "signature": "(value: 'object', *, claim_id: 'str | None' = None) -> 'ClaimGraph'"
+      },
+      "collide": {
+        "operation": "hurwitz.collide",
+        "qualified_name": "arbogast.hurwitz.boundary.collide",
+        "signature": "(value: 'NielsenTuple', collision: 'Collision | tuple[int, int]') -> 'BoundaryTuple'"
+      },
+      "components": {
+        "operation": "hurwitz.components",
+        "qualified_name": "arbogast.hurwitz.braid.components",
+        "signature": "(value: 'NielsenClass | BraidAction', *, mode: 'str' = 'full') -> 'ComponentCollection'"
+      },
+      "cusps": {
+        "operation": "hurwitz.cusps",
+        "qualified_name": "arbogast.hurwitz.geometry.cusps",
+        "signature": "(component: 'HurwitzComponent', operator: 'str | BraidWord', *, name: 'str | None' = None) -> 'CuspData'"
+      },
+      "hurwitz_move": {
+        "operation": "hurwitz.hurwitz_move",
+        "qualified_name": "arbogast.hurwitz.braid.hurwitz_move",
+        "signature": "(value: 'NielsenTuple', index: 'int', *, inverse: 'bool' = False) -> 'NielsenTuple'"
+      },
+      "is_real_tuple": {
+        "operation": "hurwitz.is_real_tuple",
+        "qualified_name": "arbogast.hurwitz.real.is_real_tuple",
+        "signature": "(value: 'NielsenTuple', fiber_conjugation: 'Element', *, require_involution: 'bool' = True) -> 'bool'"
+      },
+      "is_totally_real": {
+        "operation": "hurwitz.is_totally_real",
+        "qualified_name": "arbogast.hurwitz.real.is_totally_real",
+        "signature": "(value: 'NielsenTuple') -> 'bool'"
+      },
+      "load_m23_exact_dataset": {
+        "operation": "hurwitz.load_m23_exact_dataset",
+        "qualified_name": "arbogast.hurwitz.m23_exact.load_m23_exact_dataset",
+        "signature": "(manifest_path: 'str | Path', dataset_path: 'str | Path | None' = None) -> 'M23ExactDataset'"
+      },
+      "load_precomputed_nielsen_class": {
+        "operation": "hurwitz.load_precomputed_nielsen_class",
+        "qualified_name": "arbogast.hurwitz.dataset.load_precomputed_nielsen_class",
+        "signature": "(path: 'str | Path', group: 'object', classes: 'Sequence[object]', *, decode_element: 'Callable[[Any], Element] | None' = None) -> 'ImportedNielsenDataset'"
+      },
+      "m23_certificates_for": {
+        "operation": "hurwitz.m23_certificates",
+        "qualified_name": "arbogast.hurwitz.m23_exact.m23_certificates_for",
+        "signature": "(dataset: 'M23ExactDataset') -> 'dict[str, VerificationCertificate]'"
+      },
+      "m23_claim_graph_for": {
+        "operation": "hurwitz.m23_claim_graph",
+        "qualified_name": "arbogast.hurwitz.m23_exact.m23_claim_graph_for",
+        "signature": "(dataset: 'M23ExactDataset', *, provenance_record: 'str | None' = None) -> 'ClaimGraph'"
+      },
+      "m23_verification_certificate_for": {
+        "operation": "hurwitz.m23_verification_certificate",
+        "qualified_name": "arbogast.hurwitz.m23_exact.m23_verification_certificate_for",
+        "signature": "(dataset: 'M23ExactDataset', claim_id: 'str') -> 'VerificationCertificate'"
+      },
+      "nielsen_class": {
+        "operation": "hurwitz.nielsen_class",
+        "qualified_name": "arbogast.hurwitz.nielsen.nielsen_class",
+        "signature": "(group: 'object', classes: 'Sequence[object]', *, shards: 'int' = 1) -> 'NielsenClass'"
+      },
+      "nielsen_tuple": {
+        "operation": "hurwitz.nielsen_tuple",
+        "qualified_name": "arbogast.hurwitz.nielsen.nielsen_tuple",
+        "signature": "(group: 'object', entries: 'Sequence[Element]', classes: 'Sequence[object]') -> 'NielsenTuple'"
+      },
+      "operation_certificate_for": {
+        "operation": "hurwitz.operation_certificate",
+        "qualified_name": "arbogast.hurwitz.portable.operation_certificate_for",
+        "signature": "(value: 'object') -> 'HurwitzOperationCertificate'"
+      },
+      "plan_nielsen_class": {
+        "operation": "hurwitz.plan_nielsen_class",
+        "qualified_name": "arbogast.hurwitz.nielsen.plan_nielsen_class",
+        "signature": "(group: 'object', classes: 'Sequence[object]', *, shards: 'int') -> 'NielsenEnumerationPlan'"
+      },
+      "pure_braid_word": {
+        "operation": "hurwitz.pure_braid_word",
+        "qualified_name": "arbogast.hurwitz.braid.pure_braid_word",
+        "signature": "(left: 'int', right: 'int') -> 'BraidWord'"
+      },
+      "real_census": {
+        "operation": "hurwitz.real_census",
+        "qualified_name": "arbogast.hurwitz.real.real_census",
+        "signature": "(nielsen_class: 'NielsenClass', c: 'Element | None' = None, *, up_to_inner: 'bool' = True) -> 'RealCensus'"
+      },
+      "real_points": {
+        "operation": "hurwitz.real_points",
+        "qualified_name": "arbogast.hurwitz.real.real_points",
+        "signature": "(nielsen_class: 'NielsenClass', c: 'Element | None' = None, *, up_to_inner: 'bool' = True) -> 'tuple[NielsenTuple, ...]'"
+      },
+      "real_structure": {
+        "operation": "hurwitz.real_structure",
+        "qualified_name": "arbogast.hurwitz.real.real_structure",
+        "signature": "(nielsen_class: 'NielsenClass', *, transform: 'TupleTransform | None' = None, signed_slots: 'Sequence[tuple[int, bool]] | None' = None, name: 'str' = 'straight-real-bouquet', convention: 'str | None' = None) -> 'RealStructure'"
+      },
+      "real_witnesses": {
+        "operation": "hurwitz.real_witnesses",
+        "qualified_name": "arbogast.hurwitz.real.real_witnesses",
+        "signature": "(nielsen_class: 'NielsenClass', c: 'Element | None' = None, *, up_to_inner: 'bool' = True) -> 'tuple[RealPointWitness, ...]'"
+      },
+      "reduced": {
+        "operation": "hurwitz.reduced",
+        "qualified_name": "arbogast.hurwitz.geometry.reduced",
+        "signature": "(component: 'HurwitzComponent', symmetries: 'Sequence[ExplicitSymmetry | tuple[str, BraidWord]]') -> 'ReducedComponent'"
+      },
+      "signed_slot_transform": {
+        "operation": "hurwitz.signed_slot_transform",
+        "qualified_name": "arbogast.hurwitz.real.signed_slot_transform",
+        "signature": "(slots: 'Sequence[tuple[int, bool]]') -> 'TupleTransform'"
+      },
+      "source_genus": {
+        "operation": "hurwitz.source_genus",
+        "qualified_name": "arbogast.hurwitz.geometry.source_genus",
+        "signature": "(value: 'NielsenTuple') -> 'int'"
+      },
+      "source_genus_result": {
+        "operation": "hurwitz.source_genus_result",
+        "qualified_name": "arbogast.hurwitz.geometry.source_genus_result",
+        "signature": "(value: 'NielsenTuple') -> 'SourceGenusResult'"
+      },
+      "straight_real_transform": {
+        "operation": "hurwitz.straight_real_transform",
+        "qualified_name": "arbogast.hurwitz.real.straight_real_transform",
+        "signature": "(context: 'ConcreteGroupContext', entries: 'tuple[Element, ...]') -> 'tuple[Element, ...]'"
+      },
+      "symmetry_from_braid_word": {
+        "operation": "hurwitz.symmetry_from_braid_word",
+        "qualified_name": "arbogast.hurwitz.geometry.symmetry_from_braid_word",
+        "signature": "(component: 'HurwitzComponent', word: 'BraidWord', *, name: 'str' = 'explicit-braid-symmetry') -> 'ExplicitSymmetry'"
+      },
+      "totally_real": {
+        "operation": "hurwitz.totally_real",
+        "qualified_name": "arbogast.hurwitz.real.totally_real",
+        "signature": "(nielsen_class: 'NielsenClass') -> 'tuple[NielsenTuple, ...]'"
+      },
+      "verification_certificate_for": {
+        "operation": "hurwitz.verification_certificate",
+        "qualified_name": "arbogast.hurwitz.claims.verification_certificate_for",
+        "signature": "(value: 'object', *, claim_id: 'str | None' = None) -> 'VerificationCertificate'"
+      },
+      "verify_hurwitz_operation_payload": {
+        "operation": "hurwitz.verify_operation_payload",
+        "qualified_name": "arbogast.hurwitz.portable.verify_hurwitz_operation_payload",
+        "signature": "(payload: 'Mapping[str, object]') -> 'bool'"
+      },
+      "verify_nielsen_certificate_payload": {
+        "operation": "hurwitz.verify_nielsen_certificate_payload",
+        "qualified_name": "arbogast.hurwitz.nielsen.verify_nielsen_certificate_payload",
+        "signature": "(payload: 'Mapping[str, object]') -> 'bool'"
+      },
+      "weighted_braid_path": {
+        "operation": "hurwitz.weighted_braid_path",
+        "qualified_name": "arbogast.hurwitz.braid.weighted_braid_path",
+        "signature": "(action: 'BraidAction', source: 'int | NielsenTuple', target: 'int | NielsenTuple', costs: 'Mapping[str | tuple[str, bool], float] | Callable[[str, bool], float]') -> 'BraidPath'"
+      }
+    },
+    "arbogast.linalg": {
+      "as_dense": {
+        "operation": "linalg.as_dense",
+        "qualified_name": "arbogast.linalg.matrix.as_dense",
+        "signature": "(matrix: 'Matrix') -> 'DenseMatrix'"
+      },
+      "column_space": {
+        "operation": "linalg.image",
+        "qualified_name": "arbogast.linalg.algorithms.image",
+        "signature": "(matrix: 'Matrix') -> 'LinearSubspace'"
+      },
+      "complement": {
+        "operation": "linalg.complement",
+        "qualified_name": "arbogast.linalg.algorithms.complement",
+        "signature": "(subspace: 'LinearSubspace', *, within: 'LinearSubspace | None' = None) -> 'LinearSubspace'"
+      },
+      "determinant": {
+        "operation": "linalg.determinant",
+        "qualified_name": "arbogast.linalg.algorithms.determinant",
+        "signature": "(matrix: 'Matrix') -> 'int'"
+      },
+      "image": {
+        "operation": "linalg.image",
+        "qualified_name": "arbogast.linalg.algorithms.image",
+        "signature": "(matrix: 'Matrix') -> 'LinearSubspace'"
+      },
+      "intersection": {
+        "operation": "linalg.intersection",
+        "qualified_name": "arbogast.linalg.algorithms.intersection",
+        "signature": "(left: 'LinearSubspace', right: 'LinearSubspace') -> 'LinearSubspace'"
+      },
+      "inverse": {
+        "operation": "linalg.inverse",
+        "qualified_name": "arbogast.linalg.algorithms.inverse",
+        "signature": "(matrix: 'Matrix') -> 'DenseMatrix'"
+      },
+      "kernel": {
+        "operation": "linalg.nullspace",
+        "qualified_name": "arbogast.linalg.algorithms.nullspace",
+        "signature": "(matrix: 'Matrix') -> 'LinearSubspace'"
+      },
+      "left_nullspace": {
+        "operation": "linalg.left_nullspace",
+        "qualified_name": "arbogast.linalg.algorithms.left_nullspace",
+        "signature": "(matrix: 'Matrix') -> 'LinearSubspace'"
+      },
+      "nullspace": {
+        "operation": "linalg.nullspace",
+        "qualified_name": "arbogast.linalg.algorithms.nullspace",
+        "signature": "(matrix: 'Matrix') -> 'LinearSubspace'"
+      },
+      "quotient": {
+        "operation": "linalg.quotient_space",
+        "qualified_name": "arbogast.linalg.algorithms.quotient_space",
+        "signature": "(numerator: 'LinearSubspace', denominator: 'LinearSubspace') -> 'QuotientSpace'"
+      },
+      "quotient_space": {
+        "operation": "linalg.quotient_space",
+        "qualified_name": "arbogast.linalg.algorithms.quotient_space",
+        "signature": "(numerator: 'LinearSubspace', denominator: 'LinearSubspace') -> 'QuotientSpace'"
+      },
+      "rank": {
+        "operation": "linalg.rank",
+        "qualified_name": "arbogast.linalg.algorithms.rank",
+        "signature": "(matrix: 'Matrix') -> 'int'"
+      },
+      "row_space": {
+        "operation": "linalg.row_space",
+        "qualified_name": "arbogast.linalg.algorithms.row_space",
+        "signature": "(matrix: 'Matrix') -> 'LinearSubspace'"
+      },
+      "rref": {
+        "operation": "linalg.rref",
+        "qualified_name": "arbogast.linalg.algorithms.rref",
+        "signature": "(matrix: 'Matrix') -> 'RREFResult'"
+      },
+      "solve": {
+        "operation": "linalg.solve",
+        "qualified_name": "arbogast.linalg.algorithms.solve",
+        "signature": "(matrix: 'Matrix', rhs: 'Iterable[Scalar]') -> 'LinearSolveResult'"
+      },
+      "sum_subspaces": {
+        "operation": "linalg.sum_subspaces",
+        "qualified_name": "arbogast.linalg.algorithms.sum_subspaces",
+        "signature": "(left: 'LinearSubspace', right: 'LinearSubspace') -> 'LinearSubspace'"
+      }
+    },
+    "arbogast.rep": {
+      "cyclic_group": {
+        "operation": "rep.cyclic_group",
+        "qualified_name": "arbogast.rep.group.cyclic_group",
+        "signature": "(order: 'int | Permutation', *, degree: 'int | None' = None, generator: 'Permutation | None' = None) -> 'CyclicGroup'"
+      },
+      "decompose": {
+        "operation": "rep.decompose",
+        "qualified_name": "arbogast.rep.representation.decompose",
+        "signature": "(module: 'Representation', group: 'object | None' = None, *, generator: 'Any | None' = None, characters: 'Iterable[Character] | None' = None, require_complete: 'bool' = False) -> 'CyclicDecomposition | IsotypicDecomposition'"
+      },
+      "fixed_part": {
+        "operation": "rep.fixed_part",
+        "qualified_name": "arbogast.rep.representation.fixed_part",
+        "signature": "(module: 'Representation', sigma: 'Any') -> 'LinearSubspace'"
+      },
+      "isotypic": {
+        "operation": "rep.isotypic",
+        "qualified_name": "arbogast.rep.representation.isotypic",
+        "signature": "(module: 'Representation', character: 'Character | CyclicFactor | int', *, generator: 'Any | None' = None) -> 'LinearSubspace'"
+      },
+      "projector": {
+        "operation": "rep.projector",
+        "qualified_name": "arbogast.rep.representation.projector",
+        "signature": "(module: 'Representation', character: 'Character | CyclicFactor | int', *, generator: 'Any | None' = None) -> 'DenseMatrix'"
+      },
+      "representation": {
+        "operation": "rep.representation",
+        "qualified_name": "arbogast.rep.representation.representation",
+        "signature": "(group: 'object', field: 'PrimeField | int', action: 'Mapping[Any, MatrixInput] | Callable[[Any], MatrixInput]', **kwargs: 'Any') -> 'Representation'"
+      },
+      "semisimple": {
+        "operation": "rep.semisimple",
+        "qualified_name": "arbogast.rep.representation.semisimple",
+        "signature": "(action: 'Representation') -> 'SemisimplicityResult'"
+      },
+      "symmetric_group": {
+        "operation": "rep.symmetric_group",
+        "qualified_name": "arbogast.rep.group.symmetric_group",
+        "signature": "(degree: 'int') -> 'PermutationGroup'"
+      },
+      "weight_spaces": {
+        "operation": "rep.weight_spaces",
+        "qualified_name": "arbogast.rep.representation.weight_spaces",
+        "signature": "(module: 'Representation', action: 'Any | None' = None) -> 'WeightDecomposition'"
+      }
+    }
+  },
+  "helpers": {
+    "arbogast.hurwitz": {
+      "m23_verifier_registry": {
+        "qualified_name": "arbogast.hurwitz.m23_exact.m23_verifier_registry",
+        "reason": "constructs a VerifierRegistry bound to an already replayed M23 dataset; it is certificate plumbing and computes no new mathematical result",
+        "signature": "(dataset: 'M23ExactDataset') -> 'VerifierRegistry'"
+      },
+      "register_hurwitz_replay": {
+        "qualified_name": "arbogast.hurwitz.claims.register_hurwitz_replay",
+        "reason": "idempotently installs a verifier in the central registry and optionally preflights a receipt; it computes no mathematical result",
+        "signature": "(certificate: 'NielsenEnumerationCertificate | HurwitzOperationCertificate | None' = None) -> 'None'"
+      }
+    }
+  },
+  "schema_version": "arbogast.compatibility-public-contracts/v1",
+  "source_commit": "dfd1cc0fd7830ae77de2a04617fa21cece69dde2",
+  "source_tag": "v0.1.0",
+  "version": "0.1.0"
+}
+

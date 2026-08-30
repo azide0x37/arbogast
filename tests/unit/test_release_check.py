@@ -3,6 +3,7 @@ from __future__ import annotations
 import hashlib
 import json
 import runpy
+import shutil
 from collections.abc import Callable
 from pathlib import Path
 from typing import Any, cast
@@ -10,9 +11,13 @@ from typing import Any, cast
 PROJECT_ROOT = Path(__file__).resolve().parents[2]
 CHECKER = runpy.run_path(str(PROJECT_ROOT / "scripts/check_release.py"))
 CheckSection = Callable[[Path, list[str]], None]
-check_release_metadata = cast(CheckSection, CHECKER["_check_release_metadata"])
+CheckReleaseMetadata = Callable[[Path, list[str], str], None]
+check_release_metadata = cast(CheckReleaseMetadata, CHECKER["_check_release_metadata"])
 check_m23_fixture = cast(CheckSection, CHECKER["_check_m23_fixture"])
+check_v010_compatibility = cast(CheckSection, CHECKER["_check_v010_compatibility"])
+check_live_pari_matrix = cast(CheckSection, CHECKER["_check_live_pari_matrix"])
 required_paths = cast(tuple[str, ...], CHECKER["REQUIRED_PATHS"])
+release_required_paths = cast(Callable[[str], tuple[str, ...]], CHECKER["required_paths"])
 
 
 def _write(path: Path, value: str) -> None:
@@ -45,7 +50,7 @@ def test_release_metadata_requires_final_version_date_and_wording(tmp_path: Path
     )
 
     failures: list[str] = []
-    check_release_metadata(tmp_path, failures)
+    check_release_metadata(tmp_path, failures, "0.1.0")
     assert failures == []
 
     _write(
@@ -57,7 +62,7 @@ def test_release_metadata_requires_final_version_date_and_wording(tmp_path: Path
         "# Draft Arbogast 0.1.0 release notes\n",
     )
     failures = []
-    check_release_metadata(tmp_path, failures)
+    check_release_metadata(tmp_path, failures, "0.1.0")
     assert any("development-release wording" in failure for failure in failures)
     assert any("release dates must match" in failure for failure in failures)
     assert any("final heading" in failure for failure in failures)
@@ -71,7 +76,7 @@ def test_release_metadata_requires_final_version_date_and_wording(tmp_path: Path
         "# Arbogast 0.1.0 release notes\n\nThis is a development release.\n",
     )
     failures = []
-    check_release_metadata(tmp_path, failures)
+    check_release_metadata(tmp_path, failures, "0.1.0")
     assert failures == ["docs/release-notes-0.1.0.md contains stale development-release wording"]
 
 
@@ -82,6 +87,68 @@ def test_release_surface_requires_ci_campaign_and_exact_m23_inputs() -> None:
     assert "examples/hurwitz/m23_real_component/fixture.py" in required_paths
     assert "examples/hurwitz/m23_real_component/generate.g" in required_paths
     assert "examples/hurwitz/m23_real_component/expected/dataset.json" in required_paths
+    assert "examples/arithmetic/aim_a_cocycle/run.py" in required_paths
+    assert "examples/campaigns/antieau_klueners_malle/local_global.py" in required_paths
+    assert "docs/release-notes-0.2.0.md" in release_required_paths("0.2.0")
+    assert "docs/release-notes-0.1.0.md" in release_required_paths("0.2.0")
+    assert "scripts/build_source_archive.py" in required_paths
+    assert "scripts/pari_anchor_payload.py" in required_paths
+    assert "scripts/snapshot_v010_api_cli.py" in required_paths
+    assert "tests/fixtures/compat/v0.1.0/release.json" in required_paths
+    assert "tests/fixtures/compat/v0.1.0/api-cli-contracts.json" in required_paths
+    assert "tests/integration/test_v010_compatibility.py" in required_paths
+
+
+def test_release_gate_pins_both_supported_live_pari_anchors(tmp_path: Path) -> None:
+    workflow = (PROJECT_ROOT / ".github/workflows/ci.yml").read_text(encoding="utf-8")
+    _write(tmp_path / ".github/workflows/ci.yml", workflow)
+    failures: list[str] = []
+    check_live_pari_matrix(tmp_path, failures)
+    assert failures == []
+
+    damaged = workflow.replace(
+        "02651d99c391007d384b3fadbc20abc6916b77036f9e496c99e9ce8688ca4b53",
+        "0" * 64,
+    )
+    _write(tmp_path / ".github/workflows/ci.yml", damaged)
+    failures = []
+    check_live_pari_matrix(tmp_path, failures)
+    assert any("2.17.4" in failure for failure in failures)
+
+
+def test_release_gate_hashes_the_immutable_v010_inputs(tmp_path: Path) -> None:
+    shutil.copytree(
+        PROJECT_ROOT / "tests/fixtures/compat/v0.1.0",
+        tmp_path / "tests/fixtures/compat/v0.1.0",
+    )
+    notes = tmp_path / "docs/release-notes-0.1.0.md"
+    notes.parent.mkdir(parents=True)
+    shutil.copyfile(PROJECT_ROOT / "docs/release-notes-0.1.0.md", notes)
+
+    failures: list[str] = []
+    check_v010_compatibility(tmp_path, failures)
+    assert failures == []
+
+    api_cli = tmp_path / "tests/fixtures/compat/v0.1.0/api-cli-contracts.json"
+    api_cli.write_text(api_cli.read_text(encoding="utf-8") + "\n", encoding="utf-8")
+    failures = []
+    check_v010_compatibility(tmp_path, failures)
+    assert any("api-cli-contracts.json" in failure for failure in failures)
+    shutil.copyfile(
+        PROJECT_ROOT / "tests/fixtures/compat/v0.1.0/api-cli-contracts.json",
+        api_cli,
+    )
+
+    fixture = tmp_path / "tests/fixtures/compat/v0.1.0/h1-c2-f2.json"
+    fixture.write_text(fixture.read_text(encoding="utf-8") + "\n", encoding="utf-8")
+    failures = []
+    check_v010_compatibility(tmp_path, failures)
+    assert any("fixture SHA-256 mismatch" in failure for failure in failures)
+
+    fixture.unlink()
+    failures = []
+    check_v010_compatibility(tmp_path, failures)
+    assert any("missing immutable 0.1.0 fixture" in failure for failure in failures)
 
 
 def test_m23_release_gate_binds_exact_artifacts_and_theorem_counts(tmp_path: Path) -> None:

@@ -1,6 +1,8 @@
 from __future__ import annotations
 
 import json
+import subprocess
+import sys
 import unicodedata
 
 import pytest
@@ -24,6 +26,63 @@ from arbogast.cert import (
     content_address,
 )
 from arbogast.core import canonical_bytes as core_canonical_bytes
+
+
+@pytest.mark.parametrize(
+    ("verifier_name", "module_name"),
+    (
+        ("cohom.induced_map.v1", "arbogast.cohom.map_certificate"),
+        ("cohom.inflation_restriction.v1", "arbogast.cohom.five_term"),
+        ("cohom.normalized_bar.v1", "arbogast.cohom.semantic"),
+        ("galois.finite_quotient.v1", "arbogast.galois.groups"),
+        ("galois.kummer.v1", "arbogast.galois.semantic"),
+        ("galois.local_h1.v1", "arbogast.galois.semantic"),
+        ("galois.localization.v1", "arbogast.galois.semantic"),
+        ("galois.module.v1", "arbogast.galois.modules"),
+        ("galois.quotient_presentation.v1", "arbogast.galois.groups"),
+        ("galois.twists.v1", "arbogast.galois.semantic"),
+        ("galois.unsupported.v1", "arbogast.galois.proof"),
+        ("arithmetic.finite-linear.v1", "arbogast.arithmetic.semantic"),
+        ("arbogast.backends.pari.v1", "arbogast.backends.pari_certificate"),
+        (
+            "arbogast.backends.pari.operational.v1",
+            "arbogast.backends.pari_certificate",
+        ),
+    ),
+)
+def test_builtin_verifiers_lazy_load_in_a_fresh_process(
+    verifier_name: str,
+    module_name: str,
+) -> None:
+    script = """
+import json
+import sys
+
+from arbogast.cert import default_verifiers
+
+name = sys.argv[1]
+module = sys.argv[2]
+before = module in sys.modules
+description = default_verifiers.describe(name)
+print(json.dumps({
+    "before": before,
+    "description": description,
+    "loaded": module in sys.modules,
+    "registered": name in default_verifiers.names(),
+}, sort_keys=True))
+"""
+    completed = subprocess.run(
+        [sys.executable, "-c", script, verifier_name, module_name],
+        check=False,
+        capture_output=True,
+        text=True,
+    )
+    assert completed.returncode == 0, completed.stderr
+    payload = json.loads(completed.stdout)
+    assert payload["before"] is False
+    assert payload["loaded"] is True
+    assert payload["registered"] is True
+    assert payload["description"]["name"] == verifier_name
 
 
 def test_common_canonical_values_match_core_and_normalize_unicode() -> None:

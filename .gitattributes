@@ -1,0 +1,2 @@
+# Published compatibility fixtures are byte-for-byte golden artifacts.
+tests/fixtures/compat/v0.1.0/*.json -diff -text

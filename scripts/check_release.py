@@ -6,6 +6,7 @@ broken source tree or stale editable installation before a tag is created.
 
 from __future__ import annotations
 
+import argparse
 import ast
 import hashlib
 import json
@@ -16,13 +17,15 @@ from datetime import date
 from pathlib import Path
 from typing import Final
 
-EXPECTED_VERSION: Final = "0.1.0"
+PROJECT_ROOT: Final = Path(__file__).resolve().parents[1]
+FINAL_VERSION_RE: Final = re.compile(r"[0-9]+\.[0-9]+\.[0-9]+")
 REQUIRED_PATHS: Final = (
     ".github/workflows/ci.yml",
     "README.md",
     "CHANGELOG.md",
     "CITATION.cff",
     "docs/release-notes-0.1.0.md",
+    "docs/certified-arithmetic.md",
     "pyproject.toml",
     "uv.lock",
     "assets/arbogast-mark.png",
@@ -34,6 +37,8 @@ REQUIRED_PATHS: Final = (
     "src/arbogast/linalg/__init__.py",
     "src/arbogast/rep/__init__.py",
     "src/arbogast/cohom/__init__.py",
+    "src/arbogast/galois/__init__.py",
+    "src/arbogast/arithmetic/__init__.py",
     "src/arbogast/hurwitz/__init__.py",
     "src/arbogast/claims/__init__.py",
     "src/arbogast/cert/__init__.py",
@@ -47,8 +52,30 @@ REQUIRED_PATHS: Final = (
     "src/arbogast/sinks/__init__.py",
     "src/arbogast/backends/__init__.py",
     "src/arbogast/formats/__init__.py",
+    "scripts/build_source_archive.py",
+    "scripts/pari_anchor_payload.py",
+    "scripts/qualify_artifacts.py",
+    "scripts/snapshot_v010_api_cli.py",
+    "tests/fixtures/compat/v0.1.0/release.json",
+    "tests/fixtures/compat/v0.1.0/h1-c2-f2.json",
+    "tests/fixtures/compat/v0.1.0/public-contracts.json",
+    "tests/fixtures/compat/v0.1.0/api-cli-contracts.json",
+    "tests/integration/test_v010_compatibility.py",
+    "examples/arithmetic/README.md",
+    "examples/arithmetic/aim_a_cocycle/README.md",
+    "examples/arithmetic/aim_a_cocycle/run.py",
+    "examples/arithmetic/inflation_restriction/README.md",
+    "examples/arithmetic/inflation_restriction/run.py",
+    "examples/arithmetic/nonabelian_twists/README.md",
+    "examples/arithmetic/nonabelian_twists/run.py",
+    "examples/arithmetic/q_kummer_selmer/README.md",
+    "examples/arithmetic/q_kummer_selmer/run.py",
+    "examples/arithmetic/quadratic_field/README.md",
+    "examples/arithmetic/quadratic_field/run.py",
     "examples/group_cohomology/cyclic_action_h1.py",
     "examples/campaigns/antieau_klueners_malle/README.md",
+    "examples/campaigns/antieau_klueners_malle/LOCAL_GLOBAL.md",
+    "examples/campaigns/antieau_klueners_malle/local_global.py",
     "examples/campaigns/antieau_klueners_malle/run.py",
     "examples/hurwitz/m23_real_component/README.md",
     "examples/hurwitz/m23_real_component/compute.py",
@@ -86,21 +113,13 @@ M23_COMPLETENESS_COUNTS: Final = {
     "generating_c1": 20,
     "nongenerating_c1": 212,
 }
-PRERELEASE_PATTERNS: Final = (
+STATIC_PRERELEASE_PATTERNS: Final = (
     ("draft wording", re.compile(r"\bdraft\b", re.IGNORECASE)),
-    (
-        "planned-release wording",
-        re.compile(
-            r"\bplanned(?:\s+for)?\s+`?v?0\.1\.0|\bplanned\s+release\b",
-            re.IGNORECASE,
-        ),
-    ),
     ("pre-release wording", re.compile(r"\bpre[- ]?release\b", re.IGNORECASE)),
     (
         "development-release wording",
         re.compile(
-            r"\b(?:development|dev)\s+(?:build|release|snapshot|version)\b"
-            r"|\bv?0\.1\.0(?:[.-]?dev\d*)\b",
+            r"\b(?:development|dev)\s+(?:build|release|snapshot|version)\b",
             re.IGNORECASE,
         ),
     ),
@@ -110,6 +129,77 @@ PRERELEASE_PATTERNS: Final = (
     ),
 )
 SHA256_RE: Final = re.compile(r"[0-9a-f]{64}")
+V010_COMPATIBILITY_FILES: Final = {
+    "docs/release-notes-0.1.0.md": (
+        "6bd4a9c04aa7cfadddd80b443fb67df49fb7e3756aa3e70c9e889091d7250ca6",
+        8390,
+    ),
+    "tests/fixtures/compat/v0.1.0/h1-c2-f2.json": (
+        "9768c82cb12a7d04f8850244c0b686ce33ba2bb633ffc777c4d72a9aba433743",
+        7529,
+    ),
+    "tests/fixtures/compat/v0.1.0/public-contracts.json": (
+        "8cbaf8089635ce156b27b70c1a33ec0e88f02f07ff4274ec15144aa5e158cb30",
+        22326,
+    ),
+    "tests/fixtures/compat/v0.1.0/api-cli-contracts.json": (
+        "36c759049c5c30c092fbc96ea4519326513a2f754d5b8158303a8cfe8bd62e4c",
+        404644,
+    ),
+    "tests/fixtures/compat/v0.1.0/release.json": (
+        "026e324569dc054bfbea8e7f349a3c021f0eeab6795e2cf6a7bec3c005861811",
+        4962,
+    ),
+}
+V010_PUBLISHED_ARTIFACTS: Final = (
+    {
+        "bytes": 368096,
+        "filename": "arbogast-0.1.0-py3-none-any.whl",
+        "sha256": "sha256:e5c37b20d94720cd8cd9a14db2689694f4a90e4d009582a7b7837dabf35f9521",
+    },
+    {
+        "bytes": 1238239,
+        "filename": "arbogast-0.1.0.tar.gz",
+        "sha256": "sha256:6f20622025a0bdebce76ce41c765380e9f4ab2574488fdc443ba1dd098c9b02c",
+    },
+)
+V010_CERTIFICATE_ID: Final = (
+    "sha256:52b76eed5ad4ab3ee16fa7b34920c680cdb68e82470c72cefadf06a3d9439377"
+)
+PARI_CI_ANCHORS: Final = {
+    "2.15.5": (
+        "https://pari.math.u-bordeaux.fr/pub/pari/OLD/2.15/pari-2.15.5.tar.gz",
+        "0efdda7515d9d954f63324c34b34c560e60f73a81c3924a71260a2cc91d5f981",
+    ),
+    "2.17.4": (
+        "https://pari.math.u-bordeaux.fr/pub/pari/unix/pari-2.17.4.tar.gz",
+        "02651d99c391007d384b3fadbc20abc6916b77036f9e496c99e9ce8688ca4b53",
+    ),
+}
+
+
+def _project_version(root: Path) -> str | None:
+    path = root / "pyproject.toml"
+    if not path.is_file():
+        return None
+    try:
+        value = tomllib.loads(path.read_text(encoding="utf-8"))
+    except (OSError, UnicodeDecodeError, tomllib.TOMLDecodeError):
+        return None
+    project = value.get("project")
+    if not isinstance(project, dict):
+        return None
+    version = project.get("version")
+    return version if isinstance(version, str) else None
+
+
+EXPECTED_VERSION: Final = _project_version(PROJECT_ROOT) or ""
+
+
+def required_paths(version: str) -> tuple[str, ...]:
+    """Return the release surface for ``version`` without forgetting old fixtures."""
+
+    return (*REQUIRED_PATHS, f"docs/release-notes-{version}.md")
 
 
 class _InvalidJson(ValueError):
@@ -236,48 +326,91 @@ def _release_date(value: str | None, label: str, failures: list[str]) -> date | 
     return parsed
 
 
-def _reject_prerelease_wording(text: str, label: str, failures: list[str]) -> None:
-    for description, pattern in PRERELEASE_PATTERNS:
+def _prerelease_patterns(version: str) -> tuple[tuple[str, re.Pattern[str]], ...]:
+    escaped = re.escape(version)
+    return (
+        *STATIC_PRERELEASE_PATTERNS,
+        (
+            "planned-release wording",
+            re.compile(
+                rf"\bplanned(?:\s+for)?\s+`?v?{escaped}|\bplanned\s+release\b",
+                re.IGNORECASE,
+            ),
+        ),
+        (
+            "development-release wording",
+            re.compile(rf"\bv?{escaped}(?:[.-]?dev\d*)\b", re.IGNORECASE),
+        ),
+    )
+
+
+def _reject_prerelease_wording(
+    text: str,
+    label: str,
+    failures: list[str],
+    *,
+    expected_version: str,
+) -> None:
+    for description, pattern in _prerelease_patterns(expected_version):
         if pattern.search(text):
             failures.append(f"{label} contains stale {description}")
 
 
-def _check_release_metadata(root: Path, failures: list[str]) -> None:
+def _check_release_metadata(
+    root: Path,
+    failures: list[str],
+    expected_version: str = EXPECTED_VERSION,
+) -> None:
     citation_path = root / "CITATION.cff"
     changelog_path = root / "CHANGELOG.md"
-    notes_path = root / "docs/release-notes-0.1.0.md"
+    notes_path = root / f"docs/release-notes-{expected_version}.md"
     if not citation_path.is_file() or not changelog_path.is_file() or not notes_path.is_file():
         return
 
     citation = citation_path.read_text(encoding="utf-8")
     changelog = changelog_path.read_text(encoding="utf-8")
     notes = notes_path.read_text(encoding="utf-8")
-    _reject_prerelease_wording(citation, "CITATION.cff", failures)
-    _reject_prerelease_wording(changelog, "CHANGELOG.md", failures)
-    _reject_prerelease_wording(notes, "docs/release-notes-0.1.0.md", failures)
+    _reject_prerelease_wording(
+        citation,
+        "CITATION.cff",
+        failures,
+        expected_version=expected_version,
+    )
+    _reject_prerelease_wording(
+        changelog,
+        "CHANGELOG.md",
+        failures,
+        expected_version=expected_version,
+    )
+    _reject_prerelease_wording(
+        notes,
+        f"docs/release-notes-{expected_version}.md",
+        failures,
+        expected_version=expected_version,
+    )
 
     citation_version = _cff_scalar(citation, "version")
-    if citation_version != EXPECTED_VERSION:
+    if citation_version != expected_version:
         failures.append(
-            f"CITATION.cff version must be {EXPECTED_VERSION}, found {citation_version!r}"
+            f"CITATION.cff version must be {expected_version}, found {citation_version!r}"
         )
     citation_date = _release_date(_cff_scalar(citation, "date-released"), "CITATION.cff", failures)
 
     release_headings = re.findall(
-        rf"(?m)^## \[{re.escape(EXPECTED_VERSION)}\] - (\d{{4}}-\d{{2}}-\d{{2}})$",
+        rf"(?m)^## \[{re.escape(expected_version)}\] - (\d{{4}}-\d{{2}}-\d{{2}})$",
         changelog,
     )
     if len(release_headings) != 1:
         failures.append(
             "CHANGELOG.md must contain exactly one release heading for "
-            f"{EXPECTED_VERSION} with a date"
+            f"{expected_version} with a date"
         )
     else:
         changelog_date = _release_date(release_headings[0], "CHANGELOG.md", failures)
         if citation_date is not None and changelog_date != citation_date:
             failures.append("CITATION.cff and CHANGELOG.md release dates must match")
 
-    expected_notes_heading = f"# Arbogast {EXPECTED_VERSION} release notes"
+    expected_notes_heading = f"# Arbogast {expected_version} release notes"
     if not notes.startswith(expected_notes_heading + "\n"):
         failures.append(
             f"release notes must begin with the final heading {expected_notes_heading!r}"
@@ -439,9 +572,107 @@ def _check_m23_fixture(root: Path, failures: list[str]) -> None:
                 failures.append(f"M23 real.{field} must contain exactly {length} entries")
 
 
-def check(root: Path) -> dict[str, object]:
+def _check_v010_compatibility(root: Path, failures: list[str]) -> None:
+    for relative, (digest, size) in V010_COMPATIBILITY_FILES.items():
+        path = root / relative
+        if not path.is_file():
+            failures.append(f"missing immutable 0.1.0 fixture: {relative}")
+            continue
+        if path.stat().st_size != size:
+            failures.append(f"immutable 0.1.0 fixture byte count mismatch: {relative}")
+        if _sha256(path) != digest:
+            failures.append(f"immutable 0.1.0 fixture SHA-256 mismatch: {relative}")
+
+    manifest_path = root / "tests/fixtures/compat/v0.1.0/release.json"
+    fixture_path = root / "tests/fixtures/compat/v0.1.0/h1-c2-f2.json"
+    api_cli_path = root / "tests/fixtures/compat/v0.1.0/api-cli-contracts.json"
+    if api_cli_path.is_file():
+        api_cli = _json_object(api_cli_path, "0.1.0 API/CLI compatibility fixture", failures)
+        if api_cli is not None:
+            _expect_fields(
+                api_cli,
+                {
+                    "schema_version": "arbogast.compatibility-api-cli/v1",
+                    "version": "0.1.0",
+                    "source_tag": "v0.1.0",
+                    "source_commit": "dfd1cc0fd7830ae77de2a04617fa21cece69dde2",
+                },
+                "0.1.0 API/CLI compatibility fixture",
+                failures,
+            )
+    if not manifest_path.is_file() or not fixture_path.is_file():
+        return
+    manifest = _json_object(manifest_path, "0.1.0 compatibility manifest", failures)
+    fixture = _json_object(fixture_path, "0.1.0 H1 fixture", failures)
+    if manifest is None or fixture is None:
+        return
+    _expect_fields(
+        manifest,
+        {
+            "schema_version": "arbogast.compatibility-release/v1",
+            "compatibility_policy": "immutable-published-input",
+            "version": "0.1.0",
+            "source_tag": "v0.1.0",
+            "source_commit": "dfd1cc0fd7830ae77de2a04617fa21cece69dde2",
+        },
+        "0.1.0 compatibility manifest",
+        failures,
+    )
+    if manifest.get("published_artifacts") != list(V010_PUBLISHED_ARTIFACTS):
+        failures.append("0.1.0 published artifact hashes or sizes changed")
+    stable = manifest.get("stable_schema_ids")
+    if (
+        not isinstance(stable, list)
+        or any(not isinstance(identifier, str) for identifier in stable)
+        or stable != sorted(set(stable))
+    ):
+        failures.append("0.1.0 stable schema IDs must be unique strings in canonical order")
+    certificate = _object_field(fixture.get("certificate"), "0.1.0 certificate", failures)
+    if certificate is not None:
+        _expect_fields(
+            certificate,
+            {
+                "schema_version": "arbogast.cert.verification/v1",
+                "certificate_id": V010_CERTIFICATE_ID,
+                "verifier": "cohom.normalized_bar.v1",
+            },
+            "0.1.0 certificate",
+            failures,
+        )
+
+
+def _check_live_pari_matrix(root: Path, failures: list[str]) -> None:
+    workflow_path = root / ".github/workflows/ci.yml"
+    if not workflow_path.is_file():
+        return
+    workflow = workflow_path.read_text(encoding="utf-8")
+    for version, (source_url, source_sha256) in PARI_CI_ANCHORS.items():
+        for required in (version, source_url, source_sha256):
+            if required not in workflow:
+                failures.append(f"live-PARI CI anchor {version} omits {required!r}")
+    for required in (
+        "ARBOGAST_LIVE_PARI",
+        "--require-gp",
+        "pari-anchor-agreement",
+        "scripts/build_source_archive.py",
+        "scripts/pari_anchor_payload.py",
+        "tests/integration/test_pari_live.py",
+        "sha256sum --check --strict",
+    ):
+        if required not in workflow:
+            failures.append(f"live-PARI CI matrix omits {required!r}")
+
+
+def check(root: Path, *, expected_version: str | None = None) -> dict[str, object]:
     failures: list[str] = []
-    for relative in REQUIRED_PATHS:
+    declared_version = _project_version(root)
+    version = expected_version or declared_version or ""
+    if not version or FINAL_VERSION_RE.fullmatch(version) is None:
+        failures.append(f"release version must be final X.Y.Z, found {version!r}")
+    if expected_version is not None and declared_version != expected_version:
+        failures.append(f"pyproject version must be {expected_version}, found {declared_version!r}")
+
+    for relative in required_paths(version):
         required = root / relative
         if not required.exists():
             failures.append(f"missing required path: {relative}")
@@ -458,8 +689,8 @@ def check(root: Path) -> dict[str, object]:
         project = pyproject.get("project", {})
         if project.get("name") != "arbogast":
             failures.append("pyproject project.name must be arbogast")
-        if project.get("version") != EXPECTED_VERSION:
-            failures.append(f"pyproject version must be {EXPECTED_VERSION}")
+        if project.get("version") != version:
+            failures.append(f"pyproject version must be {version}")
         scripts = project.get("scripts", {})
         if scripts.get("arbogast") != "arbogast.cli:main":
             failures.append("pyproject must publish the arbogast CLI")
@@ -467,11 +698,13 @@ def check(root: Path) -> dict[str, object]:
             failures.append("pyproject must publish the arb CLI alias")
 
     init_path = root / "src/arbogast/__init__.py"
-    if init_path.exists() and _source_version(init_path) != EXPECTED_VERSION:
-        failures.append(f"source __version__ must be {EXPECTED_VERSION}")
+    if init_path.exists() and _source_version(init_path) != version:
+        failures.append(f"source __version__ must be {version}")
 
-    _check_release_metadata(root, failures)
+    _check_release_metadata(root, failures, version)
     _check_m23_fixture(root, failures)
+    _check_v010_compatibility(root, failures)
+    _check_live_pari_matrix(root, failures)
 
     checked_files = _text_files(root)
     for path in checked_files:
@@ -524,16 +757,27 @@ def check(root: Path) -> dict[str, object]:
 
     return {
         "ok": not failures,
-        "version": EXPECTED_VERSION,
+        "version": version,
         "checked_files": len(checked_files),
         "source_tree_sha256": digest.hexdigest(),
         "failures": failures,
     }
 
 
-def main() -> int:
-    root = Path(__file__).resolve().parents[1]
-    report = check(root)
+def main(argv: list[str] | None = None) -> int:
+    parser = argparse.ArgumentParser(description=__doc__)
+    parser.add_argument(
+        "--root",
+        type=Path,
+        default=PROJECT_ROOT,
+        help="source tree to qualify (default: repository containing this script)",
+    )
+    parser.add_argument(
+        "--expected-version",
+        help="require an exact final version instead of deriving it from pyproject.toml",
+    )
+    args = parser.parse_args(argv)
+    report = check(args.root.resolve(), expected_version=args.expected_version)
     print(json.dumps(report, indent=2, sort_keys=True))
     return 0 if report["ok"] else 1
 

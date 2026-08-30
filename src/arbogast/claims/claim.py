@@ -223,6 +223,7 @@ class Claim:
         derivation: Derivation | None = None,
         evidence: Sequence[EvidenceRef | Certificate | CertificateRef | str] = (),
         certificate: Certificate | CertificateRef | str | None = None,
+        supporting_certificates: Sequence[Certificate] = (),
         source: str | Sequence[str] = (),
         hypotheses: Sequence[FormalStatement | str] = (),
         novelty: NoveltyRecord | None = None,
@@ -253,6 +254,21 @@ class Claim:
             refs.append(_certificate_evidence(certificate))
             if isinstance(certificate, Certificate) and not isinstance(certificate, CertificateRef):
                 attached += (certificate,)
+        support = tuple(supporting_certificates)
+        if any(not isinstance(item, Certificate) for item in support):
+            raise ClaimError("supporting_certificates must contain certificate objects")
+        support_ids = {item.certificate_id for item in support}
+        evidence_certificate_ids = {
+            item.ref for item in refs if item.kind is EvidenceKind.CERTIFICATE
+        }
+        if support_ids & evidence_certificate_ids:
+            raise ClaimError("supporting certificates cannot also be direct claim evidence")
+        attached += support
+        attached_ids = tuple(item.certificate_id for item in attached)
+        if len(set(attached_ids)) != len(attached_ids):
+            raise ClaimError("attached certificates must have unique content IDs")
+        _validate_attached_certificate_reachability(refs, attached)
+        attached = _canonical_attached_certificate_order(refs, attached)
         sources = (source,) if isinstance(source, str) else tuple(source)
         hypothesis_records = tuple(_statement(item) for item in hypotheses)
         if formalization is not None and not isinstance(formalization, ProofGap):
@@ -595,20 +611,20 @@ class Claim:
             from arbogast.cert.io import certificate_from_dict
 
             attached: list[Certificate] = []
-            evidence_ids = {item.ref for item in claim.evidence}
             for item in attached_sequence:
                 if not isinstance(item, Mapping):
                     raise ClaimError("attached certificate must be a mapping")
                 certificate = certificate_from_dict(item)
-                if certificate.certificate_id not in evidence_ids:
-                    raise ClaimError(
-                        "attached certificate is not committed by the claim evidence list"
-                    )
                 attached.append(certificate)
             attached_ids = tuple(item.certificate_id for item in attached)
             if len(set(attached_ids)) != len(attached_ids):
                 raise ClaimError("attached certificates must have unique content IDs")
-            object.__setattr__(claim, "_attached_certificates", tuple(attached))
+            _validate_attached_certificate_reachability(claim.evidence, attached)
+            object.__setattr__(
+                claim,
+                "_attached_certificates",
+                _canonical_attached_certificate_order(claim.evidence, attached),
+            )
         return claim
 
     def export(
@@ -784,6 +800,99 @@ def _verify_sources(claim: Claim, source_registry: object | None) -> None:
             raise ClaimVerificationError(
                 f"source reference {source_id} is not bound to claim {claim.id}"
             )
+
+
+def _certificate_dependency_refs(
+    certificate: Certificate,
+) -> tuple[CertificateRef, ...]:
+    if isinstance(certificate, VerificationCertificate):
+        return certificate.dependencies
+    if isinstance(certificate, TheoremCertificate):
+        return certificate.verification_certificates
+    return ()
+
+
+def _validate_attached_certificate_reachability(
+    evidence: Sequence[EvidenceRef],
+    attached: Sequence[Certificate],
+) -> None:
+    """Require every support-only attachment to descend from direct evidence."""
+
+    by_id = {certificate.certificate_id: certificate for certificate in attached}
+    if len(by_id) != len(attached):
+        raise ClaimError("attached certificates must have unique content IDs")
+    roots = {item.ref: item for item in evidence if item.kind is EvidenceKind.CERTIFICATE}
+    reachable: set[str] = set()
+    pending: list[str] = []
+    for certificate_id, evidence_ref in roots.items():
+        certificate = by_id.get(certificate_id)
+        if certificate is None:
+            continue
+        assert evidence_ref.certificate_layer is not None
+        try:
+            _validate_certificate_ref(
+                CertificateRef(certificate_id, evidence_ref.certificate_layer),
+                certificate,
+            )
+        except ClaimVerificationError as exc:
+            raise ClaimError(str(exc)) from exc
+        reachable.add(certificate_id)
+        pending.append(certificate_id)
+
+    while pending:
+        certificate_id = pending.pop()
+        certificate = by_id[certificate_id]
+        for reference in _certificate_dependency_refs(certificate):
+            supporting = by_id.get(reference.certificate_id)
+            if supporting is None:
+                continue
+            try:
+                _validate_certificate_ref(reference, supporting)
+            except ClaimVerificationError as exc:
+                raise ClaimError(str(exc)) from exc
+            if reference.certificate_id not in reachable:
+                reachable.add(reference.certificate_id)
+                pending.append(reference.certificate_id)
+
+    foreign = sorted(set(by_id) - reachable)
+    if foreign:
+        raise ClaimError(
+            "attached supporting certificate is not reachable from direct claim evidence: "
+            + ", ".join(foreign)
+        )
+
+
+def _canonical_attached_certificate_order(
+    evidence: Sequence[EvidenceRef],
+    attached: Sequence[Certificate],
+) -> tuple[Certificate, ...]:
+    """Order roots by evidence and supports breadth-first by certificate ID."""
+
+    by_id = {certificate.certificate_id: certificate for certificate in attached}
+    root_ids = tuple(
+        dict.fromkeys(
+            item.ref
+            for item in evidence
+            if item.kind is EvidenceKind.CERTIFICATE and item.ref in by_id
+        )
+    )
+    ordered_ids = list(root_ids)
+    seen = set(root_ids)
+    pending = list(root_ids)
+    while pending:
+        certificate = by_id[pending.pop(0)]
+        references = sorted(
+            _certificate_dependency_refs(certificate),
+            key=lambda item: item.certificate_id,
+        )
+        for reference in references:
+            dependency_id = reference.certificate_id
+            if dependency_id in by_id and dependency_id not in seen:
+                seen.add(dependency_id)
+                ordered_ids.append(dependency_id)
+                pending.append(dependency_id)
+    assert seen == set(by_id)
+    return tuple(by_id[certificate_id] for certificate_id in ordered_ids)
 
 
 def _verify_dependency_boundaries(

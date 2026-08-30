@@ -9,9 +9,20 @@ from .artifacts import (
     ArtifactStoreError,
 )
 from .builtins import (
+    ARITHMETIC_FLEET_OPERATIONS,
+    CERTIFICATE_FLEET_OPERATIONS,
     LOCAL_ECHO_OPERATION,
+    LOCAL_H1_MU2_OPERATION,
+    LOCALIZE_SQUARECLASS_OPERATION,
+    PARI_ARITHMETIC_OPERATION,
+    PYTHON_CERTIFICATE_REPLAY_OPERATION,
+    SELMER_ASSEMBLE_OPERATION,
+    ArithmeticShardError,
+    CertificateTaskError,
     automatic_local_worker_pool,
     default_fleet_operation_registry,
+    plan_pari_arithmetic_task,
+    plan_python_certificate_replay_task,
 )
 from .execution import (
     FleetExecutionError,
@@ -80,7 +91,15 @@ from .workers import (
 )
 
 __all__ = [
+    "ARITHMETIC_FLEET_OPERATIONS",
+    "CERTIFICATE_FLEET_OPERATIONS",
+    "LOCALIZE_SQUARECLASS_OPERATION",
     "LOCAL_ECHO_OPERATION",
+    "LOCAL_H1_MU2_OPERATION",
+    "PARI_ARITHMETIC_OPERATION",
+    "PYTHON_CERTIFICATE_REPLAY_OPERATION",
+    "SELMER_ASSEMBLE_OPERATION",
+    "ArithmeticShardError",
     "ArtifactBinding",
     "ArtifactConflictError",
     "ArtifactIntegrityError",
@@ -92,6 +111,7 @@ __all__ = [
     "BackendRequirement",
     "BudgetExhaustedError",
     "CapabilityMatch",
+    "CertificateTaskError",
     "CheckpointCustodyRecord",
     "CheckpointManifest",
     "CheckpointRef",
@@ -142,4 +162,6 @@ __all__ = [
     "default_fleet_operation_registry",
     "deterministic_plan",
     "execute_local",
+    "plan_pari_arithmetic_task",
+    "plan_python_certificate_replay_task",
 ]

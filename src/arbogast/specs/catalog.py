@@ -1,4 +1,4 @@
-"""Built-in v0.1 mathematical contracts, independent of backend imports."""
+"""Built-in mathematical contracts, preserving every v0.1 contract additively."""
 
 from __future__ import annotations
 
@@ -122,6 +122,32 @@ PORTABLE_HURWITZ_CLAIM_TYPES = (
     "HurwitzOperationCertificate",
     *PORTABLE_HURWITZ_RESULT_TYPES,
 )
+GALOIS_SEMANTIC_RESULT_TYPES = (
+    "FiniteGaloisQuotient",
+    "GaloisModule",
+    "KummerSpace",
+    "KummerClass",
+    "LocalH1Space",
+    "LocalH1Class",
+    "LocalizationMap",
+    "TwistClassSet",
+    "TwistClass",
+    "NonabelianCocycle",
+    "Unsupported",
+)
+ARITHMETIC_SEMANTIC_RESULT_TYPES = (
+    "CartierDual",
+    "LocalCondition",
+    "LocalPairing",
+    "SelmerKernel",
+    "SelmerGroup",
+    "DualSelmerResult",
+    "AffineFamily",
+    "LeftNullspaceObstruction",
+    "Realized",
+    "Obstructed",
+    "Unknown",
+)
 IO_OR_SCHEMA = FailureMode(
     "dataset_io_or_schema",
     "the imported dataset cannot be read or does not match the strict typed schema",
@@ -131,6 +157,44 @@ M23_EXACT_FAILURE = FailureMode(
     "m23_exact_replay_failed",
     "the specialized M23 v2 schema, digest binding, or compact finite witness replay fails",
     "M23ExactVerificationError",
+)
+ARITHMETIC_UNSUPPORTED = FailureMode(
+    "unsupported_arithmetic_scope",
+    "automatic arithmetic is outside the bounded prime-2 scope of Arbogast 0.2",
+    "Unsupported",
+)
+ARITHMETIC_PRESENTATION = FailureMode(
+    "invalid_arithmetic_presentation",
+    (
+        "a defining polynomial, basis, embedding, ideal HNF, place, group map, or module "
+        "presentation fails canonical exact validation"
+    ),
+    "TypeError | ValueError | ArithmeticError",
+)
+INCOMPLETE_EVIDENCE = FailureMode(
+    "incomplete_evidence",
+    "the result remains a candidate because a declared completeness witness is absent",
+    "IncompleteEvidenceError | Unsupported",
+)
+ASSUMPTION_BOUNDARY = FailureMode(
+    "unresolved_assumption",
+    "one or more explicit mathematical assumptions keep the claim conditional",
+    "Unsupported",
+)
+PAIRING_VERIFICATION = FailureMode(
+    "pairing_verification_failed",
+    "the local pairing is not certified perfect or the proposed conditions are not orthogonal",
+    "ValueError | CertificateVerificationError",
+)
+ARITHMETIC_VERIFICATION = FailureMode(
+    "arithmetic_verification_failed",
+    "a finite arithmetic, Kummer, local, Selmer, twist, or descent witness fails replay",
+    "ValueError | CertificateVerificationError",
+)
+BACKEND_BUDGET = FailureMode(
+    "backend_unknown_or_budget_exhausted",
+    "the optional arithmetic backend is absent, unsupported, malformed, timed out, or capped",
+    "BackendUnavailableError | PariBackendError",
 )
 
 
@@ -952,9 +1016,807 @@ COHOM_OPERATION_SPECS: tuple[OperationSpec, ...] = (
         input_types=("Cochain | CohomologyClass", "FiniteGroup | Extension", "GroupMap | None"),
         output_type="Cochain | CohomologyClass",
     ),
+    _spec(
+        "cohom.restriction_map",
+        "certified functorial finite-group cohomology",
+        (
+            "exact H^0, H^1, or H^2 result on a pinned finite group action",
+            "literal subgroup inclusion or explicit injective FiniteGroupMap",
+        ),
+        (
+            "returns a first-class induced linear map on the requested cohomology degree",
+            "replays group-map axioms, cochain transport, and quotient independence",
+            "binds source, target, degree, matrices, and finite witness in one certificate",
+        ),
+        "finite homomorphism validation, bar transport, and quotient projection",
+        "arbogast.cohom.CohomologyMapCertificate",
+        "restriction_map(h1_result, subgroup)",
+        failure_modes=(INVALID_INPUT, INVALID_GROUP, COMPLEXITY_LIMIT, COHOMOLOGY_FAILURE),
+        input_types=("CohomologyResult", "FiniteGroup", "FiniteGroupMap | None"),
+        input_bundles=(("CohomologyResult", "FiniteGroup"),),
+        output_type="InducedCohomologyMap",
+    ),
+    _spec(
+        "cohom.inflation_map",
+        "certified functorial finite-group cohomology",
+        (
+            "exact H^0, H^1, or H^2 result on a pinned quotient action",
+            "explicit surjective FiniteGroupMap or pinned FiniteGroupExtension",
+        ),
+        (
+            "returns a first-class induced linear map on the requested cohomology degree",
+            "replays the quotient projection, cochain transport, and quotient independence",
+            "does not infer an implicit quotient identification",
+        ),
+        "finite homomorphism validation, bar transport, and quotient projection",
+        "arbogast.cohom.CohomologyMapCertificate",
+        "inflation_map(h1_quotient, extension)",
+        failure_modes=(INVALID_INPUT, INVALID_GROUP, COMPLEXITY_LIMIT, COHOMOLOGY_FAILURE),
+        input_types=(
+            "CohomologyResult",
+            "FiniteGroup | FiniteGroupExtension",
+            "FiniteGroupMap | None",
+        ),
+        input_bundles=(
+            ("CohomologyResult", "FiniteGroupExtension"),
+            ("CohomologyResult", "FiniteGroup", "FiniteGroupMap"),
+        ),
+        output_type="InducedCohomologyMap",
+    ),
+    _spec(
+        "cohom.corestriction_map",
+        "certified transfer in finite-group cohomology",
+        (
+            "exact H^0, H^1, or H^2 result for a pinned finite subgroup action",
+            "explicit subgroup inclusion into the ambient finite group",
+            "complete declared transversal or deterministic complete transversal construction",
+        ),
+        (
+            "returns the induced corestriction map computed by the complete transfer formula",
+            "certifies the transversal and every finite transfer summand",
+            "checks class-level independence from cocycle representative choices",
+        ),
+        "complete transversal transfer followed by exact quotient projection",
+        "arbogast.cohom.CohomologyMapCertificate",
+        "corestriction_map(h1_subgroup, ambient_group)",
+        failure_modes=(INVALID_INPUT, INVALID_GROUP, COMPLEXITY_LIMIT, COHOMOLOGY_FAILURE),
+        input_types=(
+            "CohomologyResult",
+            "FiniteGroup",
+            "Representation | None",
+            "FiniteGroupMap | None",
+        ),
+        input_bundles=(("CohomologyResult", "FiniteGroup"),),
+        output_type="InducedCohomologyMap",
+    ),
+    _spec(
+        "cohom.corestrict",
+        "finite-group cohomology convenience transport",
+        (
+            "cochain or represented class for a pinned finite subgroup action",
+            "explicit ambient action and subgroup inclusion",
+            "complete declared or deterministically constructed transversal",
+        ),
+        (
+            "preserves the v0.2 convenience return shape while using certified transfer",
+            "returns the exact transferred cochain or recomputed cohomology class",
+            "does not claim a first-class map when called on one value",
+        ),
+        "one certified corestriction-map construction and application",
+        None,
+        "corestrict(cocycle, ambient_group)",
+        failure_modes=(INVALID_INPUT, INVALID_GROUP, COMPLEXITY_LIMIT, COHOMOLOGY_FAILURE),
+        input_types=(
+            "Cochain | CohomologyClass",
+            "FiniteGroup",
+            "Representation | None",
+            "FiniteGroupMap | None",
+        ),
+        input_bundles=(("Cochain | CohomologyClass", "FiniteGroup"),),
+        output_type="Cochain | CohomologyClass",
+    ),
+    _spec(
+        "cohom.transgression",
+        "certified inflation--restriction cohomology",
+        (
+            "pinned finite group extension 1 -> N -> G -> Q -> 1",
+            "prime-field G-module, or an already certified five-term sequence",
+        ),
+        (
+            "returns the exact connecting map H^1(N,M)^Q -> H^2(Q,M^N)",
+            "binds the complete finite transgression witnesses and endpoint cohomology",
+            "participates in independently replayed zero composites and image-equals-kernel",
+        ),
+        "one complete normalized-bar five-term construction unless a sequence is supplied",
+        "arbogast.cohom.InflationRestrictionCertificate",
+        "transgression(extension, module)",
+        failure_modes=(INVALID_INPUT, INVALID_GROUP, COMPLEXITY_LIMIT, COHOMOLOGY_FAILURE),
+        input_types=(
+            "FiniteGroupExtension | InflationRestrictionSequence",
+            "Representation | None",
+        ),
+        input_bundles=(
+            ("FiniteGroupExtension", "Representation"),
+            ("InflationRestrictionSequence",),
+        ),
+        output_type="ExactLinearMap",
+    ),
+    _spec(
+        "cohom.inflation_restriction",
+        "certified inflation--restriction cohomology",
+        (
+            "pinned exact finite group extension 1 -> N -> G -> Q -> 1",
+            "finite-dimensional prime-field G-module with explicit action",
+        ),
+        (
+            "returns the complete five-term sequence through H^2",
+            "checks all adjacent composites are zero",
+            "independently recomputes image equals kernel at every interior term",
+            "returns one portable central verification certificate for the full exactness claim",
+        ),
+        "five normalized-bar cohomology calculations plus complete finite witness replay",
+        "arbogast.cohom.InflationRestrictionCertificate",
+        "inflation_restriction(extension, module).verify()",
+        failure_modes=(INVALID_INPUT, INVALID_GROUP, COMPLEXITY_LIMIT, COHOMOLOGY_FAILURE),
+        input_types=("FiniteGroupExtension", "Representation"),
+        output_type="InflationRestrictionSequence",
+    ),
 )
 
 BUILTIN_OPERATION_SPECS += COHOM_OPERATION_SPECS
+
+
+GALOIS_OPERATION_SPECS: tuple[OperationSpec, ...] = (
+    _spec(
+        "galois.finite_galois_quotient",
+        "finite Galois quotient presentations",
+        (
+            "pinned exact base NumberField and concrete finite PermutationGroup",
+            "explicit label, arithmetic presentation, and proof context",
+            "a COMPLETE context only when paired with a bound proving certificate",
+        ),
+        (
+            "returns the canonical candidate or certified finite quotient presentation",
+            "binds the base field, concrete group table, label, and arithmetic presentation",
+            "never promotes a nontrivial arithmetic realization from a completeness flag alone",
+        ),
+        "complete finite presentation validation and optional proving-certificate replay",
+        "arbogast.cert.VerificationCertificate using galois.quotient_presentation.v1",
+        "finite_galois_quotient(Q, group, label='candidate')",
+        failure_modes=(
+            INVALID_INPUT,
+            INVALID_GROUP,
+            ARITHMETIC_PRESENTATION,
+            INCOMPLETE_EVIDENCE,
+            ARITHMETIC_VERIFICATION,
+        ),
+        input_types=(
+            "NumberField",
+            "PermutationGroup",
+            "ProofContext | None",
+            "VerificationCertificate | None",
+        ),
+        input_bundles=(("NumberField", "PermutationGroup"),),
+        output_type="FiniteGaloisQuotient",
+    ),
+    _spec(
+        "galois.galois_module",
+        "finite Galois modules",
+        (
+            "pinned finite Galois quotient",
+            "finite-dimensional representation over one prime field",
+        ),
+        (
+            "binds the quotient presentation and every action matrix canonically",
+            "validates the complete finite group action without implicit isomorphism transport",
+        ),
+        "complete finite representation validation",
+        "arbogast.galois.GaloisModuleReceipt nested in arbogast.cert.VerificationCertificate",
+        "galois_module(quotient, representation)",
+        failure_modes=(INVALID_INPUT, ARITHMETIC_PRESENTATION, INVALID_ACTION),
+        input_types=(
+            "FiniteGaloisQuotient",
+            "Representation | PrimeField | int",
+            "Mapping | Callable | None",
+        ),
+        input_bundles=(
+            ("FiniteGaloisQuotient", "Representation"),
+            ("FiniteGaloisQuotient", "PrimeField", "Mapping | Callable"),
+        ),
+        output_type="GaloisModule",
+    ),
+    _spec(
+        "galois.finite_galois_quotient_certificate",
+        "finite Galois quotient proof factories",
+        (
+            "pinned exact base NumberField and concrete finite PermutationGroup",
+            "exact label and arithmetic presentation",
+            "the bounded portable factory currently accepts only the canonical trivial quotient",
+        ),
+        (
+            "returns a central verification certificate with a complete finite-group receipt",
+            "binds the base field, group table, label, and arithmetic presentation exactly",
+            "rejects nontrivial quotient promotion without external arithmetic proving evidence",
+        ),
+        "complete replay of the trivial group table and portable base-field witness",
+        "arbogast.cert.VerificationCertificate using galois.finite_quotient.v1",
+        (
+            "finite_galois_quotient_certificate(Q, trivial_group, "
+            "label='trivial', presentation=portable_presentation)"
+        ),
+        failure_modes=(
+            INVALID_INPUT,
+            INVALID_GROUP,
+            ARITHMETIC_PRESENTATION,
+            INCOMPLETE_EVIDENCE,
+            ARITHMETIC_VERIFICATION,
+        ),
+        input_types=("NumberField", "PermutationGroup"),
+        output_type="VerificationCertificate",
+    ),
+    _spec(
+        "galois.kummer_space",
+        "finite Kummer arithmetic",
+        (
+            "pinned exact number-field presentation and complete declared place set",
+            "prime 2 for automatic arithmetic, or a certified finite prime-p presentation",
+        ),
+        (
+            "returns finite K(S,p), never unrestricted K^*/K^{*p}",
+            (
+                "binds its ordered basis, S-units, class-group p-torsion, and "
+                "principalization witnesses"
+            ),
+            "keeps assumptions, verifier trust, and completeness as independent evidence axes",
+            "returns typed Unsupported outside the automatic p=2 slice",
+            (
+                "returns a receipt-bearing non-closing PariArithmeticResult for backend "
+                "UNKNOWN or BUDGET_EXHAUSTED"
+            ),
+        ),
+        "finite S-unit and class-group presentation replay; discovery may require pinned PARI",
+        "arbogast.galois.KummerReceipt nested in arbogast.cert.VerificationCertificate",
+        "kummer_space(Q, (place_2, place_infinity))",
+        failure_modes=(
+            INVALID_INPUT,
+            ARITHMETIC_PRESENTATION,
+            ARITHMETIC_UNSUPPORTED,
+            INCOMPLETE_EVIDENCE,
+            ASSUMPTION_BOUNDARY,
+            ARITHMETIC_VERIFICATION,
+            BACKEND_BUDGET,
+        ),
+        input_types=("NumberField", "Iterable[Place]"),
+        output_type="KummerSpace | Unsupported | PariArithmeticResult",
+    ),
+    _spec(
+        "galois.kummer_class",
+        "finite Kummer arithmetic",
+        ("certified finite KummerSpace", "prime-field coordinate vector of matching dimension"),
+        (
+            "returns the canonical Kummer class in the pinned ordered basis",
+            "binds the class coordinates to the complete source-space receipt",
+        ),
+        "linear coordinate canonicalization",
+        "arbogast.galois.KummerReceipt nested in arbogast.cert.VerificationCertificate",
+        "kummer_class(space, (1, 0))",
+        failure_modes=(INVALID_INPUT, DIMENSION_MISMATCH, ARITHMETIC_VERIFICATION),
+        input_types=("KummerSpace", "Iterable[int]"),
+        output_type="KummerClass",
+    ),
+    _spec(
+        "galois.local_h1",
+        "continuous local Kummer cohomology",
+        (
+            "exact finite or infinite place",
+            "prime 2 for automatic arithmetic, or a certified finite prime-p presentation",
+        ),
+        (
+            "returns genuine certified H^1(K_v,mu_p)",
+            "includes exact archimedean and finite-place identity in the receipt",
+            "never silently identifies continuous local cohomology with finite D_v cohomology",
+            "returns typed Unsupported outside the automatic p=2 slice",
+            (
+                "returns a receipt-bearing non-closing PariArithmeticResult for backend "
+                "UNKNOWN or BUDGET_EXHAUSTED"
+            ),
+        ),
+        "finite local squareclass presentation replay",
+        "arbogast.galois.LocalH1Receipt nested in arbogast.cert.VerificationCertificate",
+        "local_h1(place_2)",
+        failure_modes=(
+            INVALID_INPUT,
+            ARITHMETIC_PRESENTATION,
+            ARITHMETIC_UNSUPPORTED,
+            INCOMPLETE_EVIDENCE,
+            ASSUMPTION_BOUNDARY,
+            ARITHMETIC_VERIFICATION,
+            BACKEND_BUDGET,
+        ),
+        shardable=True,
+        shard_strategy="one deterministic shard per canonical place ID",
+        input_types=("FinitePlace | InfinitePlace",),
+        output_type="LocalH1Space | Unsupported | PariArithmeticResult",
+    ),
+    _spec(
+        "galois.local_h1_class",
+        "continuous local Kummer cohomology",
+        (
+            "genuine certified finite local H^1 space",
+            "prime-field coordinate vector of matching dimension",
+        ),
+        (
+            "returns the canonical class in the pinned local squareclass basis",
+            "binds its coordinates to the exact local H^1 receipt",
+            "does not identify the class with finite decomposition-quotient cohomology",
+        ),
+        "linear coordinate canonicalization",
+        "arbogast.galois.LocalH1Receipt nested in arbogast.cert.VerificationCertificate",
+        "local_h1_class(local_space, (1, 0, 0))",
+        failure_modes=(INVALID_INPUT, DIMENSION_MISMATCH, ARITHMETIC_VERIFICATION),
+        input_types=("LocalH1Space", "Iterable[int]"),
+        output_type="LocalH1Class",
+    ),
+    _spec(
+        "galois.decomposition_quotient_h1",
+        "finite decomposition-quotient cohomology",
+        (
+            "explicit finite decomposition quotient and prime-field module",
+            "complete finite group presentation",
+        ),
+        (
+            "returns certified finite H^1(D_v,M)",
+            "keeps this result separate from continuous H^1(K_v,M)",
+        ),
+        "normalized finite-group bar cohomology",
+        "arbogast.cohom.CohomologyCertificate",
+        "decomposition_quotient_h1(module)",
+        failure_modes=(INVALID_INPUT, COMPLEXITY_LIMIT, COHOMOLOGY_FAILURE),
+        input_types=("FiniteGroup | GaloisModule", "Representation | None"),
+        input_bundles=(("GaloisModule",), ("FiniteGroup", "Representation")),
+        output_type="H1Result",
+    ),
+    _spec(
+        "galois.localize",
+        "Kummer localization",
+        (
+            "certified finite global Kummer space or class",
+            "genuine local H^1 space or exact target place",
+            (
+                "automatic certified mu2 arithmetic at supported rational, finite-PARI, "
+                "or exact archimedean places, or a certified localization matrix"
+            ),
+        ),
+        (
+            "binds the global basis, local basis, place, and exact matrix",
+            "returns the induced local class when the source is a Kummer class",
+            "returns typed Unsupported rather than guessing an unavailable matrix",
+            (
+                "returns a receipt-bearing non-closing PariArithmeticResult for backend "
+                "UNKNOWN or BUDGET_EXHAUSTED"
+            ),
+        ),
+        "exact prime-field matrix construction and application",
+        "arbogast.galois.LocalizationReceipt nested in arbogast.cert.VerificationCertificate",
+        "localize(kummer, local_space)",
+        failure_modes=(
+            INVALID_INPUT,
+            DIMENSION_MISMATCH,
+            FIELD_MISMATCH,
+            ARITHMETIC_UNSUPPORTED,
+            ARITHMETIC_VERIFICATION,
+            BACKEND_BUDGET,
+        ),
+        shardable=True,
+        shard_strategy="one deterministic shard for each canonical place and Kummer generator",
+        input_types=("KummerSpace | KummerClass", "LocalH1Space | Place"),
+        output_type=("LocalizationMap | LocalH1Class | Unsupported | PariArithmeticResult"),
+    ),
+    _spec(
+        "galois.nonabelian_h1",
+        "finite nonabelian cohomology",
+        (
+            "two completely enumerated finite groups",
+            "explicit action of the first group by automorphisms of the second",
+            "declared exhaustive-enumeration budget",
+        ),
+        (
+            "exhaustively enumerates crossed homomorphisms and coefficient-conjugacy orbits",
+            "returns a pointed set whose first class is the identity class",
+            "does not expose vector-space operations or construct twisted models",
+        ),
+        "exponential finite enumeration bounded by max_assignments",
+        "arbogast.galois.TwistReceipt nested in arbogast.cert.VerificationCertificate",
+        "nonabelian_h1(C2, S3, action='trivial')",
+        failure_modes=(INVALID_INPUT, INVALID_GROUP, COMPLEXITY_LIMIT, ARITHMETIC_VERIFICATION),
+        input_types=("FiniteGroup", "FiniteGroup", "Action | None"),
+        output_type="TwistClassSet | Unsupported",
+    ),
+    _spec(
+        "galois.twist_classes",
+        "finite nonabelian twist classes",
+        (
+            "two completely enumerated finite groups",
+            "explicit finite action and declared enumeration budget",
+        ),
+        (
+            "returns exactly the pointed nonabelian H^1 cocycle-orbit set",
+            "does not claim automatic twisted models, curves, or descent",
+        ),
+        "the same bounded exhaustive enumeration as nonabelian_h1",
+        "arbogast.galois.TwistReceipt nested in arbogast.cert.VerificationCertificate",
+        "twist_classes(C2, S3, action='trivial')",
+        failure_modes=(INVALID_INPUT, INVALID_GROUP, COMPLEXITY_LIMIT, ARITHMETIC_VERIFICATION),
+        input_types=("FiniteGroup", "FiniteGroup", "Action | None"),
+        output_type="TwistClassSet | Unsupported",
+    ),
+)
+
+BUILTIN_OPERATION_SPECS += GALOIS_OPERATION_SPECS
+
+
+ARITHMETIC_OPERATION_SPECS: tuple[OperationSpec, ...] = (
+    _spec(
+        "arithmetic.cartier_dual",
+        "Cartier-dual finite Galois modules",
+        (
+            "explicit verified finite GaloisModule action",
+            "a certified cyclotomic character when an automatic p>2 Tate twist is unavailable",
+        ),
+        (
+            "returns the exact contragredient action M^vee(1)",
+            "binds the source quotient, action matrices, Tate twist, and optional dual module",
+            "does not infer an unavailable cyclotomic character",
+        ),
+        "one inverse-transpose per complete finite action matrix",
+        "arbogast.arithmetic.ArithmeticReceipt nested in arbogast.cert.VerificationCertificate",
+        "cartier_dual(module)",
+        failure_modes=(
+            INVALID_INPUT,
+            FIELD_MISMATCH,
+            ARITHMETIC_UNSUPPORTED,
+            ARITHMETIC_VERIFICATION,
+        ),
+        input_types=("GaloisModule", "GaloisModule | None"),
+        input_bundles=(("GaloisModule",), ("GaloisModule", "GaloisModule")),
+        output_type="CartierDual",
+    ),
+    _spec(
+        "arithmetic.local_pairing",
+        "exact local Tate and Hilbert pairings",
+        (
+            "one or two genuine certified local H^1 spaces at the same exact place",
+            "either an exact matrix or supported automatic p=2 Hilbert arithmetic",
+        ),
+        (
+            "returns an exact bilinear pairing bound to both local spaces and their place",
+            "keeps candidate pairing matrices distinct from certified complete Hilbert evidence",
+            "records pinned PARI verification separately when portable replay is unavailable",
+        ),
+        "matrix validation or one closed Hilbert-symbol call per ordered basis pair",
+        "arbogast.arithmetic.LocalPairingCertificate",
+        "local_pairing(local_space)",
+        failure_modes=(
+            INVALID_INPUT,
+            DIMENSION_MISMATCH,
+            FIELD_MISMATCH,
+            PAIRING_VERIFICATION,
+            ARITHMETIC_UNSUPPORTED,
+            ARITHMETIC_VERIFICATION,
+            BACKEND_BUDGET,
+        ),
+        input_types=("LocalH1Space", "LocalH1Space | None", "Matrix | None"),
+        input_bundles=(
+            ("LocalH1Space",),
+            ("LocalH1Space", "LocalH1Space"),
+            ("LocalH1Space", "LocalH1Space", "Matrix"),
+        ),
+        output_type="LocalPairing",
+    ),
+    _spec(
+        "arithmetic.local_condition",
+        "Kummer local conditions",
+        (
+            "genuine certified finite local H^1 space",
+            "explicit prime-field subspace basis and exact place",
+        ),
+        (
+            "returns the exact pinned local-condition subspace",
+            "binds the ambient local space, place, basis, and quotient map",
+            "cannot claim completeness beyond the independently verified ambient local space",
+        ),
+        "exact subspace canonicalization and quotient-kernel replay",
+        "arbogast.arithmetic.LocalConditionCertificate",
+        "local_condition(local_space, ((1, 0, 0),))",
+        failure_modes=(
+            INVALID_INPUT,
+            DIMENSION_MISMATCH,
+            FIELD_MISMATCH,
+            INCOMPLETE_EVIDENCE,
+            ARITHMETIC_VERIFICATION,
+        ),
+        input_types=("LocalH1Space", "LinearSubspace | Iterable[Iterable[int]]"),
+        output_type="LocalCondition",
+    ),
+    _spec(
+        "arithmetic.selmer",
+        "finite Kummer Selmer problems",
+        (
+            "finite global Kummer space with exact localization maps",
+            "one certified local condition at every declared place",
+            "explicit relevant place set",
+        ),
+        (
+            "returns the exact kernel of the global-to-local quotient map",
+            "keeps an incompletely justified result typed as SelmerKernel",
+            (
+                "promotes to SelmerGroup only when global space, local spaces, maps, "
+                "conditions, and place set all independently replay as complete"
+            ),
+            "keeps assumptions, verifier trust, and completeness independent",
+        ),
+        "exact block-matrix assembly and prime-field nullspace",
+        "arbogast.arithmetic.SelmerCertificate",
+        "selmer(SelmerProblem(global_space, localizations, conditions))",
+        failure_modes=(
+            INVALID_INPUT,
+            DIMENSION_MISMATCH,
+            FIELD_MISMATCH,
+            ARITHMETIC_PRESENTATION,
+            INCOMPLETE_EVIDENCE,
+            ASSUMPTION_BOUNDARY,
+            ARITHMETIC_VERIFICATION,
+            BACKEND_BUDGET,
+        ),
+        shardable=True,
+        shard_strategy="place-major, Kummer-generator-minor exact quotient-matrix columns",
+        input_types=(
+            "SelmerProblem | KummerSpace",
+            "LocalizationCollection | None",
+            "LocalConditionCollection | None",
+        ),
+        input_bundles=(
+            ("SelmerProblem",),
+            ("KummerSpace", "LocalizationCollection", "LocalConditionCollection"),
+        ),
+        output_type="SelmerKernel | SelmerGroup",
+    ),
+    _spec(
+        "arithmetic.dual_selmer",
+        "Cartier-dual Selmer problems",
+        (
+            "constructed primal SelmerProblem and M^vee(1)",
+            "one certified perfect local Tate/Hilbert pairing per declared place",
+            "supplied or exactly constructed orthogonal dual local conditions",
+        ),
+        (
+            "checks every pairing is nondegenerate before forming orthogonal conditions",
+            "recomputes every orthogonal complement over the prime field",
+            "returns the exact dual Selmer kernel with the same completeness gates",
+        ),
+        "pairing rank checks, orthogonal nullspaces, and one Selmer kernel computation",
+        "arbogast.arithmetic.DualSelmerCertificate",
+        "dual_selmer(primal_problem, pairings=pairings, cartier_dual=dual)",
+        failure_modes=(
+            INVALID_INPUT,
+            DIMENSION_MISMATCH,
+            FIELD_MISMATCH,
+            PAIRING_VERIFICATION,
+            INCOMPLETE_EVIDENCE,
+            ARITHMETIC_VERIFICATION,
+        ),
+        input_types=(
+            "SelmerProblem",
+            "SelmerProblem | PairingCollection | None",
+            "PairingCollection | None",
+            "CartierDual",
+        ),
+        input_bundles=(
+            ("SelmerProblem", "PairingCollection", "CartierDual"),
+            ("SelmerProblem", "SelmerProblem", "PairingCollection", "CartierDual"),
+        ),
+        output_type="DualSelmerResult",
+    ),
+    _spec(
+        "arithmetic.aim",
+        "Kummer and cocycle aiming",
+        (
+            "exact finite prime-field system or certified global-to-local map",
+            "target vector of matching codomain dimension",
+        ),
+        (
+            "returns an affine family with a checked representative and full homogeneous kernel",
+            "or returns a literal checked left-nullspace separator for an inconsistent target",
+            "never converts failed search into an obstruction",
+        ),
+        "one exact linear solve with kernel and separating-witness replay",
+        "arbogast.arithmetic.AimCertificate",
+        "aim(matrix, target)",
+        failure_modes=(INVALID_INPUT, DIMENSION_MISMATCH, ARITHMETIC_VERIFICATION),
+        input_types=("Matrix | SelmerProblem | LocalizationMap", "Vector | None"),
+        input_bundles=(
+            ("Matrix", "Vector"),
+            ("SelmerProblem", "Vector"),
+            ("LocalizationMap", "Vector"),
+        ),
+        output_type="AffineFamily | LeftNullspaceObstruction",
+    ),
+    _spec(
+        "arithmetic.unique",
+        "Kummer and cocycle aiming",
+        ("certified aiming result, or an exact finite aiming system and target",),
+        (
+            "returns true exactly when a consistent aiming family has zero-dimensional kernel",
+            "returns false for a literal obstruction and never hides inconsistency",
+        ),
+        "aim verification or one exact aiming computation",
+        None,
+        "unique(aim(matrix, target))",
+        failure_modes=(INVALID_INPUT, DIMENSION_MISMATCH, ARITHMETIC_VERIFICATION),
+        input_types=("AimResult | Matrix", "Vector | None"),
+        input_bundles=(("AimResult",), ("Matrix", "Vector")),
+        output_type="bool",
+    ),
+    _spec(
+        "arithmetic.elementary_descent",
+        "bounded elementary Kummer descent",
+        (
+            "KummerDescentProblem with exact finite local/Kummer conditions",
+            "explicit realization witness or a finite linear realization boundary",
+        ),
+        (
+            "returns Realized only with a checked global realization witness",
+            "returns Obstructed only with a literal checked separating certificate",
+            "otherwise returns Unknown with a reason",
+            "never promotes local solubility, failed search, or timeout to a global conclusion",
+        ),
+        "one exact aiming computation plus explicit realization-boundary replay",
+        "arbogast.arithmetic.DescentCertificate",
+        "elementary_descent(KummerDescentProblem(system, target))",
+        failure_modes=(
+            INVALID_INPUT,
+            DIMENSION_MISMATCH,
+            INCOMPLETE_EVIDENCE,
+            ARITHMETIC_UNSUPPORTED,
+            ARITHMETIC_VERIFICATION,
+            BACKEND_BUDGET,
+        ),
+        input_types=("KummerDescentProblem",),
+        output_type="Realized | Obstructed | Unknown",
+    ),
+)
+
+BUILTIN_OPERATION_SPECS += ARITHMETIC_OPERATION_SPECS
+
+
+SEMANTIC_PROJECTION_OPERATION_SPECS: tuple[OperationSpec, ...] = (
+    *(
+        _spec(
+            f"galois.{projection}",
+            "Galois arithmetic evidence projection",
+            ("a substantial Galois result carrying a replayable central certificate",),
+            (guarantee,),
+            "linear in the bound finite receipt serialization",
+            "arbogast.cert.VerificationCertificate",
+            f"{implementation_name}(kummer_space)",
+            failure_modes=(INVALID_INPUT, ARITHMETIC_VERIFICATION),
+            input_types=(" | ".join(GALOIS_SEMANTIC_RESULT_TYPES),),
+            output_type=output_type,
+        )
+        for projection, implementation_name, output_type, guarantee in (
+            (
+                "verification_certificate",
+                "verification_certificate_for_result",
+                "VerificationCertificate",
+                "returns the central certificate bound to the exact result receipt",
+            ),
+            (
+                "claim",
+                "claim_for_result",
+                "Claim",
+                "returns the only mathematical claim justified by that exact receipt",
+            ),
+            (
+                "claim_graph",
+                "claim_graph_for_result",
+                "ClaimGraph",
+                "returns the result claim with its exact certificate dependencies",
+            ),
+        )
+    ),
+    *(
+        _spec(
+            f"arithmetic.{projection}",
+            "certified arithmetic evidence projection",
+            ("a substantial arithmetic result carrying one finite-linear receipt",),
+            (guarantee,),
+            "linear in the bound finite receipt serialization",
+            "arbogast.cert.VerificationCertificate",
+            f"{implementation_name}(selmer_result)",
+            failure_modes=(INVALID_INPUT, ARITHMETIC_VERIFICATION),
+            input_types=(" | ".join(ARITHMETIC_SEMANTIC_RESULT_TYPES),),
+            output_type=output_type,
+        )
+        for projection, implementation_name, output_type, guarantee in (
+            (
+                "verification_certificate",
+                "verification_certificate_for_result",
+                "VerificationCertificate",
+                "returns the central certificate bound to the exact arithmetic receipt",
+            ),
+            (
+                "claim",
+                "claim_for_result",
+                "Claim",
+                "returns the only mathematical claim justified by that exact receipt",
+            ),
+            (
+                "claim_graph",
+                "claim_graph_for_result",
+                "ClaimGraph",
+                "returns the result claim with its exact certificate dependencies",
+            ),
+        )
+    ),
+    _spec(
+        "export.json",
+        "stable semantic export",
+        ("a central VerificationCertificate, Claim, or ClaimGraph",),
+        ("returns deterministic canonical JSON without changing claim classification",),
+        "linear in canonical semantic payload size",
+        None,
+        "export_json(claim_graph)",
+        failure_modes=(INVALID_INPUT,),
+        input_types=("VerificationCertificate | Claim | ClaimGraph",),
+        output_type="JSONDocument",
+    ),
+)
+
+BUILTIN_OPERATION_SPECS += SEMANTIC_PROJECTION_OPERATION_SPECS
+
+
+FLEET_CERTIFICATE_OPERATION_SPECS: tuple[OperationSpec, ...] = (
+    _spec(
+        "fleet.plan_pari_arithmetic_task",
+        "pinned external arithmetic fleet routing",
+        (
+            "central VerificationCertificate using arbogast.backends.pari.v1",
+            "certificate witness pins one closed PARI operation and supported backend version",
+        ),
+        (
+            "returns a TaskSpec requiring exactly the pinned PARI version and operation capability",
+            "uses the distinct backends.pari.arithmetic.v1 trusted fleet task kind",
+            "marks every success, failure, timeout, and scheduler outcome as non-closing",
+        ),
+        "constant-time canonical task construction; execution remains separately budgeted",
+        None,
+        "plan_pari_arithmetic_task(pari_certificate)",
+        failure_modes=(INVALID_INPUT, ARITHMETIC_VERIFICATION, BACKEND_BUDGET),
+        input_types=("VerificationCertificate",),
+        output_type="PariArithmeticTask",
+    ),
+    _spec(
+        "fleet.plan_python_certificate_replay_task",
+        "portable certificate fleet routing",
+        (
+            "central VerificationCertificate naming an allowlisted portable Python verifier",
+            "pinned external PARI certificates are explicitly excluded",
+        ),
+        (
+            "returns a TaskSpec requiring Python certificate-verification capability",
+            "uses the distinct cert.python.replay.v1 trusted fleet task kind",
+            "the Python verifier decides receipt validity without scheduler-driven claim closure",
+        ),
+        "constant-time canonical task construction plus separately scheduled finite replay",
+        None,
+        "plan_python_certificate_replay_task(portable_certificate)",
+        failure_modes=(INVALID_INPUT, ARITHMETIC_VERIFICATION),
+        input_types=("VerificationCertificate",),
+        output_type="PortableCertificateReplayTask",
+    ),
+)
+
+BUILTIN_OPERATION_SPECS += FLEET_CERTIFICATE_OPERATION_SPECS
 
 
 HURWITZ_AUXILIARY_OPERATION_SPECS: tuple[OperationSpec, ...] = (
@@ -1491,10 +2353,71 @@ BUILTIN_IMPLEMENTATIONS: dict[str, tuple[str, str]] = {
     "cohom.class_of": ("arbogast.cohom", "class_of"),
     "cohom.restrict": ("arbogast.cohom", "restrict"),
     "cohom.inflate": ("arbogast.cohom", "inflate"),
+    "cohom.restriction_map": ("arbogast.cohom", "restriction_map"),
+    "cohom.inflation_map": ("arbogast.cohom", "inflation_map"),
+    "cohom.corestriction_map": ("arbogast.cohom", "corestriction_map"),
+    "cohom.corestrict": ("arbogast.cohom", "corestrict"),
+    "cohom.transgression": ("arbogast.cohom", "transgression"),
+    "cohom.inflation_restriction": ("arbogast.cohom", "inflation_restriction"),
     "cohom.claim_graph": ("arbogast.cohom.semantic", "claim_graph_for_result"),
     "cohom.verification_certificate": (
         "arbogast.cohom.semantic",
         "verification_certificate_for_result",
+    ),
+    "galois.finite_galois_quotient": (
+        "arbogast.galois",
+        "finite_galois_quotient",
+    ),
+    "galois.galois_module": ("arbogast.galois", "galois_module"),
+    "galois.finite_galois_quotient_certificate": (
+        "arbogast.galois",
+        "finite_galois_quotient_certificate",
+    ),
+    "galois.kummer_space": ("arbogast.galois", "kummer_space"),
+    "galois.kummer_class": ("arbogast.galois", "kummer_class"),
+    "galois.local_h1": ("arbogast.galois", "local_h1"),
+    "galois.local_h1_class": ("arbogast.galois", "local_h1_class"),
+    "galois.decomposition_quotient_h1": (
+        "arbogast.galois",
+        "decomposition_quotient_h1",
+    ),
+    "galois.localize": ("arbogast.galois", "localize"),
+    "galois.nonabelian_h1": ("arbogast.galois", "nonabelian_h1"),
+    "galois.twist_classes": ("arbogast.galois", "twist_classes"),
+    "galois.verification_certificate": (
+        "arbogast.galois.semantic",
+        "verification_certificate_for_result",
+    ),
+    "galois.claim": ("arbogast.galois.semantic", "claim_for_result"),
+    "galois.claim_graph": ("arbogast.galois.semantic", "claim_graph_for_result"),
+    "arithmetic.cartier_dual": ("arbogast.arithmetic", "cartier_dual"),
+    "arithmetic.local_condition": ("arbogast.arithmetic", "local_condition"),
+    "arithmetic.local_pairing": ("arbogast.arithmetic", "local_pairing"),
+    "arithmetic.selmer": ("arbogast.arithmetic", "selmer"),
+    "arithmetic.dual_selmer": ("arbogast.arithmetic", "dual_selmer"),
+    "arithmetic.aim": ("arbogast.arithmetic", "aim"),
+    "arithmetic.unique": ("arbogast.arithmetic", "unique"),
+    "arithmetic.elementary_descent": (
+        "arbogast.arithmetic",
+        "elementary_descent",
+    ),
+    "arithmetic.verification_certificate": (
+        "arbogast.arithmetic.semantic",
+        "verification_certificate_for_result",
+    ),
+    "arithmetic.claim": ("arbogast.arithmetic.semantic", "claim_for_result"),
+    "arithmetic.claim_graph": (
+        "arbogast.arithmetic.semantic",
+        "claim_graph_for_result",
+    ),
+    "export.json": ("arbogast.export", "export_json"),
+    "fleet.plan_pari_arithmetic_task": (
+        "arbogast.fleet",
+        "plan_pari_arithmetic_task",
+    ),
+    "fleet.plan_python_certificate_replay_task": (
+        "arbogast.fleet",
+        "plan_python_certificate_replay_task",
     ),
     "hurwitz.nielsen_class": ("arbogast.hurwitz", "nielsen_class"),
     "hurwitz.plan_nielsen_class": ("arbogast.hurwitz", "plan_nielsen_class"),
@@ -1572,6 +2495,9 @@ OPERATION_CONTRACT_MODULES = (
     "arbogast.linalg",
     "arbogast.rep",
     "arbogast.cohom",
+    "arbogast.galois",
+    "arbogast.arithmetic",
+    "arbogast.fleet",
     "arbogast.hurwitz",
 )
 
@@ -1622,9 +2548,42 @@ PUBLIC_FUNCTION_OPERATIONS: dict[str, dict[str, str]] = {
         "h1": "cohom.h1",
         "h2": "cohom.h2",
         "inflate": "cohom.inflate",
+        "inflation_map": "cohom.inflation_map",
         "is_coboundary": "cohom.is_coboundary",
         "is_cocycle": "cohom.is_cocycle",
         "restrict": "cohom.restrict",
+        "restriction_map": "cohom.restriction_map",
+        "corestrict": "cohom.corestrict",
+        "corestriction_map": "cohom.corestriction_map",
+        "inflation_restriction": "cohom.inflation_restriction",
+        "transgression": "cohom.transgression",
+    },
+    "arbogast.galois": {
+        "decomposition_quotient_h1": "galois.decomposition_quotient_h1",
+        "finite_galois_quotient": "galois.finite_galois_quotient",
+        "finite_galois_quotient_certificate": ("galois.finite_galois_quotient_certificate"),
+        "galois_module": "galois.galois_module",
+        "kummer_class": "galois.kummer_class",
+        "kummer_space": "galois.kummer_space",
+        "local_h1": "galois.local_h1",
+        "local_h1_class": "galois.local_h1_class",
+        "localize": "galois.localize",
+        "nonabelian_h1": "galois.nonabelian_h1",
+        "twist_classes": "galois.twist_classes",
+    },
+    "arbogast.arithmetic": {
+        "aim": "arithmetic.aim",
+        "cartier_dual": "arithmetic.cartier_dual",
+        "dual_selmer": "arithmetic.dual_selmer",
+        "elementary_descent": "arithmetic.elementary_descent",
+        "local_condition": "arithmetic.local_condition",
+        "local_pairing": "arithmetic.local_pairing",
+        "selmer": "arithmetic.selmer",
+        "unique": "arithmetic.unique",
+    },
+    "arbogast.fleet": {
+        "plan_pari_arithmetic_task": "fleet.plan_pari_arithmetic_task",
+        "plan_python_certificate_replay_task": ("fleet.plan_python_certificate_replay_task"),
     },
     "arbogast.hurwitz": {
         attribute: operation
@@ -1634,6 +2593,12 @@ PUBLIC_FUNCTION_OPERATIONS: dict[str, dict[str, str]] = {
 }
 
 PUBLIC_NON_OPERATION_HELPERS: dict[str, dict[str, str]] = {
+    "arbogast.fleet": {
+        "automatic_local_worker_pool": "constructs runtime worker inventory, not mathematics",
+        "default_fleet_operation_registry": "constructs the trusted runtime registry",
+        "deterministic_plan": "low-level shard protocol helper",
+        "execute_local": "runtime execution helper governed by registered task operations",
+    },
     "arbogast.hurwitz": {
         "m23_verifier_registry": (
             "constructs a VerifierRegistry bound to an already replayed M23 dataset; it is "
@@ -1643,10 +2608,13 @@ PUBLIC_NON_OPERATION_HELPERS: dict[str, dict[str, str]] = {
             "idempotently installs a verifier in the central registry and optionally preflights "
             "a receipt; it computes no mathematical result"
         ),
-    }
+    },
 }
 
 SHARD_PLANNERS: dict[str, tuple[str, str]] = {
+    "arithmetic.selmer": ("arbogast.arithmetic.plans", "plan_selmer"),
+    "galois.local_h1": ("arbogast.galois.plans", "plan_local_h1"),
+    "galois.localize": ("arbogast.galois.plans", "plan_localize"),
     "hurwitz.nielsen_class": ("arbogast.hurwitz", "plan_nielsen_class"),
 }
 
@@ -1662,7 +2630,7 @@ def register_builtin_operations(
 def bind_builtin_implementations(
     registry: OperationRegistry = default_operations,
 ) -> OperationRegistry:
-    """Bind contracts to the v0.1 public callables after lightweight module imports."""
+    """Bind contracts to public callables after lightweight module imports."""
 
     for name, (module_name, attribute) in BUILTIN_IMPLEMENTATIONS.items():
         module = import_module(module_name)

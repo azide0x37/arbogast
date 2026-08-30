@@ -30,6 +30,7 @@ from arbogast.fleet import (
     default_fleet_operation_registry,
 )
 from arbogast.formats import (
+    CLI_BACKENDS_SCHEMA,
     CLI_CAMPAIGN_SCHEMA,
     CLI_CLAIMS_SCHEMA,
     CLI_DESCRIBE_SCHEMA,
@@ -106,6 +107,46 @@ def _cmd_version(args: argparse.Namespace) -> int:
     return 0
 
 
+def _cmd_backends(args: argparse.Namespace) -> int:
+    """Report a backend status, using its explicit detailed probe when available."""
+
+    from arbogast.backends import DEFAULT_BACKENDS
+
+    if args.name is not None:
+        try:
+            backend = DEFAULT_BACKENDS.get(args.name)
+        except KeyError as error:
+            raise CLIError(str(error)) from error
+        probe = getattr(backend, "probe", None)
+        try:
+            result = probe() if callable(probe) else backend.status()
+        except (OSError, RuntimeError, TypeError, ValueError) as error:
+            raise CLIError(f"backend {args.name!r} probe failed: {error}") from error
+        payload = {"backend": _jsonable(result), "schema": CLI_BACKENDS_SCHEMA}
+        if args.json:
+            _emit_json(payload)
+        else:
+            status = getattr(result, "status", result)
+            available = bool(getattr(status, "available", False))
+            version = getattr(status, "version", None)
+            summary = "available" if available else "unavailable"
+            print(f"{args.name.lower()}: {summary}" + (f" ({version})" if version else ""))
+        return 0
+
+    statuses = tuple(DEFAULT_BACKENDS.statuses())
+    payload = {
+        "backend": [_jsonable(status) for status in statuses],
+        "schema": CLI_BACKENDS_SCHEMA,
+    }
+    if args.json:
+        _emit_json(payload)
+    else:
+        for status in statuses:
+            summary = "available" if status.available else "unavailable"
+            print(f"{status.name}: {summary}" + (f" ({status.version})" if status.version else ""))
+    return 0
+
+
 def _cmd_describe(args: argparse.Namespace) -> int:
     # Keep non-describe CLI startup independent of the mathematical registry imports.
     from arbogast.specs import OperationSpecError
@@ -148,7 +189,15 @@ def _load_builtin_verifiers() -> None:
     """Import lightweight certificate modules that explicitly self-register."""
 
     for module_name in (
+        "arbogast.arithmetic.semantic",
+        "arbogast.backends.pari_certificate",
+        "arbogast.cohom.five_term",
+        "arbogast.cohom.map_certificate",
         "arbogast.cohom.semantic",
+        "arbogast.galois.groups",
+        "arbogast.galois.modules",
+        "arbogast.galois.proof",
+        "arbogast.galois.semantic",
         "arbogast.hurwitz.claims",
     ):
         try:
@@ -600,6 +649,11 @@ def build_parser() -> argparse.ArgumentParser:
     version = commands.add_parser("version", help="show the Arbogast release version")
     version.add_argument("--json", action="store_true", help="emit stable JSON")
     version.set_defaults(handler=_cmd_version)
+
+    backends = commands.add_parser("backends", help="probe optional algebra backends")
+    backends.add_argument("--name", help="probe one backend by name")
+    backends.add_argument("--json", action="store_true", help="emit stable JSON")
+    backends.set_defaults(handler=_cmd_backends)
 
     describe = commands.add_parser("describe", help="describe a semantic operation")
     describe.add_argument("operation")

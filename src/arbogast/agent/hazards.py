@@ -49,7 +49,12 @@ class Hazard:
         object.__setattr__(self, "triggered_by", tuple(sorted(set(triggers))))
 
     def relevant_to(self, values: Iterable[str]) -> bool:
-        candidates = set(values)
+        candidates = {
+            alternative.strip()
+            for value in values
+            for alternative in value.split("|")
+            if alternative.strip()
+        }
         return bool(candidates.intersection(self.triggered_by))
 
     def to_dict(self) -> dict[str, JSONValue]:
@@ -160,6 +165,42 @@ DEFAULT_HAZARDS = HazardRegistry(
             remediation="Verify the quotient action and descent maps explicitly.",
         ),
         Hazard(
+            id="cohom.induced-map-needs-explicit-group-map",
+            triggered_by=(
+                "cohom.inflate",
+                "cohom.inflation_map",
+                "cohom.restrict",
+                "cohom.restriction_map",
+            ),
+            message=(
+                "An abstract subgroup or quotient identification does not define a certified "
+                "cohomology transport."
+            ),
+            remediation=(
+                "Supply and replay the explicit injective or surjective finite group map."
+            ),
+            severity=HazardSeverity.ERROR,
+        ),
+        Hazard(
+            id="cohom.transfer-needs-complete-transversal",
+            triggered_by=("cohom.corestrict", "cohom.corestriction_map"),
+            message="Corestriction is not certified by a partial or unbound coset transversal.",
+            remediation=(
+                "Bind a complete transversal and replay every transfer summand and "
+                "representative-independence check."
+            ),
+            severity=HazardSeverity.ERROR,
+        ),
+        Hazard(
+            id="cohom.five-term-dimensions-vs-exactness",
+            triggered_by=("cohom.inflation_restriction", "cohom.transgression"),
+            message=(
+                "Compatible dimensions and zero composites do not by themselves prove exactness."
+            ),
+            remediation="Independently recompute image equals kernel at every interior term.",
+            severity=HazardSeverity.ERROR,
+        ),
+        Hazard(
             id="backends.gap-reserved-identifier",
             triggered_by=("GAP", "gap"),
             message="EI is a reserved identifier in GAP and cannot be used as a local name.",
@@ -176,6 +217,164 @@ DEFAULT_HAZARDS = HazardRegistry(
             triggered_by=("BraidAction", "hurwitz.braid_action", "hurwitz.components"),
             message="An orbit length does not by itself determine an acting element's order.",
             remediation="Verify the permutation action and element order explicitly.",
+        ),
+        Hazard(
+            id="arithmetic.finite-s-kummer-vs-unrestricted-squareclasses",
+            triggered_by=("KummerSpace", "galois.kummer_space"),
+            message="K^*/K^{*2} is not represented by an unrestricted finite vector space.",
+            remediation=(
+                "Declare the complete place set S and bind S-units, class-group 2-torsion, "
+                "and principalization witnesses."
+            ),
+            severity=HazardSeverity.ERROR,
+        ),
+        Hazard(
+            id="arithmetic.local-h1-vs-decomposition-quotient",
+            triggered_by=(
+                "LocalH1Space",
+                "decomposition_quotient_h1",
+                "galois.decomposition_quotient_h1",
+                "galois.local_h1",
+            ),
+            message="Finite H^1(D_v,M) is not silently continuous H^1(K_v,mu_p).",
+            remediation="Name and certify the two constructions through separate operations.",
+            severity=HazardSeverity.ERROR,
+        ),
+        Hazard(
+            id="arithmetic.candidate-kernel-vs-selmer-group",
+            triggered_by=("SelmerGroup", "SelmerKernel", "arithmetic.selmer"),
+            message="A candidate global-to-local kernel is not a complete Selmer group.",
+            remediation=(
+                "Promote only after proving completeness of the Kummer space, every local "
+                "space and condition, and the complete relevant place set."
+            ),
+            severity=HazardSeverity.ERROR,
+        ),
+        Hazard(
+            id="arithmetic.assumptions-trust-completeness-axes",
+            triggered_by=(
+                "Completeness",
+                "ProofContext",
+                "SelmerProblem",
+                "galois.kummer_space",
+                "arithmetic.selmer",
+            ),
+            message="Assumptions, verifier portability, and completeness are independent axes.",
+            remediation=(
+                "Record each axis explicitly; PARI certification can remove GRH without "
+                "making the witness portable."
+            ),
+            severity=HazardSeverity.ERROR,
+        ),
+        Hazard(
+            id="arithmetic.pairing-before-dual-selmer",
+            triggered_by=(
+                "CartierDual",
+                "LocalPairing",
+                "arithmetic.cartier_dual",
+                "arithmetic.dual_selmer",
+                "arithmetic.local_pairing",
+            ),
+            message="Orthogonal local conditions require a certified nondegenerate local pairing.",
+            remediation="Replay pairing dimensions and nondegeneracy before forming orthogonals.",
+            severity=HazardSeverity.ERROR,
+        ),
+        Hazard(
+            id="arithmetic.local-vs-global-solubility",
+            triggered_by=(
+                "KummerDescentProblem",
+                "arithmetic.elementary_descent",
+                "local_solubility",
+            ),
+            message="Locally unobstructed does not imply globally soluble.",
+            remediation=(
+                "Return Realized only with a checked global witness and Obstructed only with "
+                "a replayable global obstruction; otherwise return Unknown."
+            ),
+            severity=HazardSeverity.ERROR,
+        ),
+        Hazard(
+            id="arithmetic.failed-search-vs-obstruction",
+            triggered_by=(
+                "arithmetic.aim",
+                "arithmetic.elementary_descent",
+                "arithmetic.unique",
+            ),
+            message="Failed search, timeout, and budget exhaustion are not obstruction proofs.",
+            remediation="Require a literal left-nullspace or descent obstruction witness.",
+            severity=HazardSeverity.ERROR,
+        ),
+        Hazard(
+            id="galois.nonabelian-pointed-set-vs-vector-space",
+            triggered_by=(
+                "TwistClassSet",
+                "galois.nonabelian_h1",
+                "galois.twist_classes",
+            ),
+            message="Nonabelian H^1 is a pointed set of cocycle orbits, not a vector space.",
+            remediation="Expose the basepoint and orbit witnesses without linear operations.",
+            severity=HazardSeverity.ERROR,
+        ),
+        Hazard(
+            id="galois.complete-quotient-needs-arithmetic-proof",
+            triggered_by=(
+                "FiniteGaloisQuotient",
+                "galois.finite_galois_quotient_certificate",
+                "galois.galois_module",
+            ),
+            message=(
+                "A COMPLETE proof-context flag does not prove a nontrivial absolute-Galois "
+                "quotient realization."
+            ),
+            remediation=(
+                "Attach and replay a certificate bound to the exact base field, concrete "
+                "group, label, and arithmetic presentation."
+            ),
+            severity=HazardSeverity.ERROR,
+        ),
+        Hazard(
+            id="backends.pari-handle-vs-canonical-identity",
+            triggered_by=("NumberField", "PARI", "pari"),
+            message=(
+                "PARI handles, session indices, and printed p-adics are not canonical identities."
+            ),
+            remediation=(
+                "Bind defining polynomials, bases, embedding images, ideal HNF data, and exact "
+                "place presentations at the adapter boundary."
+            ),
+            severity=HazardSeverity.ERROR,
+        ),
+        Hazard(
+            id="fleet.pari-and-python-verification-task-separation",
+            triggered_by=(
+                "backends.pari.arithmetic.v1",
+                "cert.python.replay.v1",
+                "fleet.plan_pari_arithmetic_task",
+                "fleet.plan_python_certificate_replay_task",
+            ),
+            message=(
+                "Pinned external arithmetic and portable Python receipt replay are distinct "
+                "fleet trust boundaries."
+            ),
+            remediation=(
+                "Route PARI certificates only to the exact pinned PARI capability task; route "
+                "allowlisted portable receipts to the Python verification task."
+            ),
+            severity=HazardSeverity.ERROR,
+        ),
+        Hazard(
+            id="fleet.scheduler-outcome-vs-mathematical-closure",
+            triggered_by=(
+                "backends.pari.arithmetic.v1",
+                "cert.python.replay.v1",
+                "FleetRun",
+            ),
+            message="A scheduler outcome or verified cache binding is non-closing.",
+            remediation=(
+                "Use the central certificate verifier report for receipt validity and the claim "
+                "graph for mathematical closure."
+            ),
+            severity=HazardSeverity.ERROR,
         ),
     )
 )

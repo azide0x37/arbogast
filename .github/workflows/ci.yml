@@ -33,6 +33,13 @@ jobs:
       - name: Install project
         run: uv sync --extra dev
 
+      - name: Assert the portable matrix has no GP executable
+        run: |
+          if command -v gp >/dev/null 2>&1; then
+            echo "portable Python jobs must run without GP" >&2
+            exit 1
+          fi
+
       - name: Lint
         run: uv run ruff check .
 
@@ -49,7 +56,7 @@ jobs:
         run: uv build
 
       - name: Check release surface
-        run: uv run python scripts/check_release.py
+        run: uv run python scripts/check_release.py --expected-version 0.2.0
 
       - name: Smoke CLI contracts
         run: |
@@ -74,3 +81,171 @@ jobs:
         run: |
           uv run python examples/hurwitz/m23_real_component/compute.py --output "${RUNNER_TEMP}/m23-claims.json"
           uv run python examples/hurwitz/m23_real_component/verify.py "${RUNNER_TEMP}/m23-claims.json"
+
+  release-qualification:
+    name: Exact release-artifact qualification
+    runs-on: ubuntu-latest
+    needs: test
+
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+
+      - name: Install uv
+        uses: astral-sh/setup-uv@c771a70e6277c0a99b617c7a806ffedaca235ff9 # v9.0.0
+        with:
+          python-version: "3.11"
+          enable-cache: true
+
+      - name: Install project
+        run: uv sync --extra dev
+
+      - name: Build exact candidate artifacts
+        run: |
+          uv build
+          uv run python scripts/build_source_archive.py
+
+      - name: Check release metadata and immutable compatibility fixtures
+        run: uv run python scripts/check_release.py --expected-version 0.2.0
+
+      - name: Qualify wheel and sdist in fresh environments
+        run: >-
+          uv run python scripts/qualify_artifacts.py
+          --install
+          --examples
+          --expected-version 0.2.0
+          --python 3.11
+          --report dist/arbogast-0.2.0-qualification.json
+
+      - name: Preserve the exact qualified candidate trio and report
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        with:
+          name: arbogast-0.2.0-candidates
+          path: |
+            dist/arbogast-0.2.0-py3-none-any.whl
+            dist/arbogast-0.2.0.tar.gz
+            dist/arbogast-0.2.0-source.tar.gz
+            dist/arbogast-0.2.0-qualification.json
+          if-no-files-found: error
+          retention-days: 14
+
+  live-pari:
+    name: PARI ${{ matrix.pari-version }} arithmetic replay
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    needs: release-qualification
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - pari-version: "2.15.5"
+            source-url: https://pari.math.u-bordeaux.fr/pub/pari/OLD/2.15/pari-2.15.5.tar.gz
+            source-sha256: 0efdda7515d9d954f63324c34b34c560e60f73a81c3924a71260a2cc91d5f981
+          - pari-version: "2.17.4"
+            source-url: https://pari.math.u-bordeaux.fr/pub/pari/unix/pari-2.17.4.tar.gz
+            source-sha256: 02651d99c391007d384b3fadbc20abc6916b77036f9e496c99e9ce8688ca4b53
+
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+
+      - name: Install uv
+        uses: astral-sh/setup-uv@c771a70e6277c0a99b617c7a806ffedaca235ff9 # v9.0.0
+        with:
+          python-version: "3.11"
+          enable-cache: true
+
+      - name: Install PARI build dependencies
+        run: sudo apt-get update && sudo apt-get install -y libgmp-dev libreadline-dev
+
+      - name: Build pinned PARI
+        env:
+          PARI_SOURCE_SHA256: ${{ matrix.source-sha256 }}
+          PARI_SOURCE_URL: ${{ matrix.source-url }}
+          PARI_VERSION: ${{ matrix.pari-version }}
+        run: |
+          archive="${RUNNER_TEMP}/pari-${PARI_VERSION}.tar.gz"
+          prefix="${RUNNER_TEMP}/pari-install-${PARI_VERSION}"
+          curl --fail --location --silent --show-error --proto '=https' --tlsv1.2 \
+            --output "${archive}" "${PARI_SOURCE_URL}"
+          echo "${PARI_SOURCE_SHA256}  ${archive}" | sha256sum --check --strict
+          tar --extract --gzip --file "${archive}" --directory "${RUNNER_TEMP}"
+          cd "${RUNNER_TEMP}/pari-${PARI_VERSION}"
+          ./Configure --prefix="${prefix}"
+          make -j2 gp
+          make install
+          echo "PARI_PREFIX=${prefix}" >> "${GITHUB_ENV}"
+
+      - name: Install project
+        run: uv sync --extra dev
+
+      - name: Download the exact candidate trio
+        uses: actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c # v8.0.1
+        with:
+          name: arbogast-0.2.0-candidates
+          path: dist
+
+      - name: Qualify the exact candidate trio and packaged examples with GP
+        run: >-
+          PATH="${PARI_PREFIX}/bin:${PATH}"
+          uv run python scripts/qualify_artifacts.py
+          --install
+          --examples
+          --expected-version 0.2.0
+          --python 3.11
+          --require-gp
+          --report "${RUNNER_TEMP}/arbogast-pari-${{ matrix.pari-version }}-qualification.json"
+
+      - name: Replay live arithmetic payloads and certificates
+        env:
+          ARBOGAST_LIVE_PARI: "1"
+        run: PATH="${PARI_PREFIX}/bin:${PATH}" uv run --offline pytest -q tests/integration/test_pari_live.py
+
+      - name: Emit version-independent mathematical payloads
+        run: >-
+          PATH="${PARI_PREFIX}/bin:${PATH}"
+          uv run --offline python scripts/pari_anchor_payload.py
+          --output "${RUNNER_TEMP}/pari-${{ matrix.pari-version }}.json"
+
+      - name: Upload the normalized anchor payload
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        with:
+          name: pari-anchor-${{ matrix.pari-version }}
+          path: ${{ runner.temp }}/pari-${{ matrix.pari-version }}.json
+          if-no-files-found: error
+          retention-days: 1
+
+      - name: Upload the installed-artifact PARI qualification report
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        with:
+          name: pari-qualification-${{ matrix.pari-version }}
+          path: ${{ runner.temp }}/arbogast-pari-${{ matrix.pari-version }}-qualification.json
+          if-no-files-found: error
+          retention-days: 14
+
+  pari-anchor-agreement:
+    name: PARI anchor mathematical payload agreement
+    runs-on: ubuntu-latest
+    needs: live-pari
+
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+
+      - name: Install uv
+        uses: astral-sh/setup-uv@c771a70e6277c0a99b617c7a806ffedaca235ff9 # v9.0.0
+        with:
+          python-version: "3.11"
+          enable-cache: true
+
+      - name: Download both normalized anchor payloads
+        uses: actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c # v8.0.1
+        with:
+          pattern: pari-anchor-*
+          path: ${{ runner.temp }}/pari-anchor-payloads
+          merge-multiple: true
+
+      - name: Compare exact mathematical payloads
+        run: >-
+          uv run python scripts/pari_anchor_payload.py
+          --compare-dir "${RUNNER_TEMP}/pari-anchor-payloads"

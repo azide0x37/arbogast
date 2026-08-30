@@ -100,10 +100,7 @@ class VerifierRegistry:
     def describe(self, name: str) -> dict[str, str]:
         registered = self._verifiers.get(name)
         if registered is None and self is default_verifiers:
-            module_name = _BUILTIN_VERIFIER_MODULES.get(name)
-            if module_name is not None:
-                importlib.import_module(module_name)
-                registered = self._verifiers.get(name)
+            registered = _load_builtin_verifier(name)
         if registered is None:
             raise UnknownVerifierError(name)
         certificate_type = registered.certificate_type
@@ -129,10 +126,7 @@ class VerifierRegistry:
             raise UnknownVerifierError("certificate has no verifier name; select one explicitly")
         registered = self._verifiers.get(name)
         if registered is None and self is default_verifiers:
-            module_name = _BUILTIN_VERIFIER_MODULES.get(name)
-            if module_name is not None:
-                importlib.import_module(module_name)
-                registered = self._verifiers.get(name)
+            registered = _load_builtin_verifier(name)
         if registered is None:
             raise UnknownVerifierError(name)
         if not isinstance(certificate, registered.certificate_type):
@@ -175,8 +169,21 @@ class VerifierRegistry:
 default_verifiers = VerifierRegistry()
 
 _BUILTIN_VERIFIER_MODULES = {
+    "arbogast.backends.pari.operational.v1": "arbogast.backends.pari_certificate",
+    "arbogast.backends.pari.v1": "arbogast.backends.pari_certificate",
     "campaign.claim-closure.v1": "arbogast.campaign.claims",
+    "cohom.induced_map.v1": "arbogast.cohom.map_certificate",
+    "cohom.inflation_restriction.v1": "arbogast.cohom.five_term",
     "cohom.normalized_bar.v1": "arbogast.cohom.semantic",
+    "galois.kummer.v1": "arbogast.galois.semantic",
+    "galois.finite_quotient.v1": "arbogast.galois.groups",
+    "galois.local_h1.v1": "arbogast.galois.semantic",
+    "galois.localization.v1": "arbogast.galois.semantic",
+    "galois.module.v1": "arbogast.galois.modules",
+    "galois.quotient_presentation.v1": "arbogast.galois.groups",
+    "galois.twists.v1": "arbogast.galois.semantic",
+    "galois.unsupported.v1": "arbogast.galois.proof",
+    "arithmetic.finite-linear.v1": "arbogast.arithmetic.semantic",
     "hurwitz.nielsen_class": "arbogast.hurwitz.claims",
     "hurwitz.braid_action": "arbogast.hurwitz.claims",
     "hurwitz.components": "arbogast.hurwitz.claims",
@@ -186,6 +193,31 @@ _BUILTIN_VERIFIER_MODULES = {
     "hurwitz.cusps": "arbogast.hurwitz.claims",
     "hurwitz.boundary": "arbogast.hurwitz.claims",
 }
+
+
+def _load_builtin_verifier(name: str) -> _RegisteredVerifier | None:
+    """Import only the fixed module assigned to a known verifier name.
+
+    This is intentionally not a prefix convention or an entry-point scan.  A
+    certificate cannot select an arbitrary module, and importing a module does
+    not make verification permissive: the module must still register the exact
+    requested name and certificate type.
+    """
+
+    module_name = _BUILTIN_VERIFIER_MODULES.get(name)
+    if module_name is None:
+        return None
+    try:
+        importlib.import_module(module_name)
+    except ModuleNotFoundError as error:
+        # A partial/minimal installation reports an unknown verifier cleanly.
+        # Missing dependencies *inside* an installed verifier are programming
+        # errors and remain visible rather than being mistaken for absence.
+        missing = error.name or ""
+        if missing == module_name or module_name.startswith(missing + "."):
+            return None
+        raise
+    return default_verifiers._verifiers.get(name)
 
 
 def verifier(

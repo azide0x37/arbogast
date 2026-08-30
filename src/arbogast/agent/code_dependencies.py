@@ -561,12 +561,15 @@ def _declarations(
     operations: Iterable[str],
     implementation_module: str,
     module_dependencies: tuple[str, ...],
+    *,
+    optional_backends: tuple[str, ...] = (),
 ) -> tuple[OperationCodeDependencies, ...]:
     return tuple(
         OperationCodeDependencies(
             operation,
             implementation_module,
             module_dependencies=module_dependencies,
+            optional_backends=optional_backends,
         )
         for operation in operations
     )
@@ -582,17 +585,143 @@ DEFAULT_CODE_DEPENDENCIES = CodeDependencyRegistry(
                 "cohom.cochain_complex",
                 "cohom.cocycles",
                 "cohom.cohomology",
+                "cohom.corestrict",
+                "cohom.corestriction_map",
                 "cohom.h0",
                 "cohom.h1",
                 "cohom.h2",
                 "cohom.inflate",
+                "cohom.inflation_map",
+                "cohom.inflation_restriction",
                 "cohom.is_coboundary",
                 "cohom.is_cocycle",
                 "cohom.restrict",
+                "cohom.restriction_map",
+                "cohom.transgression",
                 "cohom.verification_certificate",
             ),
             "arbogast.cohom",
             ("arbogast.cert", "arbogast.claims", "arbogast.core"),
+        ),
+        *_declarations(
+            (
+                "galois.decomposition_quotient_h1",
+                "galois.finite_galois_quotient",
+                "galois.finite_galois_quotient_certificate",
+                "galois.galois_module",
+                "galois.kummer_class",
+                "galois.local_h1_class",
+                "galois.nonabelian_h1",
+                "galois.twist_classes",
+            ),
+            "arbogast.galois",
+            (
+                "arbogast.cert",
+                "arbogast.claims",
+                "arbogast.cohom",
+                "arbogast.core",
+                "arbogast.linalg",
+                "arbogast.rep",
+            ),
+        ),
+        *_declarations(
+            (
+                "galois.kummer_space",
+                "galois.local_h1",
+                "galois.localize",
+            ),
+            "arbogast.galois",
+            (
+                "arbogast.cert",
+                "arbogast.claims",
+                "arbogast.core",
+                "arbogast.linalg",
+            ),
+            optional_backends=("pari",),
+        ),
+        *_declarations(
+            (
+                "galois.claim",
+                "galois.claim_graph",
+                "galois.verification_certificate",
+            ),
+            "arbogast.galois.semantic",
+            (
+                "arbogast.cert",
+                "arbogast.claims",
+                "arbogast.galois",
+            ),
+        ),
+        *_declarations(
+            (
+                "arithmetic.aim",
+                "arithmetic.cartier_dual",
+                "arithmetic.dual_selmer",
+                "arithmetic.elementary_descent",
+                "arithmetic.local_condition",
+                "arithmetic.selmer",
+                "arithmetic.unique",
+            ),
+            "arbogast.arithmetic",
+            (
+                "arbogast.cert",
+                "arbogast.claims",
+                "arbogast.core",
+                "arbogast.galois",
+                "arbogast.linalg",
+            ),
+        ),
+        *_declarations(
+            ("arithmetic.local_pairing",),
+            "arbogast.arithmetic",
+            (
+                "arbogast.cert",
+                "arbogast.claims",
+                "arbogast.core",
+                "arbogast.galois",
+                "arbogast.linalg",
+            ),
+            optional_backends=("pari",),
+        ),
+        *_declarations(
+            (
+                "arithmetic.claim",
+                "arithmetic.claim_graph",
+                "arithmetic.verification_certificate",
+            ),
+            "arbogast.arithmetic.semantic",
+            (
+                "arbogast.arithmetic",
+                "arbogast.cert",
+                "arbogast.claims",
+            ),
+        ),
+        *_declarations(
+            ("export.json",),
+            "arbogast.export",
+            (
+                "arbogast.cert",
+                "arbogast.claims",
+                "arbogast.formats",
+            ),
+        ),
+        *_declarations(
+            ("fleet.plan_pari_arithmetic_task",),
+            "arbogast.fleet",
+            (
+                "arbogast.backends",
+                "arbogast.cert",
+                "arbogast.formats",
+            ),
+            optional_backends=("pari",),
+        ),
+        *_declarations(
+            ("fleet.plan_python_certificate_replay_task",),
+            "arbogast.fleet",
+            (
+                "arbogast.cert",
+                "arbogast.formats",
+            ),
         ),
         *_declarations(
             (

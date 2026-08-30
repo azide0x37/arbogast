@@ -5,6 +5,7 @@ from __future__ import annotations
 from collections import deque
 from collections.abc import Iterable, Mapping
 from dataclasses import dataclass
+from itertools import product
 from typing import Any
 
 from arbogast.formats import ROUTE_SCHEMA, JSONValue
@@ -159,16 +160,18 @@ class CapabilityGraph:
     def from_operations(cls, operations: Iterable[OperationDescription]) -> CapabilityGraph:
         edges: list[CapabilityEdge] = []
         for operation in operations:
-            for required_inputs in operation.input_bundles:
-                for target in operation.outputs:
-                    edges.append(
-                        CapabilityEdge(
-                            required_inputs=required_inputs,
-                            target=target,
-                            operation=operation.name,
-                            implemented=operation.implemented,
+            for declared_bundle in operation.input_bundles:
+                alternatives = tuple(_type_alternatives(item) for item in declared_bundle)
+                for required_inputs in product(*alternatives):
+                    for target in _targets_for_inputs(operation, required_inputs):
+                        edges.append(
+                            CapabilityEdge(
+                                required_inputs=required_inputs,
+                                target=target,
+                                operation=operation.name,
+                                implemented=operation.implemented,
+                            )
                         )
-                    )
         return cls(edges)
 
     @property
@@ -237,3 +240,59 @@ class CapabilityGraph:
             "edges": [edge.to_dict() for edge in self.edges],
             "types": list(self.types),
         }
+
+
+def _type_alternatives(value: str) -> tuple[str, ...]:
+    """Expand the catalog's explicit ``A | B`` semantic union notation.
+
+    Operation descriptions retain their published display strings.  Only the
+    routing graph expands alternatives, so a concrete ``FinitePlace`` can use
+    an operation declared for ``FinitePlace | InfinitePlace`` without making
+    the union label itself a fictitious prerequisite.
+    """
+
+    alternatives = tuple(item.strip() for item in value.split("|"))
+    if any(not item for item in alternatives):
+        raise ValueError(f"malformed semantic type union: {value!r}")
+    return alternatives
+
+
+_DEPENDENT_OUTPUTS_BY_SOURCE: dict[str, dict[str, tuple[str, ...]]] = {
+    "cohom.corestrict": {
+        "Cochain": ("Cochain",),
+        "CohomologyClass": ("CohomologyClass",),
+    },
+    "galois.localize": {
+        "KummerSpace": ("LocalizationMap", "Unsupported", "PariArithmeticResult"),
+        "KummerClass": ("LocalH1Class", "Unsupported", "PariArithmeticResult"),
+    },
+}
+
+
+def _targets_for_inputs(
+    operation: OperationDescription,
+    required_inputs: tuple[str, ...],
+) -> tuple[str, ...]:
+    """Correlate dependent return types instead of inventing a union cross-product."""
+
+    declared_targets: list[str] = []
+    for output in operation.outputs:
+        declared_targets.extend(_type_alternatives(output))
+    declared = tuple(declared_targets)
+    by_source = _DEPENDENT_OUTPUTS_BY_SOURCE.get(operation.name)
+    if by_source is None:
+        return declared
+    source = required_inputs[0]
+    try:
+        selected = by_source[source]
+    except KeyError as error:
+        raise ValueError(
+            f"dependent capability operation {operation.name!r} has no route for {source!r}"
+        ) from error
+    missing = set(selected) - set(declared)
+    if missing:
+        raise ValueError(
+            f"dependent capability operation {operation.name!r} omits declared targets: "
+            + ", ".join(sorted(missing))
+        )
+    return selected

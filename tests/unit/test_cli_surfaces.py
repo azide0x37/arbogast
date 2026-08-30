@@ -10,7 +10,7 @@ from arbogast.proof import ObligationClass, ProofGap, ProofObligation
 def test_version_and_describe_json_are_stable(capsys) -> None:  # type: ignore[no-untyped-def]
     assert main(("version", "--json")) == 0
     version = json.loads(capsys.readouterr().out)
-    assert version == {"schema": "arbogast.cli.version.v1", "version": "0.1.0"}
+    assert version == {"schema": "arbogast.cli.version.v1", "version": "0.2.0"}
 
     assert main(("describe", "cohom.h1", "--json")) == 0
     description = json.loads(capsys.readouterr().out)
@@ -131,6 +131,22 @@ def test_route_reports_only_real_registered_capabilities(capsys) -> None:  # typ
         captured = capsys.readouterr()
         assert captured.out == ""
         assert f"no capability route from '{false_source}' to 'ClaimGraph'" in captured.err
+
+
+def test_route_expands_concrete_arithmetic_unions_and_projection_edges(
+    capsys,
+) -> None:  # type: ignore[no-untyped-def]
+    assert main(("route", "--from", "FinitePlace", "--to", "LocalH1Space", "--json")) == 0
+    local = json.loads(capsys.readouterr().out)["route"]
+    assert [step["operation"] for step in local["steps"]] == ["galois.local_h1"]
+
+    assert main(("route", "--from", "KummerSpace", "--to", "ClaimGraph", "--json")) == 0
+    claim = json.loads(capsys.readouterr().out)["route"]
+    assert [step["operation"] for step in claim["steps"]] == ["galois.claim_graph"]
+
+    assert main(("route", "--from", "KummerSpace", "--to", "JSONDocument", "--json")) == 0
+    exported = json.loads(capsys.readouterr().out)["route"]
+    assert exported["steps"][-1]["operation"] == "export.json"
 
 
 def test_describe_reports_hurwitz_domain_receipts_and_plain_tuple_results(

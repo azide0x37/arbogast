@@ -5,6 +5,7 @@ from __future__ import annotations
 from arbogast.claims import Claim, ClaimGraph
 from arbogast.proof import ProofGap, ProofObligation
 
+from ._lifting import claim_graph_for_export
 from .json import export_json
 
 
@@ -17,6 +18,9 @@ def export_markdown(value: object) -> str:
         return _gap(value)
     if isinstance(value, ProofObligation):
         return _obligation(value, heading=1)
+    lifted = claim_graph_for_export(value)
+    if lifted is not None:
+        return _graph(lifted)
     return f"```json\n{export_json(value, pretty=True).rstrip()}\n```\n"
 
 

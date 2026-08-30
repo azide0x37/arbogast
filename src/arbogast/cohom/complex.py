@@ -192,9 +192,9 @@ def _module_dimension(module: Any) -> int:
     try:
         dimension = _read_attribute(module, ("dimension", "dim"))
     except AttributeError as error:
-        raise TypeError("module must expose a positive dimension or dim") from error
-    if not isinstance(dimension, int) or dimension <= 0:
-        raise ValueError("module dimension must be a positive integer")
+        raise TypeError("module must expose a nonnegative dimension or dim") from error
+    if isinstance(dimension, bool) or not isinstance(dimension, int) or dimension < 0:
+        raise ValueError("module dimension must be a nonnegative integer")
     return dimension
 
 

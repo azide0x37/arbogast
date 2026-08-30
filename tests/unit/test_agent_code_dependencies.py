@@ -309,7 +309,7 @@ def _complete_context(*, max_chars: int = 20_000) -> AgentContext:
     graph = code_registry.graph(("demo.compute",))
     manifest = AgentManifest.from_operations(
         operations,
-        version="0.1.0",
+        version="0.2.0",
         scope="arbogast.demo",
         purpose="A complete bounded agent fixture.",
         primary_types=("Input", "Output", "Theorem"),

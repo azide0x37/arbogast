@@ -51,3 +51,8 @@ exhaustive residue claim.
 This example does not contact a remote scheduler, reconstruct a workstation, use a proprietary
 backend, or turn the imported catalogue statement into evidence. Its only mathematical result is
 the finite claim that the declared residue domain was exhausted under the stated modulus.
+
+The additive 0.2 journey is documented in [`LOCAL_GLOBAL.md`](LOCAL_GLOBAL.md). It keeps this
+published 0.1 fixture unchanged and runs a genuine quadratic norm campaign over
+\(\mathbf Q(t)/(t^2-t-1)\), with a complete Hilbert-symbol obstruction pass, provenance-driven
+global aiming, solved and obstructed branches, and an explicitly non-closing failed search.

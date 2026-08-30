@@ -6,6 +6,8 @@ from arbogast.claims import Claim, ClaimGraph, ClaimKind, FormalStatement
 from arbogast.claims.statement import StatementError
 from arbogast.proof import ProofGap, ProofObligation
 
+from ._lifting import claim_graph_for_export
+
 
 def export_latex(value: object) -> str:
     if isinstance(value, ClaimGraph):
@@ -16,6 +18,9 @@ def export_latex(value: object) -> str:
         return _gap(value)
     if isinstance(value, ProofObligation):
         return _obligation(value)
+    lifted = claim_graph_for_export(value)
+    if lifted is not None:
+        return "\n\n".join(_claim(claim).rstrip() for claim in lifted) + "\n"
     raise TypeError(f"LaTeX export does not support {type(value).__qualname__}")
 
 

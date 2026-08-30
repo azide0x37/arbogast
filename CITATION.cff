@@ -1,10 +1,10 @@
 cff-version: 1.2.0
 message: >-
-  If you use Arbogast, please cite the 0.1.0 release and the software repository.
+  If you use Arbogast, please cite the 0.2.0 release and the software repository.
 title: "Arbogast: certificate-first finite exact computational mathematics"
 type: software
-version: 0.1.0
-date-released: 2026-08-28
+version: 0.2.0
+date-released: 2026-08-29
 authors:
   - name: azide0x37
 repository-code: "https://github.com/azide0x37/arbogast"
@@ -14,8 +14,11 @@ keywords:
   - cohomology
   - finite groups
   - Hurwitz spaces
+  - number fields
+  - Selmer groups
   - certificates
 abstract: >-
   Arbogast is a certificate-first computational mathematics library for finite exact
-  cohomology, symmetry, and Hurwitz arithmetic. It separates discovery from verification
-  and records mathematical results in provenance-preserving claim graphs.
+  cohomology, pinned number-field arithmetic, finite Kummer and 2-Selmer problems, symmetry,
+  and Hurwitz arithmetic. It separates discovery from verification and records mathematical
+  results in provenance-preserving claim graphs.

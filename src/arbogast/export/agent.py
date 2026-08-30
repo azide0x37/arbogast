@@ -5,10 +5,14 @@ from __future__ import annotations
 from arbogast.claims import Claim, ClaimGraph
 from arbogast.proof import ProofGap
 
+from ._lifting import claim_graph_for_export
 from .json import export_json
 
 
 def export_agent_context(value: object, *, pretty: bool = False) -> str:
+    lifted = claim_graph_for_export(value)
+    if lifted is not None:
+        value = lifted
     if isinstance(value, ClaimGraph):
         payload: object = {
             "schema_version": "arbogast.agent-claim-context/v1",

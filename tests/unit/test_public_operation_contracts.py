@@ -3,6 +3,9 @@ from __future__ import annotations
 import inspect
 from importlib import import_module
 
+from arbogast.arithmetic import SelmerProblem, local_condition
+from arbogast.galois import FinitePlace, InfinitePlace, NumberField, kummer_space, local_h1
+from arbogast.galois import localize as kummer_localize
 from arbogast.rep import cyclic_group
 from arbogast.specs import (
     BUILTIN_IMPLEMENTATIONS,
@@ -55,16 +58,58 @@ def test_shardability_is_backed_by_a_real_plan_run_reduce_surface() -> None:
     for spec in default_operations.specs():
         assert bool(spec.shard_strategy) is spec.shardable
 
-    group = cyclic_group(1)
-    classes = (group.conjugacy_class(group.identity),)
     for operation_name, (module_name, planner_name) in SHARD_PLANNERS.items():
         planner = getattr(import_module(module_name), planner_name)
         assert callable(planner)
-        plan = planner(group, classes, shards=2)
+        if operation_name == "hurwitz.nielsen_class":
+            group = cyclic_group(1)
+            classes = (group.conjugacy_class(group.identity),)
+            plan = planner(group, classes, shards=2)
+        else:
+            field = NumberField.rationals()
+            at_two = FinitePlace(field, 2, ((2,),), 1, 1)
+            at_infinity = InfinitePlace(field, "real", (-1, 1))
+            if operation_name == "galois.local_h1":
+                plan = planner((at_two, at_infinity))
+            elif operation_name == "galois.localize":
+                global_space = kummer_space(field, (at_two, at_infinity))
+                local_spaces = (local_h1(at_two), local_h1(at_infinity))
+                plan = planner(global_space, local_spaces)
+            elif operation_name == "arithmetic.selmer":
+                global_space = kummer_space(field, (at_two, at_infinity))
+                local_spaces = (local_h1(at_two), local_h1(at_infinity))
+                localizations = tuple(
+                    kummer_localize(global_space, local_space) for local_space in local_spaces
+                )
+                conditions = (
+                    local_condition(
+                        local_spaces[0],
+                        ((1, 0, 0), (0, 1, 0), (0, 0, 1)),
+                    ),
+                    local_condition(local_spaces[1]),
+                )
+                problem = SelmerProblem(
+                    global_space,
+                    localizations,
+                    conditions,
+                    places=tuple(local_space.place for local_space in local_spaces),
+                    place_set_complete=True,
+                )
+                plan = planner(problem)
+            else:  # pragma: no cover - the equality assertion above closes this branch.
+                raise AssertionError(f"unexercised shard planner: {operation_name}")
         assert callable(plan.run)
         assert callable(plan.run_all)
         assert callable(plan.reduce)
-        assert len(plan.shard_specs) == 2
+        if operation_name == "hurwitz.nielsen_class":
+            # Immutable v0.1 behavior: asking the Nielsen planner for two
+            # shards produces exactly two shard specifications.
+            assert len(plan.shard_specs) == 2
+        else:
+            assert plan.shard_specs
         result = plan.reduce(plan.run_all())
-        assert result.verify()
+        if isinstance(result, tuple):
+            assert all(item.verify() for item in result)
+        else:
+            assert result.verify()
         assert default_operations.spec(operation_name).shard_strategy

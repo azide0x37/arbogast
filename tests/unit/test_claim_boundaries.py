@@ -141,6 +141,135 @@ def test_bound_computed_claim_replays_and_round_trips() -> None:
     assert restored.verify(verifier_registry=registry).verified
 
 
+def test_supporting_certificates_are_reachable_but_not_direct_evidence() -> None:
+    statement = FormalStatement("A nested finite verification succeeds")
+    leaf = VerificationCertificate.create("leaf", "tests.support.leaf")
+    middle = VerificationCertificate.create(
+        "middle",
+        "tests.support.middle",
+        dependencies=(CertificateRef.from_certificate(leaf),),
+    )
+    outer = VerificationCertificate.create(
+        "outer",
+        "tests.support.outer",
+        claim_id="claim.nested-support",
+        statement_hash=statement.statement_hash,
+        claim_boundary_hash=claim_boundary_hash(
+            "claim.nested-support",
+            statement,
+            kind=ClaimKind.COMPUTED,
+            status=EpistemicStatus.EXACT,
+        ),
+        dependencies=(CertificateRef.from_certificate(middle),),
+    )
+    registry = VerifierRegistry()
+    for verifier_name in (
+        "tests.support.leaf",
+        "tests.support.middle",
+        "tests.support.outer",
+    ):
+        registry.register(
+            verifier_name,
+            VerificationCertificate,
+            lambda certificate: True,
+        )
+    claim = Claim(
+        "claim.nested-support",
+        statement=statement,
+        kind=ClaimKind.COMPUTED,
+        status=EpistemicStatus.EXACT,
+        how=Derivation.computation("tests.nested_support"),
+        certificate=outer,
+        supporting_certificates=(middle, leaf),
+    )
+
+    assert tuple(item.ref for item in claim.evidence) == (outer.certificate_id,)
+    assert claim.verify(verifier_registry=registry).verified
+    assert ClaimGraph((claim,)).verify(verifier_registry=registry).verified
+    restored = Claim.from_dict(claim.to_dict())
+    assert restored.verify(verifier_registry=registry).verified
+    permuted = Claim(
+        "claim.nested-support",
+        statement=statement,
+        kind=ClaimKind.COMPUTED,
+        status=EpistemicStatus.EXACT,
+        how=Derivation.computation("tests.nested_support"),
+        certificate=outer,
+        supporting_certificates=(leaf, middle),
+    )
+    assert permuted.to_dict() == claim.to_dict()
+
+    partial = Claim(
+        "claim.nested-support",
+        statement=statement,
+        kind=ClaimKind.COMPUTED,
+        status=EpistemicStatus.EXACT,
+        how=Derivation.computation("tests.nested_support"),
+        certificate=outer,
+        supporting_certificates=(middle,),
+    )
+    with pytest.raises(ClaimVerificationError, match="unresolved verification"):
+        partial.verify(verifier_registry=registry)
+    assert partial.verify(
+        {leaf.certificate_id: leaf},
+        verifier_registry=registry,
+    ).verified
+
+    foreign = VerificationCertificate.create("foreign", "tests.support.foreign")
+    with pytest.raises(ClaimError, match="not reachable"):
+        Claim(
+            "claim.nested-support",
+            statement=statement,
+            kind=ClaimKind.COMPUTED,
+            status=EpistemicStatus.EXACT,
+            how=Derivation.computation("tests.nested_support"),
+            certificate=outer,
+            supporting_certificates=(middle, foreign),
+        )
+    with pytest.raises(ClaimError, match="unique content IDs"):
+        Claim(
+            "claim.nested-support",
+            statement=statement,
+            kind=ClaimKind.COMPUTED,
+            status=EpistemicStatus.EXACT,
+            how=Derivation.computation("tests.nested_support"),
+            certificate=outer,
+            supporting_certificates=(middle, middle),
+        )
+
+    wrong_schema = VerificationCertificate.create(
+        "wrong-schema-root",
+        "tests.support.outer",
+        claim_id="claim.nested-support",
+        statement_hash=statement.statement_hash,
+        claim_boundary_hash=outer.claim_boundary_hash,
+        dependencies=(
+            CertificateRef(
+                middle.certificate_id,
+                middle.layer,
+                "arbogast.cert.verification/foreign",
+            ),
+        ),
+    )
+    with pytest.raises(ClaimError, match="schema mismatch"):
+        Claim(
+            "claim.nested-support",
+            statement=statement,
+            kind=ClaimKind.COMPUTED,
+            status=EpistemicStatus.EXACT,
+            how=Derivation.computation("tests.nested_support"),
+            certificate=wrong_schema,
+            supporting_certificates=(middle,),
+        )
+
+    tampered = claim.to_dict()
+    attached = tampered["attached_certificates"]
+    assert isinstance(attached, list)
+    attached[-1] = foreign.to_dict()
+    with pytest.raises(ClaimError, match="not reachable"):
+        Claim.from_dict(tampered)
+
+
 def test_bound_certificate_rejects_hypothesis_and_status_mutation() -> None:
     claim, certificate, registry = _bound_claim()
     altered_hypotheses = Claim(

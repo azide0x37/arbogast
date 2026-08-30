@@ -94,9 +94,11 @@ class AgentManifest:
                 version = "0+unknown"
         types = set(primary_types)
         types.update(
-            type_name
+            alternative.strip()
             for operation in descriptions
             for type_name in (*operation.inputs, *operation.outputs)
+            for alternative in type_name.split("|")
+            if alternative.strip() and alternative.strip() != "None"
         )
         return cls(
             package=package,
@@ -225,10 +227,101 @@ _MODULE_PROFILES = {
         ("Do not change a pinned concrete group embedding without an explicit transport.",),
     ),
     "arbogast.cohom": _ModuleProfile(
-        "Explicit low-degree cohomology of finite group actions.",
-        ("CohomologyCertificate", "H0Result", "H1Result", "H2Result"),
-        ("Cohomology results retain cocycles, coboundaries, quotient maps, and evidence.",),
-        ("Do not treat a dimension or backend transcript as a cohomology certificate.",),
+        "Explicit low-degree cohomology and certified functorial maps for finite actions.",
+        (
+            "ExactLinearMap",
+            "CohomologyCertificate",
+            "ExactSequence",
+            "H0Result",
+            "H1Result",
+            "H2Result",
+            "InducedCohomologyMap",
+            "InflationRestrictionSequence",
+        ),
+        (
+            "Cohomology results retain cocycles, coboundaries, quotient maps, and evidence.",
+            (
+                "Restriction, inflation, corestriction, and transgression bind explicit finite "
+                "group maps and representative-independence witnesses."
+            ),
+        ),
+        (
+            "Do not treat a dimension or backend transcript as a cohomology certificate.",
+            "Do not infer a subgroup, quotient, transversal, or extension from abstract labels.",
+        ),
+    ),
+    "arbogast.galois": _ModuleProfile(
+        "Pinned number-field arithmetic, finite Galois modules, Kummer spaces, and twists.",
+        (
+            "FieldEmbedding",
+            "FiniteGaloisQuotient",
+            "FiniteGaloisQuotientReceipt",
+            "FiniteGroupExtension",
+            "FiniteGroupMap",
+            "FinitePlace",
+            "GaloisModule",
+            "GaloisModuleReceipt",
+            "Ideal",
+            "InfinitePlace",
+            "KummerClass",
+            "KummerSpace",
+            "LocalH1Class",
+            "LocalH1Space",
+            "LocalizationMap",
+            "NumberField",
+            "NumberFieldElement",
+            "TwistClassSet",
+        ),
+        (
+            (
+                "Field, element, embedding, ideal, and place identities bind their exact "
+                "presentations."
+            ),
+            "KummerSpace is finite K(S,p), not unrestricted K^*/K^{*p}.",
+            "Assumptions, verifier trust, and completeness are independent evidence axes.",
+        ),
+        (
+            (
+                "Do not serialize PARI handles, session indices, printed p-adics, or implicit "
+                "polredbest transports."
+            ),
+            "Do not identify decomposition-quotient cohomology with continuous local H^1.",
+            (
+                "Do not promote a nontrivial finite Galois quotient from a complete flag; "
+                "require its bound arithmetic proving certificate."
+            ),
+            (
+                "Do not give nonabelian H^1 vector-space operations or claim construction of "
+                "twisted models."
+            ),
+        ),
+    ),
+    "arbogast.arithmetic": _ModuleProfile(
+        "Certified local conditions, Selmer kernels, duality, aiming, and bounded descent.",
+        (
+            "CartierDual",
+            "KummerDescentProblem",
+            "LocalCondition",
+            "LocalPairing",
+            "SelmerGroup",
+            "SelmerKernel",
+            "SelmerProblem",
+        ),
+        (
+            (
+                "A candidate kernel is never promoted to SelmerGroup without complete global "
+                "and local data."
+            ),
+            "Dual local conditions are formed only after replaying a perfect local pairing.",
+            "Every obstruction is a literal checked separating witness.",
+        ),
+        (
+            "Do not turn local solubility, failed search, or timeout into a global conclusion.",
+            (
+                "Do not infer abelian-variety, elliptic, hyperelliptic, or automatic "
+                "twisted-model descent."
+            ),
+        ),
     ),
     "arbogast.hurwitz": _ModuleProfile(
         "Finite Nielsen classes, braid actions, real structures, and component invariants.",
@@ -253,9 +346,21 @@ _MODULE_PROFILES = {
     ),
     "arbogast.fleet": _ModuleProfile(
         "Deterministic mathematical task planning, sharding, execution, and reduction.",
-        ("FleetRun", "ShardSpec", "TaskSpec"),
-        ("Task and shard identities bind canonical inputs and parameters.",),
-        ("Do not treat dispatch, process exit, or an execution receipt as proof.",),
+        (
+            "FleetRun",
+            "PariArithmeticTask",
+            "PortableCertificateReplayTask",
+            "ShardSpec",
+            "TaskSpec",
+        ),
+        (
+            "Task and shard identities bind canonical inputs and parameters.",
+            "Pinned PARI work and portable Python receipt replay use distinct task kinds.",
+        ),
+        (
+            "Do not treat dispatch, process exit, or an execution receipt as proof.",
+            "Do not route a pinned PARI certificate through the portable Python task.",
+        ),
     ),
     "arbogast.agent": _ModuleProfile(
         "Compact declared contracts and work packets for machine collaborators.",
@@ -264,10 +369,24 @@ _MODULE_PROFILES = {
         ("Do not infer code dependencies by scanning Python imports.",),
     ),
     "arbogast.backends": _ModuleProfile(
-        "Honest probes for separately installed optional algebra systems.",
-        ("BackendRequirement", "BackendStatus"),
-        ("A capability status is a point-in-time observation.",),
-        ("Do not download, emulate, or silently substitute a missing backend.",),
+        "Honest probes and narrow closed-template adapters for optional algebra systems.",
+        (
+            "BackendRequirement",
+            "BackendStatus",
+            "PariArithmeticResult",
+            "PariProbeResult",
+        ),
+        (
+            "A capability status is a point-in-time observation.",
+            (
+                "PARI discovery receipts remain distinct from operation-specific central "
+                "verification certificates."
+            ),
+        ),
+        (
+            "Do not download, emulate, or silently substitute a missing backend.",
+            "Do not expose generic GP evaluation or allow backend handles across the boundary.",
+        ),
     ),
     "arbogast.export": _ModuleProfile(
         "Stable projections for JSON, paper, agent, and Lean-facing consumers.",

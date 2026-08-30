@@ -122,6 +122,35 @@ def test_capability_graph_distinguishes_alternative_unary_inputs() -> None:
     assert graph.edges[0].from_dict(graph.edges[0].to_dict()) == graph.edges[0]
 
 
+def test_capability_graph_expands_explicit_input_and_output_unions() -> None:
+    operation = OperationDescription(
+        "demo.union",
+        ("Left | Right",),
+        ("First | Second",),
+    )
+    graph = CapabilityGraph.from_operations((operation,))
+
+    assert graph.route("Left", "First").operations == ("demo.union",)
+    assert graph.route("Left", "Second").operations == ("demo.union",)
+    assert graph.route("Right", "First").operations == ("demo.union",)
+    assert graph.route("Right", "Second").operations == ("demo.union",)
+    assert "Left | Right" not in graph.types
+    assert "First | Second" not in graph.types
+
+
+def test_arithmetic_catalog_routes_concrete_places_and_result_projections() -> None:
+    graph = CapabilityGraph.from_operations(operation_descriptions())
+
+    assert graph.route("FinitePlace", "LocalH1Space").operations == ("galois.local_h1",)
+    assert graph.route("InfinitePlace", "LocalH1Space").operations == ("galois.local_h1",)
+    assert graph.route("KummerSpace", "ClaimGraph").operations == ("galois.claim_graph",)
+    assert graph.route("GaloisModule", "VerificationCertificate").operations == (
+        "galois.verification_certificate",
+    )
+    assert graph.route("SelmerGroup", "Claim").operations == ("arithmetic.claim",)
+    assert graph.route("KummerSpace", "JSONDocument").operations[-1] == "export.json"
+
+
 @pytest.mark.parametrize("source", ("Matrix", "int", "bool", "Module"))
 def test_catalog_does_not_invent_unary_routes_to_claim_graph(source: str) -> None:
     graph = CapabilityGraph.from_operations(operation_descriptions())

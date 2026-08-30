@@ -17,6 +17,7 @@ from .group import (
     cyclic_group,
     symmetric_group,
 )
+from .maps import FiniteGroupExtension, FiniteGroupMap
 from .permutation import Permutation
 from .representation import (
     Character,
@@ -45,6 +46,8 @@ __all__ = [
     "CyclicDecomposition",
     "CyclicFactor",
     "CyclicGroup",
+    "FiniteGroupExtension",
+    "FiniteGroupMap",
     "FinitePermutationGroup",
     "GenerationCertificate",
     "GenerationWitness",

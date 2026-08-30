@@ -1,0 +1,227 @@
+{
+  "certificate": {
+    "certificate_id": "sha256:52b76eed5ad4ab3ee16fa7b34920c680cdb68e82470c72cefadf06a3d9439377",
+    "checks": [
+      "finite-group-axioms",
+      "representation-homomorphism",
+      "normalized-bar-differentials",
+      "d-squared-zero",
+      "kernel-and-image",
+      "explicit-quotient-maps"
+    ],
+    "claim_boundary_hash": "sha256:32cc637b7e8ab7694ba975c8e54dc711ea94248b2fbb5b5abca82c8c39fa36dd",
+    "claim_dependencies": [],
+    "claim_id": "cohom.h1.1574520bfd2136329bd615926e159f6fc568faedbf6cce2a988058c8904d562c",
+    "dependencies": [],
+    "guarantees": [
+      "The claimed H^n dimension is recomputed from ker(d_n)/im(d_{n-1}).",
+      "Representative cocycles and quotient maps replay over the stated prime field."
+    ],
+    "layer": "verification",
+    "schema_version": "arbogast.cert.verification/v1",
+    "statement_hash": "sha256:38a8a92ffe4351e1ea4c19cca688be2efc1d8963a9a8cb2382b2b4993b958ac1",
+    "subject": "H^1:sha256:1574520bfd2136329bd615926e159f6fc568faedbf6cce2a988058c8904d562c",
+    "verifier": "cohom.normalized_bar.v1",
+    "witness": {
+      "cohomology_certificate": {
+        "action_matrices": [
+          [
+            [
+              1
+            ]
+          ],
+          [
+            [
+              1
+            ]
+          ]
+        ],
+        "coboundary_basis": [],
+        "cocycle_basis": [
+          [
+            1
+          ]
+        ],
+        "degree": 1,
+        "differential_hashes": [
+          "61b9c6a87c7dd960dc5788e7c90fd8f7641063d749db0a45d9a3053b2984ce47",
+          "61b9c6a87c7dd960dc5788e7c90fd8f7641063d749db0a45d9a3053b2984ce47"
+        ],
+        "group_element_ids": [
+          "{\"degree\":2,\"images\":[0,1],\"type\":\"permutation\"}",
+          "{\"degree\":2,\"images\":[1,0],\"type\":\"permutation\"}"
+        ],
+        "identity_index": 0,
+        "module_dimension": 1,
+        "multiplication_table": [
+          [
+            0,
+            1
+          ],
+          [
+            1,
+            0
+          ]
+        ],
+        "prime": 2,
+        "quotient_projection": [
+          [
+            1
+          ]
+        ],
+        "quotient_section": [
+          [
+            1
+          ]
+        ],
+        "representative_basis": [
+          [
+            1
+          ]
+        ],
+        "schema_version": "arbogast.cohomology.v1"
+      }
+    }
+  },
+  "claim_graph": {
+    "claims": [
+      {
+        "attached_certificates": [
+          {
+            "certificate_id": "sha256:52b76eed5ad4ab3ee16fa7b34920c680cdb68e82470c72cefadf06a3d9439377",
+            "checks": [
+              "finite-group-axioms",
+              "representation-homomorphism",
+              "normalized-bar-differentials",
+              "d-squared-zero",
+              "kernel-and-image",
+              "explicit-quotient-maps"
+            ],
+            "claim_boundary_hash": "sha256:32cc637b7e8ab7694ba975c8e54dc711ea94248b2fbb5b5abca82c8c39fa36dd",
+            "claim_dependencies": [],
+            "claim_id": "cohom.h1.1574520bfd2136329bd615926e159f6fc568faedbf6cce2a988058c8904d562c",
+            "dependencies": [],
+            "guarantees": [
+              "The claimed H^n dimension is recomputed from ker(d_n)/im(d_{n-1}).",
+              "Representative cocycles and quotient maps replay over the stated prime field."
+            ],
+            "layer": "verification",
+            "schema_version": "arbogast.cert.verification/v1",
+            "statement_hash": "sha256:38a8a92ffe4351e1ea4c19cca688be2efc1d8963a9a8cb2382b2b4993b958ac1",
+            "subject": "H^1:sha256:1574520bfd2136329bd615926e159f6fc568faedbf6cce2a988058c8904d562c",
+            "verifier": "cohom.normalized_bar.v1",
+            "witness": {
+              "cohomology_certificate": {
+                "action_matrices": [
+                  [
+                    [
+                      1
+                    ]
+                  ],
+                  [
+                    [
+                      1
+                    ]
+                  ]
+                ],
+                "coboundary_basis": [],
+                "cocycle_basis": [
+                  [
+                    1
+                  ]
+                ],
+                "degree": 1,
+                "differential_hashes": [
+                  "61b9c6a87c7dd960dc5788e7c90fd8f7641063d749db0a45d9a3053b2984ce47",
+                  "61b9c6a87c7dd960dc5788e7c90fd8f7641063d749db0a45d9a3053b2984ce47"
+                ],
+                "group_element_ids": [
+                  "{\"degree\":2,\"images\":[0,1],\"type\":\"permutation\"}",
+                  "{\"degree\":2,\"images\":[1,0],\"type\":\"permutation\"}"
+                ],
+                "identity_index": 0,
+                "module_dimension": 1,
+                "multiplication_table": [
+                  [
+                    0,
+                    1
+                  ],
+                  [
+                    1,
+                    0
+                  ]
+                ],
+                "prime": 2,
+                "quotient_projection": [
+                  [
+                    1
+                  ]
+                ],
+                "quotient_section": [
+                  [
+                    1
+                  ]
+                ],
+                "representative_basis": [
+                  [
+                    1
+                  ]
+                ],
+                "schema_version": "arbogast.cohomology.v1"
+              }
+            }
+          }
+        ],
+        "evidence": [
+          {
+            "certificate_layer": "verification",
+            "description": null,
+            "kind": "certificate",
+            "ref": "sha256:52b76eed5ad4ab3ee16fa7b34920c680cdb68e82470c72cefadf06a3d9439377"
+          }
+        ],
+        "formalization": null,
+        "how": {
+          "artifact": "sha256:52b76eed5ad4ab3ee16fa7b34920c680cdb68e82470c72cefadf06a3d9439377",
+          "inputs": [
+            "sha256:7eecaf20bdc82ed2c697eb3a74257011ee308bf3de3fef3b85c55a7b3949c7b4"
+          ],
+          "kind": "computation",
+          "method": "Exact normalized-bar linear algebra over a prime finite field",
+          "operation": "cohom.h1",
+          "parameters": {
+            "degree": 1
+          }
+        },
+        "hypotheses": [],
+        "id": "cohom.h1.1574520bfd2136329bd615926e159f6fc568faedbf6cce2a988058c8904d562c",
+        "kind": "computed",
+        "metadata": {
+          "domain_certificate_hash": "sha256:1574520bfd2136329bd615926e159f6fc568faedbf6cce2a988058c8904d562c",
+          "domain_certificate_schema": "arbogast.cohomology.v1"
+        },
+        "novelty": null,
+        "schema_version": "arbogast.claim/v1",
+        "source": [],
+        "status": "exact",
+        "what": {
+          "language": "mathematics",
+          "parameters": {
+            "coefficient_characteristic": 2,
+            "cohomology_certificate_hash": "sha256:1574520bfd2136329bd615926e159f6fc568faedbf6cce2a988058c8904d562c",
+            "cohomology_degree": 1,
+            "complex_hash": "sha256:7eecaf20bdc82ed2c697eb3a74257011ee308bf3de3fef3b85c55a7b3949c7b4",
+            "dimension": 1,
+            "group_order": 2,
+            "module_dimension": 1
+          },
+          "renderings": {},
+          "text": "The normalized-bar cohomology H^1(G, M) for the concrete finite group action sha256:7eecaf20bdc82ed2c697eb3a74257011ee308bf3de3fef3b85c55a7b3949c7b4 has dimension 1."
+        },
+        "why": []
+      }
+    ],
+    "graph_id": null,
+    "schema_version": "arbogast.claim-graph/v1"
+  }
+}

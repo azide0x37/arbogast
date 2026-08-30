@@ -110,6 +110,34 @@ means another machine can recover the same canonical claim and verify its eviden
 recreate the original workstation or repeat an expensive discovery schedule. See
 [Research campaigns](docs/research-campaigns.md).
 
+## Certified arithmetic in 0.2
+
+Arbogast 0.2 is an additive, bounded arithmetic slice over the immutable 0.1 finite-exact core.
+The abstract machinery remains prime-field generic for supplied finite presentations. Automatic
+number-field arithmetic is intentionally focused on \(p=2\): finite \(S\)-Kummer spaces, genuine
+local \(H^1(K_v,\mu _2)\), Hilbert pairings, localization maps, 2-Selmer kernels, cocycle aiming,
+finite nonabelian twist classes, and elementary Kummer/local-condition descent.
+
+The arithmetic proof model has three independent axes:
+
+| Axis | Boundary |
+| --- | --- |
+| assumptions | An unresolved label such as `GRH` makes the semantic claim `CONDITIONAL`. |
+| verifier trust | Portable Python replay and pinned PARI replay are distinct requirements. |
+| completeness | A `CANDIDATE` kernel is never named or promoted as a complete `SelmerGroup`. |
+
+A successful pinned PARI certification may therefore be unconditional while remaining
+non-portable. PARI discovery state never appears in a canonical mathematical object: field
+identities bind defining polynomials and bases; finite places bind ideal HNF data; infinite
+places bind exact embeddings and isolating data. Session handles, printed \(p\)-adics, and
+implicit `polredbest` identifications do not cross the boundary.
+
+Substantial arithmetic results provide `verify()`, `certificate`, `claim()`, and `claim_graph()`.
+Their versioned proving receipt is nested inside the existing central
+`VerificationCertificate`; 0.1 claim and certificate schemas remain valid and replayable.
+Read [Certified arithmetic](docs/certified-arithmetic.md) for the complete theorem and trust
+boundary.
+
 ## What 0.1.0 is—and is not
 
 Arbogast 0.1.0 is an alpha **finite exact core**. It provides canonical finite objects, exact
@@ -138,11 +166,11 @@ See [the theorem boundary](docs/theorem-boundaries.md) for the exact epistemic c
 
 ## Install
 
-Arbogast 0.1.0 requires Python 3.11 or newer. Pin the exact GitHub source tag with
+Arbogast 0.2.0 requires Python 3.11 or newer. Pin the exact GitHub source tag with
 [uv](https://docs.astral.sh/uv/):
 
 ```bash
-uv add "arbogast @ git+https://github.com/azide0x37/arbogast.git@v0.1.0"
+uv add "arbogast @ git+https://github.com/azide0x37/arbogast.git@v0.2.0"
 ```
 
 For a contributor checkout:
@@ -154,11 +182,12 @@ uv sync --extra dev
 uv run arbogast version
 ```
 
-No external algebra backend is required for the core examples. If an operation can use an
+No external algebra backend is required for the portable examples. If an operation can use an
 external backend, install that system independently and inspect capability discovery before
-depending on it. The optional 0.1.0 execution surface is limited to FLINT matrix rank/determinant
-and GAP permutation-group order, each returned as typed discovery evidence rather than a theorem
-certificate; see [Optional backends](docs/optional-backends.md).
+depending on it. The 0.2.0 surface retains the narrow FLINT matrix and GAP permutation-group
+discovery adapters and adds a closed, operation-specific PARI arithmetic adapter with explicit
+portable-versus-pinned verification requirements; see [Optional backends](docs/optional-backends.md)
+and [Certified arithmetic](docs/certified-arithmetic.md).
 
 ## Thirty-second tour
 
@@ -244,6 +273,7 @@ The CLI is intentionally inspection- and verification-oriented:
 
 ```text
 arbogast version [--json]
+arbogast backends [--name NAME] [--json]
 arbogast describe OPERATION [--json]
 arbogast verify CERTIFICATE [--verifier NAME] [--json]
 arbogast claims FILE [--status STATUS] [--kind KIND] [--json]
@@ -275,11 +305,12 @@ preconditions hold; missing transformations are reported as missing capabilities
 Campaign files serialize specifications, their campaign-owned `ClaimGraph`, and the authoritative
 event ledger, never executable Python callables. With the default `--fleet off`, `run` fails
 closed if the current runtime has no injected implementation for a named operation.
-`--fleet auto` creates an audited local worker pool and registry, but 0.1.0 deliberately
-registers only `fleet.echo.v1`; it returns `UNKNOWN` and is control-plane plumbing, not a
-mathematical verifier or a way to execute code named by JSON. The runnable campaign example shows
-trusted local operation injection through the Python API. `harvest` accepts only a strict
-`Observation` document, not arbitrary worker JSON. `export claims` emits the directly replayable
+`--fleet auto` creates an audited local worker pool and registry. In 0.2.0 that registry contains
+the non-closing `fleet.echo.v1` plumbing plus declared local-`H^1`, localization, Selmer assembly,
+PARI replay, and portable Python certificate-replay tasks. Registry membership never turns a
+scheduler outcome into mathematics or executes a callable named by JSON. The runnable campaign
+example shows trusted local operation injection through the Python API. `harvest` accepts only a
+strict `Observation` document, not arbitrary worker JSON. `export claims` emits the directly replayable
 canonical `arbogast.claim-graph/v1` owned by the campaign. Lower-level closure-candidate receipts
 remain an explicit Python audit surface; they are not the exported theorem graph.
 
@@ -293,6 +324,8 @@ The public surface is organized by mathematical layer:
 | `arbogast.linalg` | Exact dense and sparse linear algebra over supported finite fields |
 | `arbogast.rep` | Finite groups, permutations, representations, invariants, and decompositions |
 | `arbogast.cohom` | Cochain complexes and explicit \(H^0\), \(H^1\), \(H^2\) results |
+| `arbogast.galois` | Pinned number fields, places, finite Galois quotients, Kummer spaces, local cohomology, and twist classes |
+| `arbogast.arithmetic` | Local conditions, Selmer kernels and groups, duality, aiming, and elementary descent outcomes |
 | `arbogast.hurwitz` | Nielsen classes, braid orbits, real structures, and components |
 | `arbogast.claims` | Typed claims, theorem dependencies, and epistemic status |
 | `arbogast.cert` | Discovery receipts and independent verification certificates |
@@ -350,6 +383,29 @@ campaign-owned graph; the verified closure observation automatically adds and bi
 claim. The example independently replays both the registered residue-scan certificate and the
 campaign claim envelope, then reloads the same graph from the campaign snapshot. It does not
 contact the Klüners--Malle database or a remote scheduler at runtime.
+
+## Certified arithmetic journeys
+
+The 0.2 examples are finite, deterministic, and safe to run without GP. Where PARI can discover
+the same data, the portable lane replays the normalized witness rather than rerunning discovery.
+
+- [`aim_a_cocycle`](examples/arithmetic/aim_a_cocycle/) verifies both a solved affine family and
+  an inconsistent target with a literal left-nullspace separator, then combines both claims in a
+  claim graph.
+- [`inflation_restriction`](examples/arithmetic/inflation_restriction/) checks the five-term
+  sequence for the nonsplit extension \(C_2\to C_4\to C_2\), including transgression and exactness.
+- [`q_kummer_selmer`](examples/arithmetic/q_kummer_selmer/) certifies
+  \(\mathbf Q(\{2,\infty\},2)=\langle[-1],[2]\rangle\), its real and \(2\)-adic localizations,
+  and a one-dimensional complete local-condition kernel.
+- [`quadratic_field`](examples/arithmetic/quadratic_field/) keeps the pinned presentation
+  \(t^2-t-1\) and verifies \(\operatorname N(t)=-1\) and \((2t-1)^2=5\).
+- [`nonabelian_twists`](examples/arithmetic/nonabelian_twists/) exhausts the pointed
+  \(H^1(C_2,S_3)\) for the trivial action, yielding exactly the identity and transposition
+  classes without pretending that the result is a vector space or a twisted model.
+- The additive
+  [`local_global.py`](examples/campaigns/antieau_klueners_malle/local_global.py) campaign runs
+  cheap local obstruction tasks before provenance-driven global aiming. “Locally unobstructed”
+  remains non-closing; failed search, timeout, and missing capabilities remain `Unknown`.
 
 ## Reproducibility and theorem boundaries
 
@@ -412,19 +468,21 @@ uv run pytest
 uv build
 ```
 
-CI runs lint, formatting, strict typing, tests, builds, and every bundled example on Python
-3.11, 3.12, 3.13, and 3.14. Contributions must preserve deterministic serialization and
-theorem boundaries; start with [CONTRIBUTING.md](CONTRIBUTING.md).
+CI runs lint, formatting, strict typing, the complete test suite, and core examples without GP on
+Python 3.11, 3.12, 3.13, and 3.14. A separate Python 3.11 release lane installs the exact wheel and
+sdist and runs every packaged example; pinned PARI lanes replay that same candidate trio with GP.
+Contributions must preserve deterministic serialization and theorem boundaries; start with
+[CONTRIBUTING.md](CONTRIBUTING.md).
 
 ## License boundary
 
-No open-source license has been selected for 0.1.0. The public source and release artifacts are
+No open-source license has been selected for Arbogast. The public source and release artifacts are
 therefore source-visible but all rights are reserved unless and until the copyright holder grants
 additional permission.
 
 ## Status and citation
 
-Arbogast 0.1.0 is alpha research software. Certificate verification is intended to be small
+Arbogast 0.2.0 is alpha research software. Certificate verification is intended to be small
 and inspectable, but users remain responsible for auditing the hypotheses and imported facts
 of any theorem they rely on. See [SECURITY.md](SECURITY.md) for reporting integrity or
 parser issues and [CITATION.cff](CITATION.cff) for citation metadata.
