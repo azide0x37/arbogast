@@ -24,7 +24,6 @@ REQUIRED_PATHS: Final = (
     "README.md",
     "CHANGELOG.md",
     "CITATION.cff",
-    "docs/release-notes-0.1.0.md",
     "docs/certified-arithmetic.md",
     "pyproject.toml",
     "uv.lock",
@@ -55,11 +54,11 @@ REQUIRED_PATHS: Final = (
     "scripts/build_source_archive.py",
     "scripts/pari_anchor_payload.py",
     "scripts/qualify_artifacts.py",
+    "scripts/snapshot_api_cli.py",
+    "scripts/snapshot_semantic_contracts.py",
     "scripts/snapshot_v010_api_cli.py",
-    "tests/fixtures/compat/v0.1.0/release.json",
-    "tests/fixtures/compat/v0.1.0/h1-c2-f2.json",
-    "tests/fixtures/compat/v0.1.0/public-contracts.json",
-    "tests/fixtures/compat/v0.1.0/api-cli-contracts.json",
+    "tests/fixtures/compat/index.json",
+    "tests/integration/test_release_compatibility_index.py",
     "tests/integration/test_v010_compatibility.py",
     "examples/arithmetic/README.md",
     "examples/arithmetic/aim_a_cocycle/README.md",
@@ -97,7 +96,7 @@ M23_ARTIFACT_PATHS: Final = (
     "fixture.py",
     "generate.g",
 )
-M23_VERIFIED_CLAIMS: Final = {
+M23_VERIFIED_CLAIMS: Final[dict[str, object]] = {
     "generating_inner_nielsen_cardinality": 1428,
     "pure_braid_transitive": True,
     "c1_fixed": 20,
@@ -106,7 +105,7 @@ M23_VERIFIED_CLAIMS: Final = {
     "nongenerating_inner_orbits": 5686,
     "nongenerating_c1": 212,
 }
-M23_COMPLETENESS_COUNTS: Final = {
+M23_COMPLETENESS_COUNTS: Final[dict[str, object]] = {
     "all_inner_orbits": 7114,
     "generating_inner_orbits": 1428,
     "nongenerating_inner_orbits": 5686,
@@ -129,6 +128,8 @@ STATIC_PRERELEASE_PATTERNS: Final = (
     ),
 )
 SHA256_RE: Final = re.compile(r"[0-9a-f]{64}")
+SOURCE_COMMIT_RE: Final = re.compile(r"[0-9a-f]{40}")
+COMPATIBILITY_INDEX: Final = "tests/fixtures/compat/index.json"
 V010_COMPATIBILITY_FILES: Final = {
     "docs/release-notes-0.1.0.md": (
         "6bd4a9c04aa7cfadddd80b443fb67df49fb7e3756aa3e70c9e889091d7250ca6",
@@ -196,10 +197,31 @@ def _project_version(root: Path) -> str | None:
 EXPECTED_VERSION: Final = _project_version(PROJECT_ROOT) or ""
 
 
-def required_paths(version: str) -> tuple[str, ...]:
+def required_paths(version: str, *, root: Path = PROJECT_ROOT) -> tuple[str, ...]:
     """Return the release surface for ``version`` without forgetting old fixtures."""
 
-    return (*REQUIRED_PATHS, f"docs/release-notes-{version}.md")
+    indexed: list[str] = []
+    path = root / COMPATIBILITY_INDEX
+    try:
+        value = json.loads(path.read_text(encoding="utf-8"))
+    except (OSError, UnicodeDecodeError, json.JSONDecodeError):
+        value = None
+    if isinstance(value, dict) and isinstance(value.get("releases"), list):
+        for release in value["releases"]:
+            if not isinstance(release, dict):
+                continue
+            notes = release.get("release_notes")
+            if isinstance(notes, dict) and isinstance(notes.get("path"), str):
+                indexed.append(notes["path"])
+            fixtures = release.get("fixture_files")
+            if isinstance(fixtures, list):
+                indexed.extend(
+                    record["path"]
+                    for record in fixtures
+                    if isinstance(record, dict) and isinstance(record.get("path"), str)
+                )
+    paths = (*REQUIRED_PATHS, *indexed, f"docs/release-notes-{version}.md")
+    return tuple(dict.fromkeys(paths))
 
 
 class _InvalidJson(ValueError):
@@ -305,7 +327,7 @@ def _cff_scalar(text: str, key: str) -> str | None:
     matches = re.findall(rf"(?m)^{re.escape(key)}:\s*([^#\r\n]+?)\s*$", text)
     if len(matches) != 1:
         return None
-    value = matches[0].strip()
+    value = str(matches[0]).strip()
     if len(value) >= 2 and value[0] == value[-1] and value[0] in {"'", '"'}:
         value = value[1:-1]
     return value
@@ -572,6 +594,374 @@ def _check_m23_fixture(root: Path, failures: list[str]) -> None:
                 failures.append(f"M23 real.{field} must contain exactly {length} entries")
 
 
+def _check_indexed_file(
+    root: Path,
+    record: object,
+    label: str,
+    failures: list[str],
+) -> str | None:
+    value = _object_field(record, label, failures)
+    if value is None:
+        return None
+    relative = value.get("path")
+    size = value.get("bytes")
+    digest = value.get("sha256")
+    if (
+        not isinstance(relative, str)
+        or not relative
+        or Path(relative).is_absolute()
+        or ".." in Path(relative).parts
+    ):
+        failures.append(f"{label}.path must be a safe nonempty relative path")
+        return None
+    if isinstance(size, bool) or not isinstance(size, int) or size < 0:
+        failures.append(f"{label}.bytes must be a non-negative integer")
+    if (
+        not isinstance(digest, str)
+        or not digest.startswith("sha256:")
+        or SHA256_RE.fullmatch(digest.removeprefix("sha256:")) is None
+    ):
+        failures.append(f"{label}.sha256 must be a canonical SHA-256 content address")
+    path = root / relative
+    if not path.is_file():
+        failures.append(f"missing immutable compatibility input: {relative}")
+        return relative
+    if isinstance(size, int) and not isinstance(size, bool) and path.stat().st_size != size:
+        failures.append(f"immutable compatibility byte count mismatch: {relative}")
+    if isinstance(digest, str) and _sha256(path) != digest.removeprefix("sha256:"):
+        failures.append(f"immutable compatibility SHA-256 mismatch: {relative}")
+    return relative
+
+
+def _check_published_artifacts(
+    value: object,
+    label: str,
+    failures: list[str],
+) -> list[object] | None:
+    if not isinstance(value, list) or not value:
+        failures.append(f"{label} must be a nonempty array")
+        return None
+    filenames: list[str] = []
+    for index, record in enumerate(value):
+        artifact = _object_field(record, f"{label}[{index}]", failures)
+        if artifact is None:
+            continue
+        filename = artifact.get("filename")
+        size = artifact.get("bytes")
+        digest = artifact.get("sha256")
+        if not isinstance(filename, str) or not filename or Path(filename).name != filename:
+            failures.append(f"{label}[{index}].filename must be one plain filename")
+        else:
+            filenames.append(filename)
+        if isinstance(size, bool) or not isinstance(size, int) or size <= 0:
+            failures.append(f"{label}[{index}].bytes must be a positive integer")
+        if (
+            not isinstance(digest, str)
+            or not digest.startswith("sha256:")
+            or SHA256_RE.fullmatch(digest.removeprefix("sha256:")) is None
+        ):
+            failures.append(f"{label}[{index}].sha256 must be a canonical SHA-256 content address")
+    if len(filenames) != len(set(filenames)):
+        failures.append(f"{label} contains duplicate filenames")
+    return value
+
+
+def _canonical_document_sha256(value: object) -> str:
+    encoded = json.dumps(
+        value,
+        ensure_ascii=False,
+        separators=(",", ":"),
+        sort_keys=True,
+    ).encode("utf-8")
+    return hashlib.sha256(encoded).hexdigest()
+
+
+def _check_semantic_snapshot(
+    value: dict[str, object],
+    *,
+    version: str,
+    source_tag: str,
+    source_commit: str,
+    failures: list[str],
+) -> None:
+    label = f"{version} semantic compatibility fixture"
+    _expect_fields(
+        value,
+        {
+            "schema_version": "arbogast.compatibility-semantic-contracts/v1",
+            "version": version,
+            "source_tag": source_tag,
+            "source_commit": source_commit,
+        },
+        label,
+        failures,
+    )
+    schemas = value.get("schema_catalog")
+    if not isinstance(schemas, list) or not schemas:
+        failures.append(f"{label}.schema_catalog must be a nonempty array")
+    else:
+        identifiers: list[str] = []
+        for index, raw in enumerate(schemas):
+            record = _object_field(raw, f"{label}.schema_catalog[{index}]", failures)
+            if record is None:
+                continue
+            identifier = record.get("identifier")
+            document = record.get("document")
+            digest = record.get("document_sha256")
+            if not isinstance(identifier, str) or not identifier:
+                failures.append(f"{label}.schema_catalog[{index}] has no identifier")
+                continue
+            identifiers.append(identifier)
+            if not isinstance(document, dict) or document.get("$id") != identifier:
+                failures.append(
+                    f"{label}.schema_catalog[{index}] document is not bound to its identifier"
+                )
+            elif digest != f"sha256:{_canonical_document_sha256(document)}":
+                failures.append(f"{label}.schema_catalog[{index}] document hash does not replay")
+        if identifiers != sorted(set(identifiers)):
+            failures.append(f"{label}.schema_catalog identifiers must be unique and sorted")
+
+    certificates = value.get("central_certificates")
+    labels: list[str] = []
+    if not isinstance(certificates, list) or not certificates:
+        failures.append(f"{label}.central_certificates must be a nonempty array")
+    else:
+        for index, raw in enumerate(certificates):
+            record = _object_field(raw, f"{label}.central_certificates[{index}]", failures)
+            if record is None:
+                continue
+            certificate = _object_field(
+                record.get("certificate"),
+                f"{label}.central_certificates[{index}].certificate",
+                failures,
+            )
+            record_label = record.get("label")
+            certificate_id = record.get("certificate_id")
+            if isinstance(record_label, str):
+                labels.append(record_label)
+            if (
+                not isinstance(certificate_id, str)
+                or not certificate_id.startswith("sha256:")
+                or SHA256_RE.fullmatch(certificate_id.removeprefix("sha256:")) is None
+            ):
+                failures.append(
+                    f"{label}.central_certificates[{index}] has an invalid certificate ID"
+                )
+            if certificate is not None:
+                _expect_fields(
+                    certificate,
+                    {
+                        "schema_version": "arbogast.cert.verification/v1",
+                        "certificate_id": certificate_id,
+                    },
+                    f"{label}.central_certificates[{index}].certificate",
+                    failures,
+                )
+    if not any(item.startswith("galois.") for item in labels):
+        failures.append(f"{label} has no representative Galois central certificate")
+    if not any(item.startswith("arithmetic.") for item in labels):
+        failures.append(f"{label} has no representative arithmetic central certificate")
+
+    pari = _object_field(value.get("pari"), f"{label}.pari", failures)
+    if pari is not None:
+        supported = pari.get("supported_range")
+        if not isinstance(supported, str) or not supported:
+            failures.append(f"{label}.pari.supported_range must be nonempty")
+        anchors = pari.get("ci_anchors")
+        if not isinstance(anchors, list) or not anchors:
+            failures.append(f"{label}.pari.ci_anchors must be nonempty")
+        else:
+            versions: list[str] = []
+            for index, raw in enumerate(anchors):
+                anchor = _object_field(raw, f"{label}.pari.ci_anchors[{index}]", failures)
+                if anchor is None:
+                    continue
+                anchor_version = anchor.get("version")
+                source_url = anchor.get("source_url")
+                source_sha256 = anchor.get("source_sha256")
+                if (
+                    not isinstance(anchor_version, str)
+                    or FINAL_VERSION_RE.fullmatch(anchor_version) is None
+                ):
+                    failures.append(f"{label}.pari.ci_anchors[{index}] has an invalid version")
+                else:
+                    versions.append(anchor_version)
+                if not isinstance(source_url, str) or not source_url.startswith("https://"):
+                    failures.append(f"{label}.pari.ci_anchors[{index}] has an invalid URL")
+                if not isinstance(source_sha256, str) or SHA256_RE.fullmatch(source_sha256) is None:
+                    failures.append(f"{label}.pari.ci_anchors[{index}] has an invalid SHA-256")
+            if versions != sorted(set(versions)):
+                failures.append(f"{label}.pari.ci_anchors versions must be unique and sorted")
+
+
+def _check_compatibility_index(root: Path, failures: list[str]) -> None:
+    index_path = root / COMPATIBILITY_INDEX
+    if not index_path.is_file():
+        failures.append(f"missing compatibility index: {COMPATIBILITY_INDEX}")
+        return
+    index = _json_object(index_path, "compatibility index", failures)
+    if index is None:
+        return
+    _expect_fields(
+        index,
+        {
+            "schema_version": "arbogast.compatibility-index/v1",
+            "compatibility_policy": "immutable-published-inputs",
+        },
+        "compatibility index",
+        failures,
+    )
+    releases = index.get("releases")
+    if not isinstance(releases, list) or not releases:
+        failures.append("compatibility index.releases must be a nonempty array")
+        return
+
+    versions: list[str] = []
+    source_tags: list[str] = []
+    source_commits: list[str] = []
+    for index_number, raw_release in enumerate(releases):
+        label = f"compatibility index.releases[{index_number}]"
+        release = _object_field(raw_release, label, failures)
+        if release is None:
+            continue
+        version = release.get("version")
+        source_tag = release.get("source_tag")
+        source_commit = release.get("source_commit")
+        if not isinstance(version, str) or FINAL_VERSION_RE.fullmatch(version) is None:
+            failures.append(f"{label}.version must have final X.Y.Z form")
+            continue
+        versions.append(version)
+        if source_tag != f"v{version}":
+            failures.append(f"{label}.source_tag must be v{version}")
+        elif isinstance(source_tag, str):
+            source_tags.append(source_tag)
+        if not isinstance(source_commit, str) or SOURCE_COMMIT_RE.fullmatch(source_commit) is None:
+            failures.append(f"{label}.source_commit must be a full lowercase Git SHA-1")
+            continue
+        source_commits.append(source_commit)
+
+        fixture_records = release.get("fixture_files")
+        if not isinstance(fixture_records, list) or not fixture_records:
+            failures.append(f"{label}.fixture_files must be a nonempty array")
+            continue
+        indexed_files: dict[str, dict[str, object]] = {}
+        fixture_paths: list[str] = []
+        for fixture_index, raw_fixture in enumerate(fixture_records):
+            fixture_label = f"{label}.fixture_files[{fixture_index}]"
+            fixture = _object_field(raw_fixture, fixture_label, failures)
+            relative = _check_indexed_file(root, raw_fixture, fixture_label, failures)
+            if fixture is not None and relative is not None:
+                fixture_paths.append(relative)
+                indexed_files[relative] = fixture
+                prefix = f"tests/fixtures/compat/v{version}/"
+                if not relative.startswith(prefix):
+                    failures.append(f"{fixture_label}.path must remain under {prefix}")
+        if fixture_paths != sorted(set(fixture_paths)):
+            failures.append(f"{label}.fixture_files paths must be unique and sorted")
+
+        notes = _object_field(release.get("release_notes"), f"{label}.release_notes", failures)
+        if notes is not None:
+            notes_path = _check_indexed_file(
+                root,
+                notes,
+                f"{label}.release_notes",
+                failures,
+            )
+            if notes_path != f"docs/release-notes-{version}.md":
+                failures.append(f"{label}.release_notes.path must name the historical notes")
+        artifacts = _check_published_artifacts(
+            release.get("published_artifacts"),
+            f"{label}.published_artifacts",
+            failures,
+        )
+
+        manifest_relative = f"tests/fixtures/compat/v{version}/release.json"
+        if manifest_relative not in indexed_files:
+            failures.append(f"{label} omits {manifest_relative}")
+            continue
+        manifest_path = root / manifest_relative
+        manifest = _json_object(manifest_path, f"{version} compatibility manifest", failures)
+        if manifest is None:
+            continue
+        _expect_fields(
+            manifest,
+            {
+                "schema_version": "arbogast.compatibility-release/v1",
+                "compatibility_policy": "immutable-published-input",
+                "version": version,
+                "source_tag": source_tag,
+                "source_commit": source_commit,
+                "published_artifacts": artifacts,
+                "release_notes": notes,
+            },
+            f"{version} compatibility manifest",
+            failures,
+        )
+        for field, raw_pointer in manifest.items():
+            if field != "representative_fixture" and not field.endswith("_fixture"):
+                continue
+            pointer = _object_field(
+                raw_pointer,
+                f"{version} compatibility manifest.{field}",
+                failures,
+            )
+            if pointer is None:
+                continue
+            pointer_path = pointer.get("path")
+            if not isinstance(pointer_path, str):
+                continue
+            expected = indexed_files.get(pointer_path)
+            if expected is None:
+                failures.append(
+                    f"{version} compatibility manifest.{field} names an unindexed fixture"
+                )
+                continue
+            for key in ("path", "bytes", "sha256"):
+                if pointer.get(key) != expected.get(key):
+                    failures.append(
+                        f"{version} compatibility manifest.{field}.{key} does not match the index"
+                    )
+
+        api_relative = f"tests/fixtures/compat/v{version}/api-cli-contracts.json"
+        if api_relative in indexed_files:
+            api = _json_object(root / api_relative, f"{version} API/CLI fixture", failures)
+            if api is not None:
+                _expect_fields(
+                    api,
+                    {
+                        "schema_version": "arbogast.compatibility-api-cli/v1",
+                        "version": version,
+                        "source_tag": source_tag,
+                        "source_commit": source_commit,
+                    },
+                    f"{version} API/CLI fixture",
+                    failures,
+                )
+        semantic_relative = f"tests/fixtures/compat/v{version}/semantic-contracts.json"
+        if semantic_relative in indexed_files:
+            semantic = _json_object(
+                root / semantic_relative,
+                f"{version} semantic compatibility fixture",
+                failures,
+            )
+            if semantic is not None:
+                _check_semantic_snapshot(
+                    semantic,
+                    version=version,
+                    source_tag=str(source_tag),
+                    source_commit=source_commit,
+                    failures=failures,
+                )
+
+    version_keys = [tuple(int(part) for part in version.split(".")) for version in versions]
+    if version_keys != sorted(set(version_keys)):
+        failures.append("compatibility releases must be unique and sorted by semantic version")
+    if len(source_tags) != len(set(source_tags)):
+        failures.append("compatibility releases contain duplicate source tags")
+    if len(source_commits) != len(set(source_commits)):
+        failures.append("compatibility releases contain duplicate source commits")
+
+
 def _check_v010_compatibility(root: Path, failures: list[str]) -> None:
     for relative, (digest, size) in V010_COMPATIBILITY_FILES.items():
         path = root / relative
@@ -672,7 +1062,7 @@ def check(root: Path, *, expected_version: str | None = None) -> dict[str, objec
     if expected_version is not None and declared_version != expected_version:
         failures.append(f"pyproject version must be {expected_version}, found {declared_version!r}")
 
-    for relative in required_paths(version):
+    for relative in required_paths(version, root=root):
         required = root / relative
         if not required.exists():
             failures.append(f"missing required path: {relative}")
@@ -703,24 +1093,25 @@ def check(root: Path, *, expected_version: str | None = None) -> dict[str, objec
 
     _check_release_metadata(root, failures, version)
     _check_m23_fixture(root, failures)
+    _check_compatibility_index(root, failures)
     _check_v010_compatibility(root, failures)
     _check_live_pari_matrix(root, failures)
 
     checked_files = _text_files(root)
     for path in checked_files:
         text = path.read_text(encoding="utf-8")
-        relative = path.relative_to(root)
+        relative_path = path.relative_to(root)
         if path.suffix == ".py":
             try:
-                ast.parse(text, filename=str(relative))
+                ast.parse(text, filename=str(relative_path))
             except SyntaxError as error:
-                failures.append(f"invalid Python syntax in {relative}: {error}")
-        if relative != Path("scripts/check_release.py"):
+                failures.append(f"invalid Python syntax in {relative_path}: {error}")
+        if relative_path != Path("scripts/check_release.py"):
             if "arboghast" in text.lower():
-                failures.append(f"legacy spelling appears in {relative}")
+                failures.append(f"legacy spelling appears in {relative_path}")
             for marker in UNRESOLVED_MARKERS:
                 if marker in text:
-                    failures.append(f"unresolved marker {marker!r} appears in {relative}")
+                    failures.append(f"unresolved marker {marker!r} appears in {relative_path}")
 
     cli_path = root / "src/arbogast/cli.py"
     if cli_path.exists():

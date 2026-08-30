@@ -27,6 +27,7 @@ RELEASE_PATH = FIXTURE_ROOT / "release.json"
 H1_PATH = FIXTURE_ROOT / "h1-c2-f2.json"
 PUBLIC_CONTRACTS_PATH = FIXTURE_ROOT / "public-contracts.json"
 API_CLI_CONTRACTS_PATH = FIXTURE_ROOT / "api-cli-contracts.json"
+V020_API_CLI_CONTRACTS_PATH = PROJECT_ROOT / "tests/fixtures/compat/v0.2.0/api-cli-contracts.json"
 V010_CERTIFICATE_ID = "sha256:52b76eed5ad4ab3ee16fa7b34920c680cdb68e82470c72cefadf06a3d9439377"
 V010_CLAIM_ID = "cohom.h1.1574520bfd2136329bd615926e159f6fc568faedbf6cce2a988058c8904d562c"
 V010_H1_FIXTURE_SHA256 = "9768c82cb12a7d04f8850244c0b686ce33ba2bb633ffc777c4d72a9aba433743"
@@ -168,8 +169,8 @@ def _parameter_record(parameter: inspect.Parameter) -> dict[str, object]:
     }
 
 
-def _assert_additive_type_signature(expected: dict[str, object], value: type[object]) -> None:
-    if issubclass(value, Enum):
+def _assert_additive_signature(expected: dict[str, object], value: object) -> None:
+    if inspect.isclass(value) and issubclass(value, Enum):
         # EnumMeta's synthesized constructor signature changed from the
         # long-form ``(value, names=None, ...)`` on CPython 3.11/3.12 to
         # ``(*values)`` on 3.13/3.14.  That interpreter-owned signature is not
@@ -182,7 +183,7 @@ def _assert_additive_type_signature(expected: dict[str, object], value: type[obj
         assert expected["signature"] is None
         return
     assert isinstance(expected_parameters, list)
-    actual = inspect.signature(value)
+    actual = inspect.signature(cast(Any, value))
     actual_records = [_parameter_record(parameter) for parameter in actual.parameters.values()]
     expected_names = [cast(str, record["name"]) for record in expected_parameters]
     actual_names = [cast(str, record["name"]) for record in actual_records]
@@ -196,7 +197,17 @@ def _assert_additive_type_signature(expected: dict[str, object], value: type[obj
         ):
             cursor += 1
         assert cursor < len(actual_records), f"missing old parameter {expected_record['name']}"
-        assert actual_records[cursor] == expected_record
+        actual_record = actual_records[cursor]
+        expected_default = expected_record.get("default")
+        actual_default = actual_record.get("default")
+        if (
+            isinstance(expected_default, dict)
+            and set(expected_default) == {"identity"}
+            and isinstance(actual_default, dict)
+            and actual_default.get("identity") == expected_default["identity"]
+        ):
+            actual_record = {**actual_record, "default": expected_default}
+        assert actual_record == expected_record
         cursor += 1
 
     old_names = set(expected_names)
@@ -230,12 +241,35 @@ def _assert_additive_type_signature(expected: dict[str, object], value: type[obj
     assert set(expected_names) <= set(actual_names)
 
 
-def test_every_v010_exported_type_identity_and_constructor_remains_additive() -> None:
-    inventory = _json(API_CLI_CONTRACTS_PATH)
-    assert inventory["source_commit"] == "dfd1cc0fd7830ae77de2a04617fa21cece69dde2"
+@pytest.mark.parametrize(
+    ("path", "source_commit", "module_count", "type_count"),
+    (
+        (
+            API_CLI_CONTRACTS_PATH,
+            "dfd1cc0fd7830ae77de2a04617fa21cece69dde2",
+            17,
+            346,
+        ),
+        (
+            V020_API_CLI_CONTRACTS_PATH,
+            "8cab7f03379b75cfe875e5b9717f5a831332dfa1",
+            19,
+            424,
+        ),
+    ),
+    ids=("v0.1.0", "v0.2.0"),
+)
+def test_every_published_exported_type_identity_and_constructor_remains_additive(
+    path: Path,
+    source_commit: str,
+    module_count: int,
+    type_count: int,
+) -> None:
+    inventory = _json(path)
+    assert inventory["source_commit"] == source_commit
     modules = cast(dict[str, list[dict[str, object]]], inventory["exported_types"])
-    assert len(modules) == 17
-    assert sum(len(records) for records in modules.values()) == 346
+    assert len(modules) == module_count
+    assert sum(len(records) for records in modules.values()) == type_count
     for module_name, records in modules.items():
         module = import_module(module_name)
         exports = cast(Any, module).__all__
@@ -245,7 +279,24 @@ def test_every_v010_exported_type_identity_and_constructor_remains_additive() ->
             value = getattr(module, public_name)
             assert inspect.isclass(value)
             assert _identity(value) == expected["qualified_name"]
-            _assert_additive_type_signature(expected, value)
+            _assert_additive_signature(expected, value)
+
+
+def test_every_v020_exported_function_identity_and_signature_remains_additive() -> None:
+    inventory = _json(V020_API_CLI_CONTRACTS_PATH)
+    modules = cast(dict[str, list[dict[str, object]]], inventory["exported_functions"])
+    assert len(modules) == 17
+    assert sum(len(records) for records in modules.values()) == 176
+    for module_name, records in modules.items():
+        module = import_module(module_name)
+        exports = cast(Any, module).__all__
+        for expected in records:
+            public_name = cast(str, expected["export"])
+            assert public_name in exports
+            value = getattr(module, public_name)
+            assert inspect.isfunction(value)
+            assert _identity(value) == expected["qualified_name"]
+            _assert_additive_signature(expected, value)
 
 
 def _action_record(command_path: list[str], action: argparse.Action) -> dict[str, object]:
@@ -302,10 +353,18 @@ def _current_cli_contracts() -> dict[tuple[str, ...], dict[str, object]]:
     return parsers
 
 
-def test_every_v010_cli_option_and_positional_contract_remains_additive() -> None:
-    inventory = _json(API_CLI_CONTRACTS_PATH)
+@pytest.mark.parametrize(
+    ("path", "parser_count"),
+    ((API_CLI_CONTRACTS_PATH, 15), (V020_API_CLI_CONTRACTS_PATH, 16)),
+    ids=("v0.1.0", "v0.2.0"),
+)
+def test_every_published_cli_option_and_positional_contract_remains_additive(
+    path: Path,
+    parser_count: int,
+) -> None:
+    inventory = _json(path)
     expected_parsers = cast(list[dict[str, object]], inventory["cli_parsers"])
-    assert len(expected_parsers) == 15
+    assert len(expected_parsers) == parser_count
     actual_parsers = _current_cli_contracts()
     for expected_parser in expected_parsers:
         command_path = tuple(cast(list[str], expected_parser["command_path"]))

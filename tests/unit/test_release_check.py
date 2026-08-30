@@ -14,6 +14,7 @@ CheckSection = Callable[[Path, list[str]], None]
 CheckReleaseMetadata = Callable[[Path, list[str], str], None]
 check_release_metadata = cast(CheckReleaseMetadata, CHECKER["_check_release_metadata"])
 check_m23_fixture = cast(CheckSection, CHECKER["_check_m23_fixture"])
+check_compatibility_index = cast(CheckSection, CHECKER["_check_compatibility_index"])
 check_v010_compatibility = cast(CheckSection, CHECKER["_check_v010_compatibility"])
 check_live_pari_matrix = cast(CheckSection, CHECKER["_check_live_pari_matrix"])
 required_paths = cast(tuple[str, ...], CHECKER["REQUIRED_PATHS"])
@@ -93,9 +94,15 @@ def test_release_surface_requires_ci_campaign_and_exact_m23_inputs() -> None:
     assert "docs/release-notes-0.1.0.md" in release_required_paths("0.2.0")
     assert "scripts/build_source_archive.py" in required_paths
     assert "scripts/pari_anchor_payload.py" in required_paths
+    assert "scripts/snapshot_api_cli.py" in required_paths
+    assert "scripts/snapshot_semantic_contracts.py" in required_paths
     assert "scripts/snapshot_v010_api_cli.py" in required_paths
-    assert "tests/fixtures/compat/v0.1.0/release.json" in required_paths
-    assert "tests/fixtures/compat/v0.1.0/api-cli-contracts.json" in required_paths
+    assert "tests/fixtures/compat/index.json" in required_paths
+    assert "tests/fixtures/compat/v0.1.0/release.json" in release_required_paths("0.3.0")
+    assert "tests/fixtures/compat/v0.2.0/release.json" in release_required_paths("0.3.0")
+    assert "tests/fixtures/compat/v0.2.0/semantic-contracts.json" in release_required_paths("0.3.0")
+    assert "docs/release-notes-0.1.0.md" in release_required_paths("0.3.0")
+    assert "docs/release-notes-0.2.0.md" in release_required_paths("0.3.0")
     assert "tests/integration/test_v010_compatibility.py" in required_paths
 
 
@@ -149,6 +156,36 @@ def test_release_gate_hashes_the_immutable_v010_inputs(tmp_path: Path) -> None:
     failures = []
     check_v010_compatibility(tmp_path, failures)
     assert any("missing immutable 0.1.0 fixture" in failure for failure in failures)
+
+
+def test_release_gate_validates_every_indexed_compatibility_release(tmp_path: Path) -> None:
+    shutil.copytree(
+        PROJECT_ROOT / "tests/fixtures/compat",
+        tmp_path / "tests/fixtures/compat",
+    )
+    for version in ("0.1.0", "0.2.0"):
+        notes = tmp_path / f"docs/release-notes-{version}.md"
+        notes.parent.mkdir(parents=True, exist_ok=True)
+        shutil.copyfile(PROJECT_ROOT / f"docs/release-notes-{version}.md", notes)
+
+    failures: list[str] = []
+    check_compatibility_index(tmp_path, failures)
+    assert failures == []
+
+    semantic = tmp_path / "tests/fixtures/compat/v0.2.0/semantic-contracts.json"
+    semantic.write_text(semantic.read_text(encoding="utf-8") + "\n", encoding="utf-8")
+    failures = []
+    check_compatibility_index(tmp_path, failures)
+    assert any("semantic-contracts.json" in failure for failure in failures)
+
+    shutil.copyfile(
+        PROJECT_ROOT / "tests/fixtures/compat/v0.2.0/semantic-contracts.json",
+        semantic,
+    )
+    (tmp_path / "docs/release-notes-0.2.0.md").unlink()
+    failures = []
+    check_compatibility_index(tmp_path, failures)
+    assert any("release-notes-0.2.0.md" in failure for failure in failures)
 
 
 def test_m23_release_gate_binds_exact_artifacts_and_theorem_counts(tmp_path: Path) -> None:
