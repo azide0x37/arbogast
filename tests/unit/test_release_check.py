@@ -21,6 +21,7 @@ check_semantic_snapshot = cast(Callable[..., None], CHECKER["_check_semantic_sna
 check_v010_compatibility = cast(CheckSection, CHECKER["_check_v010_compatibility"])
 check_live_pari_matrix = cast(CheckSection, CHECKER["_check_live_pari_matrix"])
 check_ci_install_contract = cast(CheckSection, CHECKER["_check_ci_install_contract"])
+check_pypi_workflow = cast(CheckSection, CHECKER["_check_pypi_workflow"])
 check_security_policy = cast(CheckReleaseMetadata, CHECKER["_check_security_policy"])
 check_build_system = cast(CheckSection, CHECKER["_check_build_system"])
 required_paths = cast(tuple[str, ...], CHECKER["REQUIRED_PATHS"])
@@ -71,6 +72,20 @@ def _replace_occurrence(text: str, old: str, new: str, occurrence: int) -> str:
     return text[:found] + new + text[start:]
 
 
+def _remove_named_workflow_step(text: str, name: str, occurrence: int = 0) -> str:
+    marker = f"      - name: {name}\n"
+    start = 0
+    for _ in range(occurrence + 1):
+        found = text.find(marker, start)
+        if found < 0:
+            raise AssertionError(f"occurrence {occurrence} of workflow step {name!r} is missing")
+        start = found + len(marker)
+    end = text.find("      - name: ", start)
+    if end < 0:
+        raise AssertionError(f"workflow step {name!r} has no following step boundary")
+    return text[:found] + text[end:]
+
+
 def test_release_metadata_requires_final_version_date_and_wording(tmp_path: Path) -> None:
     _write(
         tmp_path / "CITATION.cff",
@@ -115,6 +130,10 @@ def test_release_metadata_requires_final_version_date_and_wording(tmp_path: Path
 
 def test_release_surface_requires_ci_campaign_and_exact_m23_inputs() -> None:
     assert ".github/workflows/ci.yml" in required_paths
+    assert ".github/workflows/publish-pypi.yml" in required_paths
+    assert "docs/publishing.md" in required_paths
+    assert "scripts/verify_pypi_artifacts.py" in required_paths
+    assert "scripts/verify_pypi_registry.py" in required_paths
     assert "examples/campaigns/antieau_klueners_malle/README.md" in required_paths
     assert "examples/campaigns/antieau_klueners_malle/run.py" in required_paths
     assert "examples/hurwitz/m23_real_component/fixture.py" in required_paths
@@ -240,6 +259,9 @@ def test_bootstrap_release_surface_is_additive_from_v060() -> None:
     v050_manifest = "tests/fixtures/compat/v0.5.0/release.json"
     assert v050_manifest not in legacy
     assert v050_manifest in v060
+    assert "release/pypi/v0.5.0.json" not in legacy
+    assert "release/pypi/v0.6.0.json" in v060
+    assert "release/pypi/v0.7.0.json" in future
 
     expected_sources = {
         path.removeprefix("src/arbogast/bootstrap/")
@@ -455,6 +477,291 @@ def test_release_gate_makes_every_ci_uv_command_lock_preserving(tmp_path: Path) 
         failures = []
         check_ci_install_contract(tmp_path, failures)
         assert failures != []
+
+
+def test_pypi_workflow_is_manual_hash_bound_and_oidc_isolated(tmp_path: Path) -> None:
+    workflow = (PROJECT_ROOT / ".github/workflows/publish-pypi.yml").read_text(encoding="utf-8")
+    path = tmp_path / ".github/workflows/publish-pypi.yml"
+    _write(path, workflow)
+    failures: list[str] = []
+    check_pypi_workflow(tmp_path, failures)
+    assert failures == []
+
+    damaged_workflows = [
+        workflow.replace("  workflow_dispatch:\n", "  push:\n", 1),
+        workflow.replace(
+            "  workflow_dispatch:\n",
+            '  workflow_dispatch:\n  "push":\n',
+            1,
+        ),
+        workflow.replace(
+            "jobs:\n  validate:\n",
+            "jobs:\n"
+            '  "shadow-publisher":\n'
+            "    runs-on: ubuntu-latest\n"
+            "    permissions:\n"
+            '      "id-token": write\n'
+            "    environment:\n"
+            "      name: pypi\n"
+            "    steps:\n"
+            "      - run: uv publish attacker.whl\n"
+            "  validate:\n",
+            1,
+        ),
+        workflow.replace("  validate:\n", '  "validate":\n', 1),
+        workflow.replace(
+            "permissions:\n  contents: read\n",
+            'permissions:\n  contents: read\n  "id-token": write\n',
+            1,
+        ).replace(
+            "    permissions:\n      contents: read\n\n    steps:\n",
+            "    environment:\n"
+            "      name: pypi\n"
+            "    steps:\n"
+            "      - name: Unreviewed validator publisher\n"
+            "        run: uv publish --publish-url "
+            "https://upload.pypi.org/legacy/ attacker.whl\n\n",
+            1,
+        ),
+        workflow.replace(
+            "    permissions:\n      contents: read\n",
+            "    permissions:\n      contents: read\n      id-token: write\n",
+            1,
+        ),
+        workflow.replace("--trusted-publishing always", "--trusted-publishing automatic", 1),
+        workflow.replace(
+            '"dist/arbogast-${PROJECT_VERSION}-py3-none-any.whl"',
+            '"dist/*"',
+            1,
+        ),
+        workflow.replace(
+            "            dist/arbogast-${{ inputs.version }}.tar.gz\n",
+            "            dist/arbogast-${{ inputs.version }}.tar.gz\n"
+            "            dist/arbogast-${{ inputs.version }}-source.tar.gz\n",
+            1,
+        ),
+        workflow.replace(
+            "uses: astral-sh/attest-action@f589a42a7efb6fe400b4f400de60b4bc90390027 # v0.0.6",
+            "uses: astral-sh/attest-action@main",
+            1,
+        ),
+        workflow.replace("name: pypi\n", "name: production\n", 1),
+        workflow.replace("sha256sum --check --strict", "sha256sum --check", 1),
+        workflow.replace(
+            '[[ -f "${wheel}" && ! -L "${wheel}" ]]',
+            '[[ -f "${wheel}" ]]',
+            1,
+        ),
+        workflow.replace(
+            "      - name: Install pinned uv\n",
+            "      - uses: actions/checkout@main\n\n      - name: Install pinned uv\n",
+            1,
+        ),
+        workflow.replace(
+            '          --manifest "release/pypi/${RELEASE_TAG}.json"\n',
+            "",
+            1,
+        ),
+    ]
+    for index, damaged in enumerate(damaged_workflows):
+        _write(path, damaged)
+        failures = []
+        check_pypi_workflow(tmp_path, failures)
+        assert failures != [], f"tamper case {index} was accepted"
+
+
+def test_pypi_publishers_reject_structural_and_evidence_tampering(tmp_path: Path) -> None:
+    workflow = (PROJECT_ROOT / ".github/workflows/publish-pypi.yml").read_text(encoding="utf-8")
+    path = tmp_path / ".github/workflows/publish-pypi.yml"
+
+    reordered = workflow.replace(
+        "      - name: Recheck exact custody at the credential boundary\n",
+        "      - name: TEMPORARY STEP NAME\n",
+        1,
+    )
+    reordered = reordered.replace(
+        "      - name: Revalidate the current public release after environment approval\n",
+        "      - name: Recheck exact custody at the credential boundary\n",
+        1,
+    ).replace(
+        "      - name: TEMPORARY STEP NAME\n",
+        "      - name: Revalidate the current public release after environment approval\n",
+        1,
+    )
+
+    exact_attest_action = (
+        "        uses: astral-sh/attest-action@f589a42a7efb6fe400b4f400de60b4bc90390027 # v0.0.6"
+    )
+    publisher_boundary = "    permissions:\n      id-token: write\n\n    steps:\n"
+    tamper_cases = [
+        (
+            "condition",
+            workflow.replace(
+                "    if: ${{ inputs.target == 'testpypi' }}\n",
+                "    if: ${{ always() }}\n",
+                1,
+            ),
+            "must use exact condition",
+        ),
+        (
+            "needs",
+            workflow.replace("    needs: validate\n", "    needs: []\n", 1),
+            "must need only the validate job",
+        ),
+        (
+            "runner",
+            _replace_occurrence(
+                workflow,
+                "    runs-on: ubuntu-latest\n",
+                "    runs-on: self-hosted\n",
+                1,
+            ),
+            "must run on ubuntu-latest",
+        ),
+        (
+            "environment URL",
+            workflow.replace(
+                "      url: https://test.pypi.org/project/arbogast/${{ inputs.version }}/\n",
+                "      url: https://example.invalid/\n",
+                1,
+            ),
+            "must use the exact 'testpypi' environment",
+        ),
+        (
+            "extra permission",
+            workflow.replace(
+                "    permissions:\n      id-token: write\n",
+                "    permissions:\n      id-token: write\n      contents: write\n",
+                1,
+            ),
+            "must grant only id-token: write",
+        ),
+        (
+            "extra run step",
+            workflow.replace(
+                publisher_boundary,
+                publisher_boundary
+                + "      - name: Unauthorized command\n"
+                + "        run: echo unreviewed\n\n",
+                1,
+            ),
+            "exactly the reviewed ordered steps",
+        ),
+        (
+            "extra uses step",
+            _replace_occurrence(
+                workflow,
+                publisher_boundary,
+                publisher_boundary
+                + "      - name: Unauthorized action\n"
+                + "        uses: actions/checkout@main\n\n",
+                1,
+            ),
+            "exactly the reviewed ordered steps",
+        ),
+        (
+            "continue on error",
+            workflow.replace(
+                exact_attest_action,
+                exact_attest_action + "\n        continue-on-error: true",
+                1,
+            ),
+            "must not continue on error",
+        ),
+        (
+            "unpinned setup action",
+            _replace_occurrence(
+                workflow,
+                "        uses: "
+                "astral-sh/setup-uv@c771a70e6277c0a99b617c7a806ffedaca235ff9 # v9.0.0",
+                "        uses: astral-sh/setup-uv@main",
+                1,
+            ),
+            "must use only",
+        ),
+        (
+            "unpinned download action",
+            workflow.replace(
+                "        uses: "
+                "actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c # v8.0.1",
+                "        uses: actions/download-artifact@main",
+                1,
+            ),
+            "must use only",
+        ),
+        ("step reorder", reordered, "exactly the reviewed ordered steps"),
+        (
+            "step removal",
+            _remove_named_workflow_step(workflow, "Download the validated pair"),
+            "exactly the reviewed ordered steps",
+        ),
+        (
+            "public release comparison",
+            workflow.replace("          cmp --silent \\\n", "          test -n \\\n", 1),
+            "must revalidate and byte-compare the public release",
+        ),
+        (
+            "public tag revalidation",
+            workflow.replace(
+                '          tag_refs="$(git ls-remote --tags \\\n',
+                "          tag_refs=\"$(printf '%s' \\\n",
+                1,
+            ),
+            "must revalidate and byte-compare the public release",
+        ),
+        (
+            "post-attestation step removal",
+            _remove_named_workflow_step(
+                workflow,
+                "Recheck exact files and hashes after attestation",
+            ),
+            "exactly the reviewed ordered steps",
+        ),
+        (
+            "post-attestation file count",
+            workflow.replace('== "4" ]]', '== "3" ]]', 1),
+            "must require exactly four regular files",
+        ),
+        (
+            "post-attestation symlink rejection",
+            workflow.replace(
+                '          [[ -f "${wheel_attestation}" && ! -L "${wheel_attestation}" ]]\n',
+                '          [[ -f "${wheel_attestation}" ]]\n',
+                1,
+            ),
+            "must require exactly four regular files",
+        ),
+        (
+            "attestation input paths",
+            workflow.replace(
+                "        with:\n          paths: |\n"
+                "            dist/arbogast-${{ inputs.version }}-py3-none-any.whl\n"
+                "            dist/arbogast-${{ inputs.version }}.tar.gz\n",
+                "",
+                1,
+            ),
+            "must attest exactly the wheel and source distribution",
+        ),
+        (
+            "explicit attestation upload",
+            workflow.replace(
+                '          "dist/arbogast-${PROJECT_VERSION}-py3-none-any.whl'
+                '.publish.attestation"\n',
+                "",
+                1,
+            ),
+            "must publish only the exact pair to its registry",
+        ),
+    ]
+
+    for label, damaged, expected_failure in tamper_cases:
+        assert damaged != workflow, f"tamper fixture {label!r} did not change the workflow"
+        _write(path, damaged)
+        failures: list[str] = []
+        check_pypi_workflow(tmp_path, failures)
+        assert any(expected_failure in failure for failure in failures), (
+            f"tamper case {label!r} escaped its semantic gate: {failures!r}"
+        )
 
 
 def test_release_gate_tracks_the_current_security_support_line(tmp_path: Path) -> None:
