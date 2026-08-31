@@ -6,7 +6,7 @@ of a claimed computation.
 
 ## Supported versions
 
-Security and certificate-integrity fixes target the latest released 0.x version. Arbogast 0.1.0
+Security and certificate-integrity fixes target the latest released 0.x version. Arbogast 0.6.0
 is currently supported. Old certificate schema versions may be unsupported.
 
 ## Reporting a vulnerability

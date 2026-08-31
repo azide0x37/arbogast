@@ -3,6 +3,13 @@
 Arbogast exports projections of the same claim graph for coding agents, paper workflows, and
 formalization. None of these consumers should reconstruct mathematics from terminal output.
 
+The repository's root `AGENTS.md` is a short operational bootstrap contract: it selects an
+operating mode, requires environment and readiness gates, and points agents to the generated
+semantic surfaces below. It is not a hand-maintained operation catalog. Generated manifests,
+bounded contexts, operation descriptions, and registry records remain authoritative for API
+semantics; copying those records into `AGENTS.md` would create a second surface that can drift.
+See the [AI agent bootstrap guide](agent-bootstrap.md) for the complete startup protocol.
+
 ## Agent manifests
 
 An agent-facing manifest is intentionally smaller than the repository. `AgentManifest` is the

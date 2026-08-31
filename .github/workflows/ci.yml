@@ -7,6 +7,9 @@ on:
 permissions:
   contents: read
 
+env:
+  UV_LOCKED: "1"
+
 concurrency:
   group: ci-${{ github.workflow }}-${{ github.ref }}
   cancel-in-progress: true
@@ -29,11 +32,15 @@ jobs:
       - name: Install uv
         uses: astral-sh/setup-uv@c771a70e6277c0a99b617c7a806ffedaca235ff9 # v9.0.0
         with:
+          version: "0.12.3"
           python-version: ${{ matrix.python-version }}
           enable-cache: true
 
+      - name: Verify the dependency lock
+        run: uv lock --check
+
       - name: Install project
-        run: uv sync --extra dev
+        run: uv sync --locked --extra dev
 
       - name: Assert the portable matrix has no GP executable
         run: |
@@ -54,6 +61,12 @@ jobs:
       - name: Test
         run: uv run pytest
 
+      - name: Test the copyable campaign bootstrap template
+        run: >-
+          PYTHONPATH=examples/campaigns/_template/src
+          uv run pytest
+          examples/campaigns/_template/tests
+
       - name: Build wheel and source distribution
         run: uv build
 
@@ -63,6 +76,7 @@ jobs:
       - name: Smoke CLI contracts
         run: |
           uv run arbogast version --json
+          uv run python -c "import sys; from pathlib import Path; from scripts.qualify_artifacts import _smoke_doctor_modes; _smoke_doctor_modes(Path(sys.executable), cwd=Path.cwd())"
           uv run arbogast describe cohom.h1 --json
           uv run arbogast route --from NielsenClass --to ClaimGraph --json
 
@@ -113,11 +127,15 @@ jobs:
       - name: Install uv
         uses: astral-sh/setup-uv@c771a70e6277c0a99b617c7a806ffedaca235ff9 # v9.0.0
         with:
+          version: "0.12.3"
           python-version: "3.11"
           enable-cache: true
 
+      - name: Verify the dependency lock
+        run: uv lock --check
+
       - name: Install project
-        run: uv sync --extra dev
+        run: uv sync --locked --extra dev
 
       - name: Resolve safe project version
         id: project_version
@@ -191,6 +209,7 @@ jobs:
       - name: Install uv
         uses: astral-sh/setup-uv@c771a70e6277c0a99b617c7a806ffedaca235ff9 # v9.0.0
         with:
+          version: "0.12.3"
           python-version: "3.11"
           enable-cache: true
 
@@ -215,8 +234,11 @@ jobs:
           make install
           echo "PARI_PREFIX=${prefix}" >> "${GITHUB_ENV}"
 
+      - name: Verify the dependency lock
+        run: uv lock --check
+
       - name: Install project
-        run: uv sync --extra dev
+        run: uv sync --locked --extra dev
 
       - name: Download the exact candidate trio
         uses: actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c # v8.0.1
@@ -274,8 +296,15 @@ jobs:
       - name: Install uv
         uses: astral-sh/setup-uv@c771a70e6277c0a99b617c7a806ffedaca235ff9 # v9.0.0
         with:
+          version: "0.12.3"
           python-version: "3.11"
           enable-cache: true
+
+      - name: Verify the dependency lock
+        run: uv lock --check
+
+      - name: Install project
+        run: uv sync --locked --extra dev
 
       - name: Download both normalized anchor payloads
         uses: actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c # v8.0.1

@@ -6,6 +6,7 @@ import re
 from collections.abc import Iterable, Mapping
 from typing import Any, Protocol
 
+from arbogast.cert import VerifierRegistry, default_verifiers
 from arbogast.formats import FrozenMapping, JSONValue, canonical_dumps, loads, thaw_json
 
 from .errors import CampaignInvariantError, CampaignSerializationError, UnknownTargetError
@@ -35,7 +36,15 @@ class TargetLedger:
 
     schema = "arbogast.campaign.ledger.v1"
 
-    def __init__(self, targets: Iterable[TargetSpec] = ()) -> None:
+    def __init__(
+        self,
+        targets: Iterable[TargetSpec] = (),
+        *,
+        verifier_registry: VerifierRegistry = default_verifiers,
+    ) -> None:
+        if not isinstance(verifier_registry, VerifierRegistry):
+            raise TypeError("verifier_registry must be a VerifierRegistry")
+        self._verifier_registry = verifier_registry
         self._events: list[LedgerEvent] = []
         self._targets: dict[str, TargetSpec] = {}
         self._observations: dict[str, list[Observation]] = {}
@@ -49,6 +58,13 @@ class TargetLedger:
         self._claim_bindings: dict[str, FrozenMapping] = {}
         for target in targets:
             self.add(target)
+
+    def use_verifier_registry(self, verifier_registry: VerifierRegistry) -> None:
+        """Bind runtime-only verification context without changing ledger bytes."""
+
+        if not isinstance(verifier_registry, VerifierRegistry):
+            raise TypeError("verifier_registry must be a VerifierRegistry")
+        self._verifier_registry = verifier_registry
 
     @property
     def events(self) -> tuple[LedgerEvent, ...]:
@@ -75,7 +91,7 @@ class TargetLedger:
             raw = thaw_json(event.payload["observation"])
             if not isinstance(raw, dict):
                 raise CampaignSerializationError("observation payload must be an object")
-            result.append(Observation.from_dict(raw))
+            result.append(Observation.from_dict(raw, verifier_registry=self._verifier_registry))
         return tuple(result)
 
     @property
@@ -237,7 +253,10 @@ class TargetLedger:
                 "candidate source_refs do not match observation provenance"
             )
         if candidate.evidence.value == "VERIFIED":
-            if not observation.verified or observation.certificate_ref is None:
+            if (
+                not observation.verify(self._verifier_registry)
+                or observation.certificate_ref is None
+            ):
                 raise CampaignInvariantError(
                     "VERIFIED candidate requires its observation's verified certificate"
                 )
@@ -319,7 +338,7 @@ class TargetLedger:
                 raise CampaignInvariantError("observation ID collision")
             return None
         state = self.status(observation.target_id)
-        if state.closed and observation.closes_target:
+        if state.closed and observation.closes_target_with(self._verifier_registry):
             assert state.closing_observation is not None
             if state.closing_observation.outcome is not observation.outcome:
                 raise CampaignInvariantError(
@@ -418,13 +437,16 @@ class TargetLedger:
     def status(self, target: TargetSpec | str) -> TargetState:
         spec = self.get(target)
         observations = self._observations.get(spec.target_id, ())
-        closing = next((item for item in observations if item.closes_target), None)
+        closing = next(
+            (item for item in observations if item.closes_target_with(self._verifier_registry)),
+            None,
+        )
         if closing is None:
             status = TargetStatus.OPEN
             outcome = MathematicalOutcome.UNKNOWN
         else:
             status = TargetStatus.CLOSED
-            outcome = closing.mathematical_outcome
+            outcome = MathematicalOutcome(closing.outcome.value)
         checkpoint = next(
             (
                 item.checkpoint_ref
@@ -505,7 +527,10 @@ class TargetLedger:
             observation_value = thaw_json(event.payload["observation"])
             if not isinstance(observation_value, dict):
                 raise CampaignSerializationError("observation payload must be an object")
-            observation = Observation.from_dict(observation_value)
+            observation = Observation.from_dict(
+                observation_value,
+                verifier_registry=self._verifier_registry,
+            )
             if observation.target_id not in self._targets:
                 raise CampaignSerializationError("observation refers to an unknown target")
             task_document = self._tasks.get(observation.task_id)
@@ -569,7 +594,7 @@ class TargetLedger:
                     "candidate provenance does not match campaign history"
                 )
             if candidate.evidence.value == "VERIFIED" and (
-                not candidate_observation.verified
+                not candidate_observation.verify(self._verifier_registry)
                 or candidate_observation.certificate_ref is None
                 or candidate.certificate_ref != candidate_observation.certificate_ref.certificate_id
             ):
@@ -658,8 +683,13 @@ class TargetLedger:
         return canonical_dumps(self.to_dict())
 
     @classmethod
-    def replay(cls, events: Iterable[LedgerEvent | Mapping[str, Any]]) -> TargetLedger:
-        ledger = cls()
+    def replay(
+        cls,
+        events: Iterable[LedgerEvent | Mapping[str, Any]],
+        *,
+        verifier_registry: VerifierRegistry = default_verifiers,
+    ) -> TargetLedger:
+        ledger = cls(verifier_registry=verifier_registry)
         for expected_sequence, raw_event in enumerate(events):
             event = (
                 raw_event
@@ -676,7 +706,12 @@ class TargetLedger:
         return ledger
 
     @classmethod
-    def from_dict(cls, value: Mapping[str, Any]) -> TargetLedger:
+    def from_dict(
+        cls,
+        value: Mapping[str, Any],
+        *,
+        verifier_registry: VerifierRegistry = default_verifiers,
+    ) -> TargetLedger:
         if set(value) != {"events", "schema"}:
             raise CampaignSerializationError("ledger has missing or unknown fields")
         if value.get("schema") != cls.schema:
@@ -686,14 +721,19 @@ class TargetLedger:
             raise CampaignSerializationError("ledger events must be a JSON array")
         if any(not isinstance(event, Mapping) for event in raw_events):
             raise CampaignSerializationError("ledger event must be a JSON object")
-        return cls.replay(raw_events)
+        return cls.replay(raw_events, verifier_registry=verifier_registry)
 
     @classmethod
-    def from_json(cls, value: str | bytes | bytearray) -> TargetLedger:
+    def from_json(
+        cls,
+        value: str | bytes | bytearray,
+        *,
+        verifier_registry: VerifierRegistry = default_verifiers,
+    ) -> TargetLedger:
         parsed = loads(value)
         if not isinstance(parsed, dict):
             raise CampaignSerializationError("campaign ledger JSON must be an object")
-        return cls.from_dict(parsed)
+        return cls.from_dict(parsed, verifier_registry=verifier_registry)
 
 
 __all__ = ["TargetLedger"]

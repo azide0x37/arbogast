@@ -107,6 +107,20 @@ def _cmd_version(args: argparse.Namespace) -> int:
     return 0
 
 
+def _cmd_doctor(args: argparse.Namespace) -> int:
+    """Emit one bounded, non-authoritative environment diagnostic."""
+
+    from arbogast.bootstrap import environment_preflight
+
+    try:
+        report = environment_preflight(args.mode)
+        payload = report.to_dict()
+    except Exception as error:
+        raise CLIError(f"doctor diagnostic failed: {type(error).__name__}: {error}") from error
+    _emit_json(payload)
+    return 0 if report.ready else 1
+
+
 def _cmd_backends(args: argparse.Namespace) -> int:
     """Report a backend status, using its explicit detailed probe when available."""
 
@@ -312,17 +326,25 @@ def _cmd_verify(args: argparse.Namespace) -> int:
 
 def _load_claims(path: str) -> tuple[object, ...]:
     document = _read_json(path)
+    schema = document.get("schema_version")
     try:
         from arbogast.claims import ClaimGraph
 
         return tuple(ClaimGraph.from_dict(document).claims)
-    except (ImportError, KeyError, TypeError, ValueError):
+    except ImportError as error:
+        if schema is not None:
+            raise CLIError(f"cannot load schema-bearing claim graph: {error}") from error
+    except (KeyError, TypeError, ValueError) as error:
+        if schema is not None:
+            raise CLIError(f"invalid {schema} claim graph: {error}") from error
+    if schema is None:
         raw = document.get("claims")
         if not isinstance(raw, Sequence) or isinstance(raw, (str, bytes)):
             raise CLIError("claim document must contain a 'claims' array") from None
         if any(not isinstance(item, Mapping) for item in raw):
             raise CLIError("every claim must be a JSON object") from None
         return tuple(raw)
+    raise CLIError(f"unsupported claim graph schema: {schema}")
 
 
 def _claim_field(claim: object, name: str) -> str | None:
@@ -381,7 +403,9 @@ def _proof_gaps(document: Mapping[str, object], claim_id: str | None) -> tuple[P
             return tuple(
                 claim.formalization for claim in graph.claims if claim.formalization is not None
             )
-        if schema == Claim.schema_version:
+        from arbogast.claims import CLAIM_SCHEMA_V1, CLAIM_SCHEMA_V2
+
+        if schema in {CLAIM_SCHEMA_V1, CLAIM_SCHEMA_V2}:
             claim = Claim.from_dict(document)
             if claim_id is not None and claim_id != claim.id:
                 raise CLIError(f"unknown claim in proof document: {claim_id}")
@@ -399,7 +423,7 @@ def _proof_gaps(document: Mapping[str, object], claim_id: str | None) -> tuple[P
         raise CLIError(f"invalid {schema or 'unknown'} proof document: {error}") from error
     raise CLIError(
         "proof-gap expects an arbogast.claim-graph/v1, arbogast.claim/v1, "
-        "or arbogast.proof-gap/v1 document"
+        "arbogast.claim/v2, or arbogast.proof-gap/v1 document"
     )
 
 
@@ -649,6 +673,11 @@ def build_parser() -> argparse.ArgumentParser:
     version = commands.add_parser("version", help="show the Arbogast release version")
     version.add_argument("--json", action="store_true", help="emit stable JSON")
     version.set_defaults(handler=_cmd_version)
+
+    doctor = commands.add_parser("doctor", help="diagnose bounded environment readiness")
+    doctor.add_argument("--mode", choices=("campaign", "core", "replay"), required=True)
+    doctor.add_argument("--json", action="store_true", required=True, help="emit stable JSON")
+    doctor.set_defaults(handler=_cmd_doctor)
 
     backends = commands.add_parser("backends", help="probe optional algebra backends")
     backends.add_argument("--name", help="probe one backend by name")

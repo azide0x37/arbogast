@@ -137,6 +137,31 @@ def test_verification_requires_literal_true(tmp_path) -> None:
         LocalExecutor(tmp_path).execute(TaskSpec("demo.none-verifier"), operation, verify=True)
 
 
+def test_functional_operation_closure_verifier_contract_is_canonical() -> None:
+    operation = FunctionalOperation(
+        planner=lambda _task: ("only",),
+        runner=lambda _task, shard: {"candidate": shard.key},
+        reducer=lambda _task, values: values[0],
+        closure_verifiers=("demo.closure.v1",),
+    )
+
+    assert operation.closure_verifiers == ("demo.closure.v1",)
+    with pytest.raises(ValueError, match="sorted and unique"):
+        FunctionalOperation(
+            planner=operation.planner,
+            runner=operation.runner,
+            reducer=operation.reducer,
+            closure_verifiers=("z", "a"),
+        )
+    with pytest.raises(ValueError, match="tuple"):
+        FunctionalOperation(
+            planner=operation.planner,
+            runner=operation.runner,
+            reducer=operation.reducer,
+            closure_verifiers=cast(tuple[str, ...], ["demo.closure.v1"]),
+        )
+
+
 def test_result_cache_is_plan_bound_and_cached_results_are_reverified(tmp_path) -> None:
     task = TaskSpec("demo.plan-bound")
     first_verifications: list[object] = []

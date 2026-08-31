@@ -24,6 +24,9 @@ V030_COMMIT = "46aef45d7bb24893d552476aee2d9b17b3da7e43"
 V040_API_PATH = PROJECT_ROOT / "tests/fixtures/compat/v0.4.0/api-cli-contracts.json"
 V040_SEMANTIC_PATH = PROJECT_ROOT / "tests/fixtures/compat/v0.4.0/semantic-contracts.json"
 V040_COMMIT = "771a1a150e02b0459ff82bf1b44e3c0fb7cdd933"
+V050_API_PATH = PROJECT_ROOT / "tests/fixtures/compat/v0.5.0/api-cli-contracts.json"
+V050_SEMANTIC_PATH = PROJECT_ROOT / "tests/fixtures/compat/v0.5.0/semantic-contracts.json"
+V050_COMMIT = "a4852ec2d2d8ab0655cf6d1c2cfa5e641ea763a0"
 V020_CERTIFICATE_IDS = (
     "sha256:7fc9a8a70169714070587e7abaebb5700ff4515f4eae9f376b464cedb2055e2e",
     "sha256:6dfabd77769bd8b7b58692c53deadb0caffae30535d526aa487c1c7eebfcbbeb",
@@ -40,6 +43,7 @@ V040_CERTIFICATE_IDS = (
     "sha256:659d84788e7a1e1cb31c10b37bd2f61c87b92a96b3b3705ba71b1a60a9a75374",
     "sha256:bd6a74e2581ab3aaed0fa6a73ef51e4395b2116670a36030168adb2545d684f3",
 )
+V050_CERTIFICATE_IDS = V040_CERTIFICATE_IDS
 V020_ARTIFACTS = [
     {
         "bytes": 580623,
@@ -91,6 +95,23 @@ V040_ARTIFACTS = [
         "sha256": "sha256:f3d9dc05c3e5aad6a66248041fc5d20c506e502b8bc9c3bc5f5f90e3bd32cb71",
     },
 ]
+V050_ARTIFACTS = [
+    {
+        "bytes": 844222,
+        "filename": "arbogast-0.5.0-py3-none-any.whl",
+        "sha256": "sha256:0c0b4cea977003f7de9032141372c96f1ec2802f1f489511d1444bf84a6fe4b6",
+    },
+    {
+        "bytes": 2075723,
+        "filename": "arbogast-0.5.0.tar.gz",
+        "sha256": "sha256:5be85fdd516a5ff5125cc4d1b3d2062d6f780fd0ee254222cf2f349b30fd8a0d",
+    },
+    {
+        "bytes": 2145015,
+        "filename": "arbogast-0.5.0-source.tar.gz",
+        "sha256": "sha256:e5c1e57bf4a4abad0bce17f5e254ddffdc0115029524ab8d4250c380983530cb",
+    },
+]
 PARI_ANCHORS = [
     {
         "source_sha256": "0efdda7515d9d954f63324c34b34c560e60f73a81c3924a71260a2cc91d5f981",
@@ -124,6 +145,7 @@ def test_compatibility_index_pins_all_published_source_and_release_identities() 
         "0.2.0",
         "0.3.0",
         "0.4.0",
+        "0.5.0",
     ]
     assert releases[0]["source_commit"] == "dfd1cc0fd7830ae77de2a04617fa21cece69dde2"
     assert releases[0]["source_tag"] == "v0.1.0"
@@ -136,12 +158,22 @@ def test_compatibility_index_pins_all_published_source_and_release_identities() 
     assert releases[3]["source_commit"] == V040_COMMIT
     assert releases[3]["source_tag"] == "v0.4.0"
     assert releases[3]["published_artifacts"] == V040_ARTIFACTS
+    assert releases[4]["source_commit"] == V050_COMMIT
+    assert releases[4]["source_tag"] == "v0.5.0"
+    assert releases[4]["published_artifacts"] == V050_ARTIFACTS
     v040_manifest = _json(PROJECT_ROOT / "tests/fixtures/compat/v0.4.0/release.json")
     assert v040_manifest["github_release"] == {
         "id": 379302816,
         "platform_immutable": False,
         "published_at": "2026-08-30T14:17:14Z",
         "url": "https://github.com/azide0x37/arbogast/releases/tag/v0.4.0",
+    }
+    v050_manifest = _json(PROJECT_ROOT / "tests/fixtures/compat/v0.5.0/release.json")
+    assert v050_manifest["github_release"] == {
+        "id": 379322215,
+        "platform_immutable": False,
+        "published_at": "2026-08-30T15:32:56Z",
+        "url": "https://github.com/azide0x37/arbogast/releases/tag/v0.5.0",
     }
 
     for release in releases:
@@ -157,6 +189,7 @@ def test_compatibility_index_pins_all_published_source_and_release_identities() 
         (V020_SEMANTIC_PATH, V020_COMMIT, 41),
         (V030_SEMANTIC_PATH, V030_COMMIT, 96),
         (V040_SEMANTIC_PATH, V040_COMMIT, 160),
+        (V050_SEMANTIC_PATH, V050_COMMIT, 249),
     ),
 )
 def test_published_schema_catalogs_and_backend_boundary_remain_additive(
@@ -183,12 +216,13 @@ def test_published_schema_catalogs_and_backend_boundary_remain_additive(
         V020_SEMANTIC_PATH: V020_CERTIFICATE_IDS,
         V030_SEMANTIC_PATH: V030_CERTIFICATE_IDS,
         V040_SEMANTIC_PATH: V040_CERTIFICATE_IDS,
+        V050_SEMANTIC_PATH: V050_CERTIFICATE_IDS,
     }[path]
     assert (
         tuple(record["certificate_id"] for record in snapshot["central_certificates"])
         == expected_certificates
     )
-    if path in {V030_SEMANTIC_PATH, V040_SEMANTIC_PATH}:
+    if path in {V030_SEMANTIC_PATH, V040_SEMANTIC_PATH, V050_SEMANTIC_PATH}:
         identifiers = {record["identifier"] for record in catalog}
         assert {
             "arbogast.deform.artin-ring/v1",
@@ -207,7 +241,7 @@ def test_published_schema_catalogs_and_backend_boundary_remain_additive(
             deformation["deformation_receipt_id"]
             == deformation["deformation_receipt"]["certificate_id"]
         )
-    if path == V040_SEMANTIC_PATH:
+    if path in {V040_SEMANTIC_PATH, V050_SEMANTIC_PATH}:
         identifiers = {record["identifier"] for record in catalog}
         assert {
             "arbogast.numeric.algebraic-candidate/v1",
@@ -229,6 +263,16 @@ def test_published_schema_catalogs_and_backend_boundary_remain_additive(
             exactification["numeric_receipt_id"]
             == (exactification["numeric_receipt"]["certificate_id"])
         )
+    if path == V050_SEMANTIC_PATH:
+        identifiers = {record["identifier"] for record in catalog}
+        assert {
+            "arbogast.padic.ball/v1",
+            "arbogast.padic.certified/v1",
+            "arbogast.padic.field/v1",
+            "arbogast.padic.good-reduction/v1",
+            "arbogast.padic.unknown/v1",
+            "arbogast.padic.unsupported/v1",
+        } <= identifiers
 
 
 @pytest.mark.skipif(
@@ -246,6 +290,7 @@ def test_published_api_cli_snapshots_rederive_from_exact_tags() -> None:
         ("0.2.0", "v0.2.0", V020_COMMIT, V020_API_PATH),
         ("0.3.0", "v0.3.0", V030_COMMIT, V030_API_PATH),
         ("0.4.0", "v0.4.0", V040_COMMIT, V040_API_PATH),
+        ("0.5.0", "v0.5.0", V050_COMMIT, V050_API_PATH),
     )
     for version, tag, commit, fixture in commands:
         completed = subprocess.run(
@@ -280,6 +325,7 @@ def test_published_api_cli_snapshots_rederive_from_exact_tags() -> None:
         ("0.2.0", V020_COMMIT, V020_SEMANTIC_PATH),
         ("0.3.0", V030_COMMIT, V030_SEMANTIC_PATH),
         ("0.4.0", V040_COMMIT, V040_SEMANTIC_PATH),
+        ("0.5.0", V050_COMMIT, V050_SEMANTIC_PATH),
     ),
 )
 def test_published_semantic_snapshots_rederive_from_exact_tags(
@@ -315,6 +361,7 @@ def test_published_semantic_snapshots_rederive_from_exact_tags(
         (V020_SEMANTIC_PATH, V020_CERTIFICATE_IDS),
         (V030_SEMANTIC_PATH, V030_CERTIFICATE_IDS),
         (V040_SEMANTIC_PATH, V040_CERTIFICATE_IDS),
+        (V050_SEMANTIC_PATH, V050_CERTIFICATE_IDS),
     ),
 )
 def test_published_central_certificates_replay_in_a_fresh_process(

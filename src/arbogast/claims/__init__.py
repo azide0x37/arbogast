@@ -1,8 +1,14 @@
-"""The semantic center: typed mathematical claims and theorem dependency graphs."""
+"""The semantic center: typed claims and theorem dependency graphs."""
 
 from .claim import (
+    CLAIM_BOUNDARY_SCHEMA_V1,
+    CLAIM_BOUNDARY_SCHEMA_V2,
     CLAIM_BOUNDARY_SCHEMA_VERSION,
+    CLAIM_SCHEMA_V1,
+    CLAIM_SCHEMA_V2,
+    CLAIM_SCHEMA_VERSION,
     Claim,
+    ClaimDomain,
     ClaimError,
     ClaimKind,
     ClaimRef,
@@ -41,11 +47,17 @@ from .status import (
 )
 
 __all__ = [
+    "CLAIM_BOUNDARY_SCHEMA_V1",
+    "CLAIM_BOUNDARY_SCHEMA_V2",
     "CLAIM_BOUNDARY_SCHEMA_VERSION",
+    "CLAIM_SCHEMA_V1",
+    "CLAIM_SCHEMA_V2",
+    "CLAIM_SCHEMA_VERSION",
     "AnyEpistemic",
     "Certified",
     "Claim",
     "ClaimCycleError",
+    "ClaimDomain",
     "ClaimError",
     "ClaimGraph",
     "ClaimGraphError",

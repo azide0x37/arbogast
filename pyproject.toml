@@ -1,13 +1,13 @@
 [build-system]
-requires = ["hatchling>=1.27"]
+requires = ["hatchling==1.27.0"]
 build-backend = "hatchling.build"
 
 [project]
 name = "arbogast"
-version = "0.5.0"
-description = "Certificate-first exact, validated numerical, and bounded p-adic mathematics"
+version = "0.6.0"
+description = "Certificate-first mathematics with certified campaign readiness"
 readme = "README.md"
-requires-python = ">=3.11"
+requires-python = ">=3.11,<3.15"
 authors = [{ name = "azide0x37" }]
 keywords = [
   "computational-mathematics",
@@ -51,6 +51,9 @@ arb = "arbogast.cli:main"
 Homepage = "https://github.com/azide0x37/arbogast"
 Repository = "https://github.com/azide0x37/arbogast"
 Issues = "https://github.com/azide0x37/arbogast/issues"
+
+[tool.hatch.build]
+exclude = ["/.git"]
 
 [tool.hatch.build.targets.wheel]
 packages = ["src/arbogast"]

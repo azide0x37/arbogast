@@ -20,6 +20,9 @@ check_compatibility_index = cast(CheckSection, CHECKER["_check_compatibility_ind
 check_semantic_snapshot = cast(Callable[..., None], CHECKER["_check_semantic_snapshot"])
 check_v010_compatibility = cast(CheckSection, CHECKER["_check_v010_compatibility"])
 check_live_pari_matrix = cast(CheckSection, CHECKER["_check_live_pari_matrix"])
+check_ci_install_contract = cast(CheckSection, CHECKER["_check_ci_install_contract"])
+check_security_policy = cast(CheckReleaseMetadata, CHECKER["_check_security_policy"])
+check_build_system = cast(CheckSection, CHECKER["_check_build_system"])
 required_paths = cast(tuple[str, ...], CHECKER["REQUIRED_PATHS"])
 deformation_required_paths = cast(
     tuple[str, ...],
@@ -32,6 +35,10 @@ numeric_required_paths = cast(
 padic_required_paths = cast(
     tuple[str, ...],
     CHECKER["PADIC_REQUIRED_PATHS"],
+)
+bootstrap_required_paths = cast(
+    tuple[str, ...],
+    CHECKER["BOOTSTRAP_REQUIRED_PATHS"],
 )
 release_required_paths = cast(Callable[[str], tuple[str, ...]], CHECKER["required_paths"])
 
@@ -52,6 +59,16 @@ def _artifact(path: Path, relative: str) -> dict[str, object]:
         "sha256": hashlib.sha256(encoded).hexdigest(),
         "bytes": len(encoded),
     }
+
+
+def _replace_occurrence(text: str, old: str, new: str, occurrence: int) -> str:
+    start = 0
+    for _ in range(occurrence + 1):
+        found = text.find(old, start)
+        if found < 0:
+            raise AssertionError(f"occurrence {occurrence} of {old!r} does not exist")
+        start = found + len(old)
+    return text[:found] + new + text[start:]
 
 
 def test_release_metadata_requires_final_version_date_and_wording(tmp_path: Path) -> None:
@@ -123,6 +140,10 @@ def test_release_surface_requires_ci_campaign_and_exact_m23_inputs() -> None:
     assert "tests/fixtures/compat/v0.3.0/api-cli-contracts.json" in release_required_paths("0.4.0")
     assert "tests/fixtures/compat/v0.3.0/semantic-contracts.json" in release_required_paths("0.4.0")
     assert "docs/release-notes-0.3.0.md" in release_required_paths("0.4.0")
+    assert "tests/fixtures/compat/v0.5.0/release.json" in release_required_paths("0.6.0")
+    assert "tests/fixtures/compat/v0.5.0/api-cli-contracts.json" in release_required_paths("0.6.0")
+    assert "tests/fixtures/compat/v0.5.0/semantic-contracts.json" in release_required_paths("0.6.0")
+    assert "docs/release-notes-0.5.0.md" in release_required_paths("0.6.0")
 
 
 def test_numeric_release_surface_is_additive_from_v040() -> None:
@@ -206,6 +227,41 @@ def test_padic_release_surface_is_additive_from_v050() -> None:
     }
     assert len(expected_tests) == 11
     assert expected_tests == actual_tests
+
+
+def test_bootstrap_release_surface_is_additive_from_v060() -> None:
+    legacy = set(release_required_paths("0.5.0"))
+    v060 = set(release_required_paths("0.6.0"))
+    future = set(release_required_paths("0.7.0"))
+
+    assert legacy.isdisjoint(bootstrap_required_paths)
+    assert set(bootstrap_required_paths).issubset(v060)
+    assert set(bootstrap_required_paths).issubset(future)
+    v050_manifest = "tests/fixtures/compat/v0.5.0/release.json"
+    assert v050_manifest not in legacy
+    assert v050_manifest in v060
+
+    expected_sources = {
+        path.removeprefix("src/arbogast/bootstrap/")
+        for path in bootstrap_required_paths
+        if path.startswith("src/arbogast/bootstrap/")
+    }
+    actual_sources = {path.name for path in (PROJECT_ROOT / "src/arbogast/bootstrap").glob("*.py")}
+    assert expected_sources == actual_sources
+
+    template_root = PROJECT_ROOT / "examples/campaigns/_template"
+    expected_template = {
+        path.removeprefix("examples/campaigns/_template/")
+        for path in bootstrap_required_paths
+        if path.startswith("examples/campaigns/_template/")
+    }
+    actual_template = {
+        path.relative_to(template_root).as_posix()
+        for path in template_root.glob("**/*")
+        if path.is_file()
+        and not {".pytest_cache", ".ruff_cache", "__pycache__"}.intersection(path.parts)
+    }
+    assert expected_template == actual_template
 
 
 def test_every_deformation_release_path_fails_closed_when_deleted(tmp_path: Path) -> None:
@@ -299,6 +355,49 @@ def test_every_padic_release_path_fails_closed_when_deleted(tmp_path: Path) -> N
     )
 
 
+def test_every_bootstrap_release_path_fails_closed_when_deleted(tmp_path: Path) -> None:
+    for relative in bootstrap_required_paths:
+        _write(tmp_path / relative, "release-boundary fixture\n")
+
+    failures: list[str] = []
+    check_required_paths(tmp_path, failures, "0.6.0")
+    bootstrap_failures = [
+        failure
+        for failure in failures
+        if any(relative in failure for relative in bootstrap_required_paths)
+    ]
+    assert bootstrap_failures == []
+
+    for relative in bootstrap_required_paths:
+        path = tmp_path / relative
+        path.unlink()
+        failures = []
+        check_required_paths(tmp_path, failures, "0.6.0")
+        assert f"missing required path: {relative}" in failures
+        _write(path, "release-boundary fixture\n")
+
+    failures = []
+    for relative in bootstrap_required_paths:
+        (tmp_path / relative).unlink()
+    check_required_paths(tmp_path, failures, "0.5.0")
+    assert all(
+        f"missing required path: {relative}" not in failures
+        for relative in bootstrap_required_paths
+    )
+
+
+def test_v060_release_notes_fail_closed_when_deleted(tmp_path: Path) -> None:
+    relative = "docs/release-notes-0.6.0.md"
+    failures: list[str] = []
+    check_required_paths(tmp_path, failures, "0.6.0")
+    assert f"missing required path: {relative}" in failures
+
+    _write(tmp_path / relative, "# Arbogast 0.6.0 release notes\n")
+    failures = []
+    check_required_paths(tmp_path, failures, "0.6.0")
+    assert f"missing required path: {relative}" not in failures
+
+
 def test_release_gate_pins_both_supported_live_pari_anchors(tmp_path: Path) -> None:
     workflow = (PROJECT_ROOT / ".github/workflows/ci.yml").read_text(encoding="utf-8")
     _write(tmp_path / ".github/workflows/ci.yml", workflow)
@@ -314,6 +413,86 @@ def test_release_gate_pins_both_supported_live_pari_anchors(tmp_path: Path) -> N
     failures = []
     check_live_pari_matrix(tmp_path, failures)
     assert any("2.17.4" in failure for failure in failures)
+
+
+def test_release_gate_makes_every_ci_uv_command_lock_preserving(tmp_path: Path) -> None:
+    workflow = (PROJECT_ROOT / ".github/workflows/ci.yml").read_text(encoding="utf-8")
+    _write(tmp_path / ".github/workflows/ci.yml", workflow)
+    failures: list[str] = []
+    check_ci_install_contract(tmp_path, failures)
+    assert failures == []
+
+    damaged_workflows = [
+        workflow.replace('  UV_LOCKED: "1"\n', "", 1),
+        workflow.replace('  UV_LOCKED: "1"\n', '  UV_LOCKED: "1"\n  UV_NO_SYNC: "1"\n', 1),
+        workflow.replace("  pari-anchor-agreement:", '  "pari-anchor-agreement":', 1),
+        workflow.replace("uv run ruff check .", "UV_NO_SYNC=1 uv run ruff check .", 1),
+        workflow.replace("uv run ruff check .", "UV_LOCKED=0 uv run ruff check .", 1),
+        workflow.replace("uv run ruff check .", "uv run --no-sync ruff check .", 1),
+    ]
+    action = "uses: astral-sh/setup-uv@c771a70e6277c0a99b617c7a806ffedaca235ff9 # v9.0.0"
+    for occurrence in range(4):
+        damaged_workflows.extend(
+            (
+                _replace_occurrence(workflow, "uv lock --check", "uv lock", occurrence),
+                _replace_occurrence(
+                    workflow,
+                    "uv sync --locked --extra dev",
+                    "uv sync --extra dev",
+                    occurrence,
+                ),
+                _replace_occurrence(workflow, 'version: "0.12.3"', 'version: "latest"', occurrence),
+                _replace_occurrence(
+                    workflow,
+                    action,
+                    "uses: astral-sh/setup-uv@main",
+                    occurrence,
+                ),
+            )
+        )
+    for damaged in damaged_workflows:
+        _write(tmp_path / ".github/workflows/ci.yml", damaged)
+        failures = []
+        check_ci_install_contract(tmp_path, failures)
+        assert failures != []
+
+
+def test_release_gate_tracks_the_current_security_support_line(tmp_path: Path) -> None:
+    security = (PROJECT_ROOT / "SECURITY.md").read_text(encoding="utf-8")
+    _write(tmp_path / "SECURITY.md", security)
+    failures: list[str] = []
+    check_security_policy(tmp_path, failures, "0.6.0")
+    assert failures == []
+
+    _write(tmp_path / "SECURITY.md", security.replace("Arbogast 0.6.0", "Arbogast 0.1.0"))
+    failures = []
+    check_security_policy(tmp_path, failures, "0.6.0")
+    assert failures == [
+        "SECURITY.md must name only Arbogast 0.6.0 as currently supported, found ['0.1.0']"
+    ]
+
+
+def test_release_gate_pins_the_build_backend(tmp_path: Path) -> None:
+    pyproject = (PROJECT_ROOT / "pyproject.toml").read_text(encoding="utf-8")
+    _write(tmp_path / "pyproject.toml", pyproject)
+    failures: list[str] = []
+    check_build_system(tmp_path, failures)
+    assert failures == []
+
+    _write(
+        tmp_path / "pyproject.toml",
+        pyproject.replace('requires = ["hatchling==1.27.0"]', 'requires = ["hatchling>=1.27"]'),
+    )
+    failures = []
+    check_build_system(tmp_path, failures)
+    assert failures == [
+        "pyproject build-system.requires must pin the release backend to 'hatchling==1.27.0'"
+    ]
+
+    _write(tmp_path / "pyproject.toml", pyproject.replace('exclude = ["/.git"]', "exclude = []"))
+    failures = []
+    check_build_system(tmp_path, failures)
+    assert failures == ["pyproject must exclude the worktree .git pointer from build artifacts"]
 
 
 def test_release_gate_hashes_the_immutable_v010_inputs(tmp_path: Path) -> None:
@@ -408,6 +587,16 @@ def test_release_gate_validates_every_indexed_compatibility_release(tmp_path: Pa
         PROJECT_ROOT / "tests/fixtures/compat/v0.2.0/semantic-contracts.json",
         semantic,
     )
+    v050_api = tmp_path / "tests/fixtures/compat/v0.5.0/api-cli-contracts.json"
+    v050_api.unlink()
+    failures = []
+    check_compatibility_index(tmp_path, failures)
+    assert any("v0.5.0/api-cli-contracts.json" in failure for failure in failures)
+    shutil.copyfile(
+        PROJECT_ROOT / "tests/fixtures/compat/v0.5.0/api-cli-contracts.json",
+        v050_api,
+    )
+
     (tmp_path / "docs/release-notes-0.2.0.md").unlink()
     failures = []
     check_compatibility_index(tmp_path, failures)

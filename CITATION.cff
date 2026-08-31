@@ -1,10 +1,10 @@
 cff-version: 1.2.0
 message: >-
-  If you use Arbogast, please cite the 0.5.0 release and the software repository.
-title: "Arbogast: certificate-first exact, validated numerical, and bounded p-adic mathematics"
+  If you use Arbogast, please cite the 0.6.0 release and the software repository.
+title: "Arbogast: certificate-first mathematics with certified campaign readiness"
 type: software
-version: 0.5.0
-date-released: 2026-08-30
+version: 0.6.0
+date-released: 2026-08-31
 authors:
   - name: azide0x37
 repository-code: "https://github.com/azide0x37/arbogast"
@@ -26,4 +26,6 @@ abstract: >-
   arithmetic, symmetry, and Hurwitz arithmetic. Its proof boundaries keep finite residue classes,
   numerical evidence, recognition candidates, exactification, local reduction fragments, and
   exact scoped conclusions at distinct levels. It separates discovery from verification and
-  records mathematical results in provenance-preserving claim graphs.
+  records mathematical results in provenance-preserving claim graphs. Certified environmental
+  readiness binds an interpreter, package and lock identity, runtime registries, capabilities,
+  executor semantics, and artifact custody to an exact campaign plan before dispatch.

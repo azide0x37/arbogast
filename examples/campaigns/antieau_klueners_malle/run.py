@@ -25,9 +25,7 @@ from arbogast.cert import (
     FrozenMap,
     VerificationCertificate,
     VerificationReport,
-    certificate_from_dict,
     verifier,
-    verify_certificate,
 )
 from arbogast.claims import (
     Claim,
@@ -53,6 +51,13 @@ PRIOR_CLAIM_ID = "demo.catalogue.mod17_residue3_absent"
 CLOSURE_CLAIM_ID = "demo.certificate.mod17_residue3_nonsquare"
 RESULT_STATEMENT = FormalStatement(
     "No canonical residue modulo 17 has square congruent to 3 modulo 17."
+)
+RESULT_STATEMENT_HASH = RESULT_STATEMENT.statement_hash
+RESULT_BOUNDARY_HASH = claim_boundary_hash(
+    CLOSURE_CLAIM_ID,
+    RESULT_STATEMENT,
+    kind=ClaimKind.COMPUTED,
+    status=EpistemicStatus.EXACT,
 )
 
 
@@ -111,15 +116,9 @@ def verify_residue_scan(certificate: VerificationCertificate) -> VerificationRep
         )
     if certificate.claim_id != CLOSURE_CLAIM_ID:
         raise CertificateVerificationError("certificate is bound to another closure claim")
-    if certificate.statement_hash != RESULT_STATEMENT.statement_hash:
+    if certificate.statement_hash != RESULT_STATEMENT_HASH:
         raise CertificateVerificationError("certificate is bound to another result statement")
-    expected_boundary_hash = claim_boundary_hash(
-        CLOSURE_CLAIM_ID,
-        RESULT_STATEMENT,
-        kind=ClaimKind.COMPUTED,
-        status=EpistemicStatus.EXACT,
-    )
-    if certificate.claim_boundary_hash != expected_boundary_hash:
+    if certificate.claim_boundary_hash != RESULT_BOUNDARY_HASH:
         raise CertificateVerificationError("certificate has the wrong semantic claim boundary")
     if certificate.claim_dependencies:
         raise CertificateVerificationError("closure certificate cannot bind claim dependencies")
@@ -176,13 +175,8 @@ def reduce_residues(task: TaskSpec, partials: Sequence[JSONValue]) -> dict[str, 
         closure_subject(target_id, outcome, OutcomeScope.TARGET_GLOBAL),
         VERIFIER,
         claim_id=CLOSURE_CLAIM_ID,
-        statement_hash=RESULT_STATEMENT.statement_hash,
-        claim_boundary_hash=claim_boundary_hash(
-            CLOSURE_CLAIM_ID,
-            RESULT_STATEMENT,
-            kind=ClaimKind.COMPUTED,
-            status=EpistemicStatus.EXACT,
-        ),
+        statement_hash=RESULT_STATEMENT_HASH,
+        claim_boundary_hash=RESULT_BOUNDARY_HASH,
         witness={
             "modulus": modulus,
             "outcome": outcome.value,
@@ -233,6 +227,8 @@ def verify_reduced_result(task: TaskSpec, result: JSONValue) -> bool:
     """Fleet verification gate: literal True is required before campaign closure."""
 
     try:
+        from arbogast.cert import certificate_from_dict
+
         if not isinstance(result, dict):
             return False
         encoded_certificate = result.get("certificate")
@@ -245,7 +241,9 @@ def verify_reduced_result(task: TaskSpec, result: JSONValue) -> bool:
         if not isinstance(telemetry_value, Mapping):
             return False
         telemetry = ExecutionTelemetry.from_dict(telemetry_value)
-        report = verify_certificate(certificate)
+        report = verify_residue_scan(certificate)
+        if not isinstance(report, VerificationReport):
+            return False
         return (
             report.valid
             and telemetry.progress_completed == task.parameters["modulus"]
@@ -270,6 +268,7 @@ RESIDUE_OPERATION = FunctionalOperation(
     runner=evaluate_residue,
     reducer=reduce_residues,
     verifier=verify_reduced_result,
+    closure_verifiers=(VERIFIER,),
 )
 
 
@@ -375,6 +374,8 @@ def parse_args() -> argparse.Namespace:
 
 
 def main() -> int:
+    from arbogast.cert import certificate_from_dict, verify_certificate
+
     args = parse_args()
     args.output.mkdir(parents=True, exist_ok=True)
 

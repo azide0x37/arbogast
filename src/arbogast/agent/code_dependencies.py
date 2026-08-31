@@ -578,6 +578,15 @@ def _declarations(
 DEFAULT_CODE_DEPENDENCIES = CodeDependencyRegistry(
     (
         *_declarations(
+            ("bootstrap.certify_campaign_readiness",),
+            "arbogast.bootstrap",
+            (
+                "arbogast.cert",
+                "arbogast.claims",
+                "arbogast.formats",
+            ),
+        ),
+        *_declarations(
             (
                 "cohom.claim_graph",
                 "cohom.class_of",

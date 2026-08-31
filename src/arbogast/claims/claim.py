@@ -1,4 +1,4 @@
-"""Mathematical claims as five-question semantic records."""
+"""Domain-qualified claims as five-question semantic records."""
 
 from __future__ import annotations
 
@@ -24,6 +24,12 @@ from arbogast.cert.registry import (
 )
 from arbogast.cert.theorem import TheoremCertificate
 from arbogast.cert.verification import VerificationCertificate
+from arbogast.formats.schemas import (
+    CLAIM_BOUNDARY_SCHEMA_V1,
+    CLAIM_BOUNDARY_SCHEMA_V2,
+    CLAIM_SCHEMA_V1,
+    CLAIM_SCHEMA_V2,
+)
 
 from .derivation import Derivation
 from .novelty import NoveltyRecord
@@ -52,6 +58,21 @@ class ClaimKind(StrEnum):
     CONJECTURED = "conjectured"
 
 
+class ClaimDomain(StrEnum):
+    """The semantic universe in which a claim makes an assertion.
+
+    Values are intentionally explicit and uppercase in transport.  Legacy v1
+    claims predate this field and are interpreted as mathematical without
+    changing their serialized bytes or certified boundary.
+    """
+
+    MATHEMATICAL = "MATHEMATICAL"
+    ENVIRONMENTAL = "ENVIRONMENTAL"
+    SOFTWARE = "SOFTWARE"
+    EXECUTION = "EXECUTION"
+    DATA = "DATA"
+
+
 class EvidenceKind(StrEnum):
     CERTIFICATE = "certificate"
     ARTIFACT = "artifact"
@@ -59,7 +80,10 @@ class EvidenceKind(StrEnum):
     DATASET = "dataset"
 
 
-CLAIM_BOUNDARY_SCHEMA_VERSION = "arbogast.claim-boundary/v1"
+# Compatibility aliases stay pinned to the original v1 contracts.  New code
+# should use the explicitly versioned names when it needs to select a schema.
+CLAIM_BOUNDARY_SCHEMA_VERSION = CLAIM_BOUNDARY_SCHEMA_V1
+CLAIM_SCHEMA_VERSION = CLAIM_SCHEMA_V1
 
 
 def claim_boundary_hash(
@@ -70,6 +94,7 @@ def claim_boundary_hash(
     status: EpistemicStatus | str | EpistemicValue[Any],
     hypotheses: Sequence[FormalStatement | str] = (),
     dependency_ids: Sequence[str] = (),
+    domain: ClaimDomain | str | None = None,
 ) -> str:
     """Hash the complete semantic boundary certified for one claim.
 
@@ -90,17 +115,19 @@ def claim_boundary_hash(
         _validate_identifier(dependency_id, field="claim dependency")
     if len(set(dependencies)) != len(dependencies):
         raise ClaimError("claim dependencies must be unique")
-    return content_address(
-        {
-            "schema_version": CLAIM_BOUNDARY_SCHEMA_VERSION,
-            "claim_id": claim_id,
-            "statement": formal,
-            "kind": claim_kind.value,
-            "status": claim_status.value,
-            "hypotheses": hypothesis_records,
-            "dependencies": dependencies,
-        }
-    )
+    payload: dict[str, object] = {
+        "schema_version": CLAIM_BOUNDARY_SCHEMA_V1,
+        "claim_id": claim_id,
+        "statement": formal,
+        "kind": claim_kind.value,
+        "status": claim_status.value,
+        "hypotheses": hypothesis_records,
+        "dependencies": dependencies,
+    }
+    if domain is not None:
+        payload["schema_version"] = CLAIM_BOUNDARY_SCHEMA_V2
+        payload["domain"] = ClaimDomain(domain).value
+    return content_address(payload)
 
 
 @dataclass(frozen=True)
@@ -189,7 +216,12 @@ class EvidenceRef:
 
 @dataclass(frozen=True, init=False)
 class Claim:
-    """A mathematical claim answering what, why, how, evidence, and source."""
+    """A typed claim answering what, why, how, evidence, and source.
+
+    Omitting ``domain`` retains the exact v1 mathematical-claim transport and
+    boundary.  Supplying any domain, including ``MATHEMATICAL``, opts into the
+    domain-qualified v2 transport and boundary.
+    """
 
     id: str
     what: FormalStatement
@@ -203,11 +235,11 @@ class Claim:
     novelty: NoveltyRecord | None
     formalization: ProofGap | None
     metadata: FrozenMap
+    domain: ClaimDomain = field(default=ClaimDomain.MATHEMATICAL, init=False)
+    schema_version: str = field(default=CLAIM_SCHEMA_V1, init=False)
     _attached_certificates: tuple[Certificate, ...] = field(
         default=(), repr=False, compare=False, hash=False
     )
-
-    schema_version = "arbogast.claim/v1"
 
     def __init__(
         self,
@@ -229,6 +261,7 @@ class Claim:
         novelty: NoveltyRecord | None = None,
         formalization: ProofGap | None = None,
         metadata: Mapping[str, object] | None = None,
+        domain: ClaimDomain | str | None = None,
     ) -> None:
         from arbogast.proof.gap import ProofGap
 
@@ -244,6 +277,8 @@ class Claim:
             claim_status = status.status
         else:
             claim_status = EpistemicStatus(status)
+        claim_domain = ClaimDomain.MATHEMATICAL if domain is None else ClaimDomain(domain)
+        schema_version = CLAIM_SCHEMA_V1 if domain is None else CLAIM_SCHEMA_V2
         if how is not None and derivation is not None and how != derivation:
             raise ClaimError("how and derivation disagree")
         method = how or derivation
@@ -288,6 +323,8 @@ class Claim:
         object.__setattr__(self, "novelty", novelty)
         object.__setattr__(self, "formalization", formalization)
         object.__setattr__(self, "metadata", freeze_mapping(metadata))
+        object.__setattr__(self, "domain", claim_domain)
+        object.__setattr__(self, "schema_version", schema_version)
         object.__setattr__(self, "_attached_certificates", attached)
         self._validate_boundaries()
 
@@ -311,6 +348,16 @@ class Claim:
     def boundary_hash(self) -> str:
         """Return the evidence-independent digest certified by proof records."""
 
+        if self.schema_version == CLAIM_SCHEMA_V2:
+            return claim_boundary_hash(
+                self.id,
+                self.what,
+                kind=self.kind,
+                status=self.status,
+                hypotheses=self.hypotheses,
+                dependency_ids=self.dependency_ids,
+                domain=self.domain,
+            )
         return claim_boundary_hash(
             self.id,
             self.what,
@@ -335,6 +382,16 @@ class Claim:
             raise ClaimError("source references cannot be blank")
         if len(set(self.dependency_ids)) != len(self.dependency_ids):
             raise ClaimError("claim dependencies in why must be unique")
+        if self.domain is not ClaimDomain.MATHEMATICAL and self.why:
+            raise ClaimError(
+                "non-mathematical v2 claims cannot use why dependencies; "
+                "record execution/provenance relations outside the v1 theorem DAG"
+            )
+        if self.domain is not ClaimDomain.MATHEMATICAL and self.formalization is not None:
+            raise ClaimError(
+                "non-mathematical v2 claims cannot attach mathematical proof gaps; "
+                "record operational obligations in certificate evidence"
+            )
         if self.kind is ClaimKind.DERIVED and not self.why:
             raise ClaimError("derived claims require explicit claim dependencies in why")
         if self.kind is ClaimKind.DERIVED and (
@@ -500,7 +557,7 @@ class Claim:
         return resolved
 
     def to_canonical(self) -> dict[str, object]:
-        return {
+        value: dict[str, object] = {
             "schema_version": self.schema_version,
             "id": self.id,
             "what": self.what,
@@ -515,6 +572,9 @@ class Claim:
             "formalization": self.formalization,
             "metadata": self.metadata,
         }
+        if self.schema_version == CLAIM_SCHEMA_V2:
+            value["domain"] = self.domain.value
+        return value
 
     def to_dict(self) -> dict[str, object]:
         plain = canonicalize(self.to_canonical())
@@ -528,7 +588,7 @@ class Claim:
 
     @classmethod
     def from_dict(cls, value: Mapping[str, object]) -> Claim:
-        allowed = {
+        base_allowed = {
             "schema_version",
             "id",
             "what",
@@ -545,15 +605,24 @@ class Claim:
             "metadata",
             "attached_certificates",
         }
+        schema = value.get("schema_version")
+        if schema == CLAIM_SCHEMA_V1:
+            allowed = base_allowed
+            raw_domain: str | None = None
+        elif schema == CLAIM_SCHEMA_V2:
+            allowed = {*base_allowed, "domain"}
+            domain_value = value.get("domain")
+            if not isinstance(domain_value, str):
+                raise ClaimError("claim v2 domain must be a string")
+            raw_domain = domain_value
+        else:
+            raise ClaimError(
+                "unsupported or missing claim schema: expected "
+                f"{CLAIM_SCHEMA_V1} or {CLAIM_SCHEMA_V2}, got {schema!r}"
+            )
         unexpected = sorted(set(value) - allowed)
         if unexpected:
             raise ClaimError(f"unexpected claim fields: {', '.join(unexpected)}")
-        schema = value.get("schema_version")
-        if schema != cls.schema_version:
-            raise ClaimError(
-                f"unsupported or missing claim schema: expected {cls.schema_version}, "
-                f"got {schema!r}"
-            )
         statement_fields = [name for name in ("what", "statement") if name in value]
         if len(statement_fields) != 1:
             raise ClaimError("claim transport must contain exactly one of what or statement")
@@ -604,6 +673,7 @@ class Claim:
             ),
             formalization=_formalization_from_raw(formalization_raw),
             metadata=metadata_raw,
+            domain=raw_domain,
         )
         attached_raw = value.get("attached_certificates", ())
         attached_sequence = _sequence(attached_raw, "attached_certificates")
@@ -1125,8 +1195,14 @@ def _replay_verification_certificate(
 
 
 __all__ = [
+    "CLAIM_BOUNDARY_SCHEMA_V1",
+    "CLAIM_BOUNDARY_SCHEMA_V2",
     "CLAIM_BOUNDARY_SCHEMA_VERSION",
+    "CLAIM_SCHEMA_V1",
+    "CLAIM_SCHEMA_V2",
+    "CLAIM_SCHEMA_VERSION",
     "Claim",
+    "ClaimDomain",
     "ClaimError",
     "ClaimKind",
     "ClaimRef",

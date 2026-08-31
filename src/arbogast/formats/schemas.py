@@ -35,6 +35,18 @@ CLI_CLAIMS_SCHEMA: Final = "arbogast.cli.claims.v1"
 CLI_PROOF_GAP_SCHEMA: Final = "arbogast.cli.proof-gap.v1"
 CLI_ROUTE_SCHEMA: Final = "arbogast.cli.route.v1"
 CLI_CAMPAIGN_SCHEMA: Final = "arbogast.cli.campaign.v1"
+ENVIRONMENT_PREFLIGHT_SCHEMA: Final = "arbogast.environment-preflight.v1"
+BOOTSTRAP_REPORT_SCHEMA: Final = "arbogast.bootstrap-report/v1"
+RUNTIME_BINDING_SCHEMA: Final = "arbogast.bootstrap.runtime-binding/v1"
+DISPATCH_READINESS_RECEIPT_SCHEMA: Final = "arbogast.bootstrap.dispatch-readiness-receipt/v1"
+ENVIRONMENT_SNAPSHOT_SCHEMA: Final = "arbogast.environment-snapshot/v1"
+READINESS_PROFILE_SCHEMA: Final = "arbogast.readiness-profile/v1"
+READINESS_OBLIGATION_SCHEMA: Final = "arbogast.readiness-obligation/v1"
+ENVIRONMENT_READINESS_RECEIPT_SCHEMA: Final = "arbogast.environment-readiness-receipt/v1"
+CLAIM_SCHEMA_V1: Final = "arbogast.claim/v1"
+CLAIM_SCHEMA_V2: Final = "arbogast.claim/v2"
+CLAIM_BOUNDARY_SCHEMA_V1: Final = "arbogast.claim-boundary/v1"
+CLAIM_BOUNDARY_SCHEMA_V2: Final = "arbogast.claim-boundary/v2"
 
 # Certified-arithmetic object identities introduced in 0.2.0.  These are v1
 # interchange schemas: the package release and the schema version are kept as
@@ -456,6 +468,229 @@ _DEFINITIONS: Final = {
         ),
         SchemaDefinition(CLI_ROUTE_SCHEMA, ("route",), "CLI route response"),
         SchemaDefinition(CLI_CAMPAIGN_SCHEMA, ("command", "result"), "CLI campaign response"),
+        SchemaDefinition(
+            ENVIRONMENT_PREFLIGHT_SCHEMA,
+            (
+                "mode",
+                "profile",
+                "authoritative",
+                "status",
+                "ready",
+                "captured_at",
+                "environment_digest",
+                "arbogast",
+                "python",
+                "uv",
+                "project",
+                "portable_core",
+                "capabilities",
+                "checks",
+                "required_blockers",
+                "optional_blockers",
+                "warnings",
+                "next_commands",
+            ),
+            "Environment preflight diagnostic projection",
+        ),
+        SchemaDefinition(
+            BOOTSTRAP_REPORT_SCHEMA,
+            (
+                "authoritative",
+                "mode",
+                "status",
+                "verdict",
+                "ready",
+                "subject",
+                "checks",
+                "blockers",
+                "unchecked",
+                "warnings",
+                "environment_id",
+                "profile_id",
+                "certificate_id",
+                "claim_id",
+                "authoritative_artifacts",
+            ),
+            "Readiness-result bootstrap projection",
+        ),
+        SchemaDefinition(
+            RUNTIME_BINDING_SCHEMA,
+            ("kind", "manifest", "runtime_id"),
+            "Content-addressed readiness runtime binding",
+            marker="schema_version",
+        ),
+        SchemaDefinition(
+            DISPATCH_READINESS_RECEIPT_SCHEMA,
+            (
+                "receipt_id",
+                "environment_id",
+                "profile_id",
+                "readiness_receipt_id",
+                "readiness_certificate_id",
+                "readiness_claim_id",
+                "readiness_certificate",
+                "readiness_claim",
+                "campaign_id",
+                "campaign_plan_id",
+                "campaign_task_id",
+                "campaign_target_id",
+                "campaign_attempt",
+                "campaign_attempt_id",
+                "operation_registry_id",
+                "verifier_registry_id",
+                "executor_id",
+                "artifact_store_id",
+                "dispatch_id",
+                "dispatch_ordinal",
+                "dispatch_runtime_nonce",
+                "fleet_task",
+                "fleet_plan_hash",
+                "fleet_plan_shard_hashes",
+                "shard",
+                "worker",
+                "lease",
+                "artifact_probe",
+                "checked_at",
+                "checks",
+                "valid",
+            ),
+            "Lease-scoped dispatch-readiness runtime receipt",
+            marker="schema_version",
+        ),
+        SchemaDefinition(
+            ENVIRONMENT_SNAPSHOT_SCHEMA,
+            (
+                "environment_id",
+                "python_implementation",
+                "python_version",
+                "python_executable",
+                "python_executable_identity",
+                "platform",
+                "arbogast_version",
+                "arbogast_location",
+                "arbogast_tree_sha256",
+                "project_root",
+                "lockfiles",
+                "lock_consistent",
+                "lock_detail",
+                "packages",
+                "backends",
+                "capabilities",
+                "capture_options",
+                "probe_errors",
+            ),
+            "Canonical environment snapshot",
+            marker="schema_version",
+        ),
+        SchemaDefinition(
+            READINESS_PROFILE_SCHEMA,
+            (
+                "profile_id",
+                "scope",
+                "campaign_id",
+                "plan_id",
+                "task_ids",
+                "required_operations",
+                "required_capabilities",
+                "optional_capabilities",
+                "required_backends",
+                "optional_backends",
+                "required_verifiers",
+                "optional_verifiers",
+                "shard_policies",
+                "operation_registry",
+                "verifier_registry",
+                "executor",
+                "artifact_store",
+                "expected_arbogast_version",
+                "minimum_python",
+                "maximum_python_exclusive",
+                "require_lock_consistency",
+                "require_persistent_custody",
+                "required_obligation_ids",
+                "optional_obligation_ids",
+            ),
+            "Complete campaign-readiness profile",
+            marker="schema_version",
+        ),
+        SchemaDefinition(
+            READINESS_OBLIGATION_SCHEMA,
+            ("id", "required", "status", "detail", "evidence"),
+            "One campaign-readiness obligation result",
+            marker="schema_version",
+        ),
+        SchemaDefinition(
+            ENVIRONMENT_READINESS_RECEIPT_SCHEMA,
+            (
+                "receipt_id",
+                "environment",
+                "profile",
+                "subject",
+                "verdict",
+                "obligations",
+            ),
+            "Exact E,C,P,G,V,X,A,R readiness receipt",
+            marker="schema_version",
+        ),
+        SchemaDefinition(
+            CLAIM_SCHEMA_V1,
+            (
+                "id",
+                "what",
+                "kind",
+                "status",
+                "why",
+                "how",
+                "evidence",
+                "source",
+                "hypotheses",
+                "novelty",
+                "formalization",
+                "metadata",
+            ),
+            "Claim v1",
+            marker="schema_version",
+        ),
+        SchemaDefinition(
+            CLAIM_SCHEMA_V2,
+            (
+                "id",
+                "what",
+                "kind",
+                "status",
+                "domain",
+                "why",
+                "how",
+                "evidence",
+                "source",
+                "hypotheses",
+                "novelty",
+                "formalization",
+                "metadata",
+            ),
+            "Domain-qualified claim v2",
+            marker="schema_version",
+        ),
+        SchemaDefinition(
+            CLAIM_BOUNDARY_SCHEMA_V1,
+            ("claim_id", "statement", "kind", "status", "hypotheses", "dependencies"),
+            "Claim semantic boundary v1",
+            marker="schema_version",
+        ),
+        SchemaDefinition(
+            CLAIM_BOUNDARY_SCHEMA_V2,
+            (
+                "claim_id",
+                "statement",
+                "kind",
+                "status",
+                "domain",
+                "hypotheses",
+                "dependencies",
+            ),
+            "Domain-qualified claim semantic boundary v2",
+            marker="schema_version",
+        ),
         SchemaDefinition(
             NUMBER_FIELD_SCHEMA,
             (
@@ -1943,8 +2178,10 @@ def validate_document(
 ) -> dict[str, JSONValue]:
     """Validate a document's version marker and required top-level fields.
 
-    This intentionally provides structural boundary validation rather than a
-    partial reimplementation of a JSON Schema engine.
+    This intentionally validates canonical interchange projections rather than
+    partially reimplementing a JSON Schema engine.  An object's strict decoder
+    remains authoritative for replay and may retain published input aliases or
+    defaults that are not themselves canonical output fields.
     """
 
     normalized = normalize_json(document)

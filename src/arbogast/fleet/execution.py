@@ -69,6 +69,26 @@ class FunctionalOperation(Generic[PartialT, ResultT]):
     reducer: Callable[[TaskSpec, Sequence[JSONValue]], ResultT]
     verifier: Callable[[TaskSpec, JSONValue], bool] | None = None
     resumer: Callable[[TaskSpec, ShardSpec, CheckpointRef], PartialT] | None = None
+    closure_verifiers: tuple[str, ...] = ()
+
+    def __post_init__(self) -> None:
+        """Validate the central verifiers that may certify target closure.
+
+        The fleet-level ``verifier`` checks a reduced result before promotion.
+        ``closure_verifiers`` is a separate, data-only contract naming the
+        central certificate verifiers that can justify a mathematical closure
+        emitted by that result.  Keeping the default empty preserves existing
+        operation construction while making verified campaign plans derive
+        their verifier requirements instead of trusting a caller-supplied list.
+        """
+
+        names = self.closure_verifiers
+        if not isinstance(names, tuple) or any(
+            not isinstance(name, str) or not name or name != name.strip() for name in names
+        ):
+            raise ValueError("closure_verifiers must be a tuple of non-empty canonical strings")
+        if names != tuple(sorted(set(names))):
+            raise ValueError("closure_verifiers must be sorted and unique")
 
     def plan(self, task: TaskSpec) -> FleetPlan | Iterable[ShardSpec | str]:
         return self.planner(task)

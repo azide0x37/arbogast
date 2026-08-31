@@ -14,16 +14,26 @@ import re
 import sys
 import tomllib
 from datetime import date
+from itertools import pairwise
 from pathlib import Path
 from typing import Final
 
 PROJECT_ROOT: Final = Path(__file__).resolve().parents[1]
 FINAL_VERSION_RE: Final = re.compile(r"[0-9]+\.[0-9]+\.[0-9]+")
+PINNED_UV_VERSION: Final = "0.12.3"
+PINNED_BUILD_BACKEND: Final = "hatchling==1.27.0"
+PINNED_SETUP_UV_ACTION: Final = (
+    "uses: astral-sh/setup-uv@c771a70e6277c0a99b617c7a806ffedaca235ff9 # v9.0.0"
+)
+REQUIRED_UV_JOBS: Final = frozenset(
+    {"test", "release-qualification", "live-pari", "pari-anchor-agreement"}
+)
 REQUIRED_PATHS: Final = (
     ".github/workflows/ci.yml",
     "README.md",
     "CHANGELOG.md",
     "CITATION.cff",
+    "SECURITY.md",
     "docs/certified-arithmetic.md",
     "pyproject.toml",
     "uv.lock",
@@ -193,6 +203,44 @@ PADIC_REQUIRED_PATHS: Final = (
     "tests/unit/test_padic_three_point_reduction.py",
     "tests/unit/test_padic_wewers_lifts_descent.py",
 )
+BOOTSTRAP_INTRODUCED: Final = (0, 6, 0)
+BOOTSTRAP_REQUIRED_PATHS: Final = (
+    "AGENTS.md",
+    "docs/agent-bootstrap.md",
+    "docs/agent-and-lean-exports.md",
+    "prompts/campaign-bootstrap.md",
+    "src/arbogast/bootstrap/__init__.py",
+    "src/arbogast/bootstrap/capture.py",
+    "src/arbogast/bootstrap/dispatch.py",
+    "src/arbogast/bootstrap/models.py",
+    "src/arbogast/bootstrap/preflight.py",
+    "src/arbogast/bootstrap/readiness.py",
+    "src/arbogast/bootstrap/report.py",
+    "src/arbogast/bootstrap/runtime.py",
+    "src/arbogast/bootstrap/semantic.py",
+    "examples/campaigns/_template/.python-version",
+    "examples/campaigns/_template/AGENTS.md",
+    "examples/campaigns/_template/README.md",
+    "examples/campaigns/_template/pyproject.toml",
+    "examples/campaigns/_template/src/campaign_name/__init__.py",
+    "examples/campaigns/_template/src/campaign_name/operations.py",
+    "examples/campaigns/_template/src/campaign_name/runtime.py",
+    "examples/campaigns/_template/src/campaign_name/specification.py",
+    "examples/campaigns/_template/src/campaign_name/verifiers.py",
+    "examples/campaigns/_template/tests/test_failure_semantics.py",
+    "examples/campaigns/_template/tests/test_fresh_process_verifier.py",
+    "examples/campaigns/_template/tests/test_preflight.py",
+    "examples/campaigns/_template/tests/test_small_positive.py",
+    "tests/integration/test_campaign_readiness.py",
+    "tests/integration/test_campaign_lease_readiness.py",
+    "tests/unit/test_bootstrap_readiness.py",
+    "tests/unit/test_bootstrap_surface_registry.py",
+    "tests/unit/test_claim_domains.py",
+    "tests/unit/test_cli_doctor.py",
+    "tests/unit/test_cli_surfaces.py",
+    "tests/unit/test_environment_preflight.py",
+    "tests/unit/test_registry_readiness_manifests.py",
+)
 TEXT_SUFFIXES: Final = {".cff", ".json", ".md", ".py", ".toml", ".yaml", ".yml"}
 SKIP_PARTS: Final = {".git", ".mypy_cache", ".pytest_cache", ".ruff_cache", ".venv"}
 UNRESOLVED_MARKERS: Final = ("TODO", "FIXME", "will be filled in")
@@ -278,6 +326,12 @@ PUBLISHED_GITHUB_RELEASES: Final[dict[str, dict[str, object]]] = {
         "published_at": "2026-08-30T14:17:14Z",
         "url": "https://github.com/azide0x37/arbogast/releases/tag/v0.4.0",
     },
+    "0.5.0": {
+        "id": 379322215,
+        "platform_immutable": False,
+        "published_at": "2026-08-30T15:32:56Z",
+        "url": "https://github.com/azide0x37/arbogast/releases/tag/v0.5.0",
+    },
 }
 V010_CERTIFICATE_ID: Final = (
     "sha256:52b76eed5ad4ab3ee16fa7b34920c680cdb68e82470c72cefadf06a3d9439377"
@@ -333,6 +387,13 @@ def _padic_release(version: str) -> bool:
     return (major, minor, patch) >= PADIC_INTRODUCED
 
 
+def _bootstrap_release(version: str) -> bool:
+    if FINAL_VERSION_RE.fullmatch(version) is None:
+        return False
+    major, minor, patch = (int(part) for part in version.split("."))
+    return (major, minor, patch) >= BOOTSTRAP_INTRODUCED
+
+
 def required_paths(version: str, *, root: Path = PROJECT_ROOT) -> tuple[str, ...]:
     """Return the release surface for ``version`` without forgetting old fixtures."""
 
@@ -372,12 +433,14 @@ def required_paths(version: str, *, root: Path = PROJECT_ROOT) -> tuple[str, ...
     deformation = DEFORMATION_REQUIRED_PATHS if _deformation_release(version) else ()
     numeric = NUMERIC_REQUIRED_PATHS if _numeric_release(version) else ()
     padic = PADIC_REQUIRED_PATHS if _padic_release(version) else ()
+    bootstrap = BOOTSTRAP_REQUIRED_PATHS if _bootstrap_release(version) else ()
     paths = (
         *REQUIRED_PATHS,
         *indexed,
         *deformation,
         *numeric,
         *padic,
+        *bootstrap,
         f"docs/release-notes-{version}.md",
     )
     return tuple(dict.fromkeys(paths))
@@ -1293,6 +1356,153 @@ def _check_live_pari_matrix(root: Path, failures: list[str]) -> None:
             failures.append(f"live-PARI CI matrix omits {required!r}")
 
 
+def _check_ci_install_contract(root: Path, failures: list[str]) -> None:
+    workflow_path = root / ".github/workflows/ci.yml"
+    if not workflow_path.is_file():
+        return
+    workflow = workflow_path.read_text(encoding="utf-8")
+    lines = workflow.splitlines()
+
+    top_level_env = [index for index, line in enumerate(lines) if line == "env:"]
+    if len(top_level_env) != 1:
+        failures.append("CI workflow must declare exactly one top-level env block")
+    else:
+        env_index = top_level_env[0]
+        env_lines: list[str] = []
+        for line in lines[env_index + 1 :]:
+            if line and not line.startswith(" "):
+                break
+            if line.startswith("  "):
+                env_lines.append(line)
+        required = '  UV_LOCKED: "1"'
+        if env_lines.count(required) != 1:
+            failures.append(f"CI top-level env must contain exactly {required!r}")
+    if workflow.count("UV_LOCKED") != 1:
+        failures.append(
+            "CI workflow must not override UV_LOCKED below the top level or in commands"
+        )
+    if "UV_NO_SYNC" in workflow or "--no-sync" in workflow:
+        failures.append("CI workflow must not disable per-command lock freshness with UV_NO_SYNC")
+
+    try:
+        jobs_index = lines.index("jobs:")
+    except ValueError:
+        failures.append("CI workflow must declare jobs")
+        return
+
+    job_starts = [
+        index
+        for index in range(jobs_index + 1, len(lines))
+        if re.fullmatch(r"  [A-Za-z0-9_-]+:", lines[index]) is not None
+    ]
+    if not job_starts:
+        failures.append("CI workflow must declare at least one job")
+        return
+
+    job_names = [lines[index].strip().removesuffix(":") for index in job_starts]
+    if len(job_names) != len(set(job_names)):
+        failures.append("CI workflow job identifiers must be unique unquoted names")
+    missing_uv_jobs = sorted(REQUIRED_UV_JOBS.difference(job_names))
+    if missing_uv_jobs:
+        failures.append(f"CI workflow omits required uv jobs: {missing_uv_jobs!r}")
+
+    job_starts.append(len(lines))
+    expected_sync = "run: uv sync --locked --extra dev"
+    expected_lock = "run: uv lock --check"
+    for start, end in pairwise(job_starts):
+        block = lines[start:end]
+        job_name = block[0].strip().removesuffix(":")
+        uses_uv = any(re.search(r"(?<!setup-)\buv(?:\s|$)", line) for line in block)
+        if not uses_uv and job_name not in REQUIRED_UV_JOBS:
+            continue
+        setup_positions = [
+            index for index, line in enumerate(block) if line.strip() == PINNED_SETUP_UV_ACTION
+        ]
+        setup_candidates = [
+            (start + index + 1, line.strip())
+            for index, line in enumerate(block)
+            if "astral-sh/setup-uv@" in line
+        ]
+        lock_positions = [
+            index for index, line in enumerate(block) if line.strip() == expected_lock
+        ]
+        sync_positions = [
+            index for index, line in enumerate(block) if line.strip() == expected_sync
+        ]
+        if len(setup_positions) != 1:
+            failures.append(
+                f"CI job {job_name!r} must install uv exactly once from the pinned action SHA"
+            )
+        if len(setup_candidates) != 1 or setup_candidates[0][1] != PINNED_SETUP_UV_ACTION:
+            failures.append(
+                f"CI job {job_name!r} must use exactly {PINNED_SETUP_UV_ACTION!r}, "
+                f"found {setup_candidates!r}"
+            )
+        version_is_bound = bool(
+            setup_positions
+            and len(block) > setup_positions[0] + 2
+            and block[setup_positions[0] + 1].strip() == "with:"
+            and block[setup_positions[0] + 2].strip() == f'version: "{PINNED_UV_VERSION}"'
+        )
+        if not version_is_bound:
+            failures.append(f"CI job {job_name!r} must pin setup-uv to {PINNED_UV_VERSION}")
+        if len(lock_positions) != 1:
+            failures.append(f"CI job {job_name!r} must run exactly {expected_lock!r}")
+        if len(sync_positions) != 1:
+            failures.append(f"CI job {job_name!r} must run exactly {expected_sync!r}")
+        unexpected_lock_or_sync = [
+            (start + index + 1, line.strip())
+            for index, line in enumerate(block)
+            if ("uv lock" in line or "uv sync" in line)
+            and line.strip() not in {expected_lock, expected_sync}
+        ]
+        for line_number, line in unexpected_lock_or_sync:
+            failures.append(
+                f"CI dependency command at line {line_number} is not fail-closed: {line!r}"
+            )
+        if (
+            setup_positions
+            and lock_positions
+            and sync_positions
+            and not setup_positions[0] < lock_positions[0] < sync_positions[0]
+        ):
+            failures.append(f"CI job {job_name!r} must install uv, check the lock, then sync it")
+
+
+def _check_security_policy(root: Path, failures: list[str], version: str) -> None:
+    security_path = root / "SECURITY.md"
+    if not security_path.is_file():
+        return
+    security = security_path.read_text(encoding="utf-8")
+    supported = re.findall(
+        r"Arbogast ([0-9]+\.[0-9]+\.[0-9]+)\s+is currently supported",
+        security,
+    )
+    if supported != [version]:
+        failures.append(
+            f"SECURITY.md must name only Arbogast {version} as currently supported, "
+            f"found {supported!r}"
+        )
+
+
+def _check_build_system(root: Path, failures: list[str]) -> None:
+    pyproject_path = root / "pyproject.toml"
+    if not pyproject_path.is_file():
+        return
+    pyproject = tomllib.loads(pyproject_path.read_text(encoding="utf-8"))
+    build_system = pyproject.get("build-system", {})
+    if build_system.get("requires") != [PINNED_BUILD_BACKEND]:
+        failures.append(
+            "pyproject build-system.requires must pin the release backend to "
+            f"{PINNED_BUILD_BACKEND!r}"
+        )
+    if build_system.get("build-backend") != "hatchling.build":
+        failures.append("pyproject build-system.build-backend must be 'hatchling.build'")
+    hatch_build = pyproject.get("tool", {}).get("hatch", {}).get("build", {})
+    if hatch_build.get("exclude") != ["/.git"]:
+        failures.append("pyproject must exclude the worktree .git pointer from build artifacts")
+
+
 def _check_required_paths(root: Path, failures: list[str], version: str) -> None:
     for relative in required_paths(version, root=root):
         required = root / relative
@@ -1336,10 +1546,13 @@ def check(root: Path, *, expected_version: str | None = None) -> dict[str, objec
         failures.append(f"source __version__ must be {version}")
 
     _check_release_metadata(root, failures, version)
+    _check_build_system(root, failures)
     _check_m23_fixture(root, failures)
     _check_compatibility_index(root, failures)
     _check_v010_compatibility(root, failures)
     _check_live_pari_matrix(root, failures)
+    _check_ci_install_contract(root, failures)
+    _check_security_policy(root, failures, version)
 
     checked_files = _text_files(root)
     for path in checked_files:

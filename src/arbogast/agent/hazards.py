@@ -130,6 +130,45 @@ class HazardRegistry:
 DEFAULT_HAZARDS = HazardRegistry(
     (
         Hazard(
+            id="bootstrap.readiness-vs-mathematical-closure",
+            triggered_by=(
+                "CertifiedBlocked",
+                "CertifiedReady",
+                "DispatchReadinessReceipt",
+                "ReadinessResult",
+                "bootstrap.certify_campaign_readiness",
+            ),
+            message=(
+                "Environmental readiness authorizes execution but proves no mathematical "
+                "existence, nonexistence, or theorem closure."
+            ),
+            remediation=(
+                "Keep the readiness claim in the ENVIRONMENTAL domain and bind it to attempt "
+                "provenance rather than mathematical claim dependencies."
+            ),
+            severity=HazardSeverity.ERROR,
+        ),
+        Hazard(
+            id="bootstrap.certificate-vs-live-dispatch",
+            triggered_by=(
+                "DispatchReadinessReceipt",
+                "EnvironmentSnapshot",
+                "ReadinessReceipt",
+                "bootstrap.certify_campaign_readiness",
+            ),
+            message=(
+                "A valid readiness theorem or historical dispatch receipt does not authorize "
+                "a changed environment, plan, registry, executor, artifact store, or an "
+                "expired or terminal lease."
+            ),
+            remediation=(
+                "Revalidate the exact E,C,P,G,V,X,A,R bindings at activation and again at the "
+                "lease-scoped dispatch boundary; report completed receipts as provenance, not "
+                "current lease validity."
+            ),
+            severity=HazardSeverity.ERROR,
+        ),
+        Hazard(
             id="hurwitz.source-vs-parameter-genus",
             triggered_by=("hurwitz.source_genus", "hurwitz.hurwitz_genus"),
             message="Source genus and Hurwitz-parameter genus are different invariants.",

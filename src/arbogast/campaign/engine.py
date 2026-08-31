@@ -5,14 +5,32 @@ from __future__ import annotations
 import os
 import tempfile
 from collections import Counter
-from collections.abc import Iterable, Mapping
-from dataclasses import dataclass
+from collections.abc import Callable, Iterable, Mapping
+from contextlib import AbstractContextManager, nullcontext
+from dataclasses import dataclass, field
+from datetime import UTC, datetime
 from pathlib import Path
-from typing import Any, Protocol, cast
+from threading import RLock
+from typing import TYPE_CHECKING, Any, Protocol, cast
 
-from arbogast.cert import Certificate, CertificateError, certificate_from_dict
-from arbogast.claims import Claim, ClaimGraph, ClaimGraphError
+from arbogast.cert import (
+    Certificate,
+    CertificateError,
+    VerificationCertificate,
+    VerifierRegistry,
+    certificate_from_dict,
+    default_verifiers,
+)
+from arbogast.claims import (
+    CLAIM_SCHEMA_V2,
+    Claim,
+    ClaimDomain,
+    ClaimGraph,
+    ClaimGraphError,
+    EvidenceKind,
+)
 from arbogast.fleet import (
+    ArtifactRef,
     CheckpointManifest,
     CheckpointRef,
     FleetDispatchError,
@@ -21,15 +39,22 @@ from arbogast.fleet import (
     FleetRun,
     InterruptionReason,
     InterruptionReceipt,
+    LeaseRecord,
+    LeaseState,
     LocalExecutor,
+    ShardSpec,
+    TaskSpec,
+    Worker,
 )
 from arbogast.formats import (
     FrozenMapping,
     JSONValue,
+    canonical_bytes,
     canonical_dumps,
     canonical_sha256,
     loads,
     normalize_json,
+    thaw_json,
 )
 
 from .claims import claim_for_observation
@@ -37,12 +62,14 @@ from .derive import DerivationRule
 from .errors import (
     CampaignError,
     CampaignInvariantError,
+    CampaignReadinessError,
     CampaignSerializationError,
     CapabilityUnavailableError,
     UnknownOperationError,
 )
 from .events import (
     CLOSING_OUTCOMES,
+    EventKind,
     Observation,
     OperationalState,
     Outcome,
@@ -67,6 +94,13 @@ from .spec import CampaignSpec, Objective
 from .strategy import ExactGate, GateDisposition, Strategy, TaskFactory
 from .targets import TargetSpec, TargetState
 
+if TYPE_CHECKING:
+    from arbogast.bootstrap import (
+        DispatchReadinessReceipt,
+        EnvironmentSnapshot,
+        ReadinessActivationReport,
+    )
+
 
 class _Sink(Protocol):
     def write(
@@ -82,6 +116,16 @@ class _OperationRegistry(Protocol):
     def resolve(self, name: str) -> FleetOperation: ...
 
     def names(self) -> tuple[str, ...]: ...
+
+
+@dataclass(frozen=True, slots=True)
+class _ReadinessActivation:
+    """Runtime-only acceptance of one verified plan-readiness theorem."""
+
+    certificate: VerificationCertificate
+    plan: CampaignPlan
+    claim_id: str
+    required_verifiers: tuple[str, ...]
 
 
 @dataclass(frozen=True, slots=True)
@@ -116,6 +160,7 @@ class CampaignStatus:
     busy_workers: int
     fleet_status: FrozenMapping | None
     last_event_id: str | None
+    readiness: FrozenMapping = field(default_factory=FrozenMapping)
 
     def to_dict(self) -> dict[str, JSONValue]:
         return {
@@ -139,6 +184,7 @@ class CampaignStatus:
             "outcomes": {key: value for key, value in self.outcomes},
             "pending_tasks": self.pending_tasks,
             "recorded_plans": self.recorded_plans,
+            "readiness": self.readiness.to_dict(),
             "resource_usage": {key: value for key, value in self.resource_usage},
             "spent": {key: value for key, value in self.spent},
             "target_count": self.target_count,
@@ -201,6 +247,8 @@ class Campaign:
         executor: LocalExecutor | None = None,
         operations: Mapping[str, FleetOperation] | None = None,
         operation_registry: _OperationRegistry | None = None,
+        verifier_registry: VerifierRegistry | None = None,
+        strict_readiness: bool = False,
         gates: Mapping[str, ExactGate] | None = None,
         task_factories: Mapping[str, TaskFactory] | None = None,
         claims: ClaimGraph | None = None,
@@ -225,7 +273,20 @@ class Campaign:
                 metadata=metadata,
             )
         self.spec = resolved_spec
-        self.ledger = TargetLedger(resolved_spec.targets) if ledger is None else ledger
+        if verifier_registry is not None and not isinstance(verifier_registry, VerifierRegistry):
+            raise TypeError("verifier_registry must be a VerifierRegistry or None")
+        self.verifier_registry = (
+            default_verifiers if verifier_registry is None else verifier_registry
+        )
+        self.ledger = (
+            TargetLedger(
+                resolved_spec.targets,
+                verifier_registry=self.verifier_registry,
+            )
+            if ledger is None
+            else ledger
+        )
+        self.ledger.use_verifier_registry(self.verifier_registry)
         for target in resolved_spec.targets:
             if target.target_id in self.ledger.target_ids:
                 if self.ledger.get(target.target_id) != target:
@@ -240,6 +301,10 @@ class Campaign:
         self.operation_registry = (
             executor_registry if operation_registry is None else operation_registry
         )
+        if not isinstance(strict_readiness, bool):
+            raise TypeError("strict_readiness must be a boolean")
+        self.strict_readiness = strict_readiness
+        self._active_readiness: _ReadinessActivation | None = None
         self.gates: dict[str, ExactGate] = dict(gates or {})
         for gate_name, gate in self.gates.items():
             if gate.name != gate_name:
@@ -298,6 +363,7 @@ class Campaign:
         self._tasks: dict[str, CampaignTask] = {}
         self._deferred_task_ids: set[str] = set()
         self._active_attempts: dict[str, AttemptRecord] = {}
+        self._dispatch_readiness_lock = RLock()
         for document in self.ledger.task_documents():
             task = CampaignTask.from_dict(document)
             if task.target != self.ledger.get(task.target_id):
@@ -308,6 +374,7 @@ class Campaign:
         self.claim_graph = (
             ClaimGraph(graph_id=f"campaign:{self.campaign_id}") if claims is None else claims
         )
+        self._validate_dispatch_receipt_history()
         self._reconcile_claim_graph()
         self.reconcile_orphaned_attempts()
 
@@ -333,7 +400,7 @@ class Campaign:
 
     @property
     def claims(self) -> ClaimGraph:
-        """The campaign-owned mathematical claim graph."""
+        """The campaign-owned typed claim graph, including readiness history."""
 
         return self.claim_graph
 
@@ -347,6 +414,790 @@ class Campaign:
 
         return tuple(dict(item) for item in self._sink_errors)
 
+    @property
+    def active_readiness_certificate(self) -> VerificationCertificate | None:
+        """Return the runtime authorization certificate, never persisted state."""
+
+        activation = self._active_readiness
+        return None if activation is None else activation.certificate
+
+    def record_environment_claim(self, claim: Claim) -> Claim:
+        """Persist a verified environmental theorem without activating it."""
+
+        if not isinstance(claim, Claim):
+            raise TypeError("environment claim must be a Claim")
+        if claim.domain is not ClaimDomain.ENVIRONMENTAL:
+            raise CampaignReadinessError(
+                "campaign readiness history accepts only environmental claims",
+                code="READINESS_CLAIM_DOMAIN_MISMATCH",
+            )
+        # The readiness theorem is replayed by the audited builtin verifier.
+        # ``self.verifier_registry`` is instead the exact campaign-specific V
+        # binding certified by that theorem and may intentionally be private.
+        report = claim.verify(raise_on_failure=False)
+        if not report.verified:
+            raise CampaignReadinessError(
+                report.error or "environmental claim verification failed",
+                code="READINESS_CLAIM_UNVERIFIED",
+            )
+        self.claim_graph.add_claim(claim)
+        return claim
+
+    def _recorded_plan(self, plan_id: str) -> CampaignPlan | None:
+        for document in self.ledger.plan_documents:
+            if document.get("plan_id") == plan_id:
+                return CampaignPlan.from_dict(document)
+        return None
+
+    def _validate_dispatch_receipt_history(self) -> None:
+        """Cross-bind durable operational receipts after offline reconstruction."""
+
+        from arbogast.bootstrap import DispatchReadinessReceipt, readiness_receipt
+        from arbogast.cert import VerificationCertificate, certificate_from_dict
+
+        for attempt in self.ledger.attempts:
+            raw_receipt = attempt.dispatch_readiness_receipt
+            if raw_receipt is None:
+                continue
+            try:
+                receipt = DispatchReadinessReceipt.from_dict(raw_receipt.to_dict())
+                embedded_certificate = certificate_from_dict(
+                    receipt.readiness_certificate.to_dict()
+                )
+                if not isinstance(embedded_certificate, VerificationCertificate):
+                    raise TypeError("embedded readiness evidence is not a verification certificate")
+                theorem = readiness_receipt(embedded_certificate)
+            except (KeyError, TypeError, ValueError) as error:
+                raise CampaignInvariantError(
+                    "serialized attempt dispatch receipt failed strict replay"
+                ) from error
+            task = self._tasks.get(attempt.task_id)
+            plan = self._recorded_plan(receipt.campaign_plan_id)
+            try:
+                readiness_claim = self.claim_graph.get(receipt.readiness_claim_id)
+            except Exception:
+                readiness_claim = None
+            if (
+                task is None
+                or readiness_claim is None
+                or readiness_claim.to_dict() != receipt.readiness_claim.to_dict()
+                or receipt.campaign_id != self.campaign_id
+                or receipt.campaign_target_id != attempt.target_id
+                or receipt.campaign_task_id != attempt.task_id
+                or receipt.campaign_attempt != attempt.attempt
+                or receipt.campaign_attempt_id != attempt.attempt_id
+                or receipt.fleet_task != task.task
+                or plan is None
+                or tuple(sorted(item.campaign_task_id for item in plan.tasks))
+                != theorem.profile.task_ids
+                or all(item.campaign_task_id != task.campaign_task_id for item in plan.tasks)
+            ):
+                raise CampaignInvariantError(
+                    "serialized attempt dispatch receipt is outside its campaign/task/plan"
+                )
+            if attempt.worker_id is not None and receipt.lease.worker_id != attempt.worker_id:
+                raise CampaignInvariantError(
+                    "serialized attempt worker differs from its dispatch lease worker"
+                )
+
+    def _validate_readiness_activation(
+        self,
+        certificate: VerificationCertificate,
+        plan: CampaignPlan,
+        *,
+        environment: EnvironmentSnapshot | None = None,
+    ) -> ReadinessActivationReport:
+        # Imported lazily because bootstrap itself consumes campaign models.
+        from arbogast.bootstrap import validate_readiness_activation
+
+        return validate_readiness_activation(
+            certificate,
+            campaign=self,
+            plan=plan,
+            operation_registry=self.operation_registry,
+            verifier_registry=self.verifier_registry,
+            executor=self.executor,
+            artifact_store=getattr(self.executor, "store", None),
+            environment=environment,
+        )
+
+    @staticmethod
+    def _report_blockers(report: object) -> tuple[str, ...]:
+        raw = getattr(report, "blockers", ())
+        if not isinstance(raw, tuple) or any(not isinstance(item, str) for item in raw):
+            return ("readiness validator returned malformed blockers",)
+        return raw
+
+    def activate_readiness(
+        self,
+        certificate: VerificationCertificate,
+        *,
+        plan: CampaignPlan | None = None,
+        environment: EnvironmentSnapshot | None = None,
+    ) -> ReadinessActivationReport:
+        """Accept a verified readiness theorem for this exact live runtime.
+
+        The claim remains persistent in ``claim_graph``; this activation does
+        not.  A loaded Campaign must explicitly reactivate after recomputing
+        every runtime binding.
+        """
+
+        if not isinstance(certificate, VerificationCertificate):
+            raise TypeError("readiness activation requires a VerificationCertificate")
+        from arbogast.bootstrap import readiness_receipt
+
+        try:
+            receipt = readiness_receipt(certificate)
+        except Exception as error:
+            raise CampaignReadinessError(
+                f"readiness certificate replay failed: {error}",
+                code="READINESS_CERTIFICATE_INVALID",
+                blockers=(str(error),),
+            ) from error
+        profile = receipt.profile
+        plan_id = getattr(profile, "plan_id", None)
+        if not isinstance(plan_id, str) or not plan_id:
+            raise CampaignReadinessError(
+                "campaign dispatch activation requires a plan-scoped readiness certificate",
+                code="READINESS_PLAN_REQUIRED",
+            )
+        selected_plan = self._recorded_plan(plan_id) if plan is None else plan
+        if selected_plan is None or selected_plan.plan_id != plan_id:
+            raise CampaignReadinessError(
+                "readiness certificate does not name a recorded campaign plan",
+                code="READINESS_PLAN_MISMATCH",
+            )
+        try:
+            report = self._validate_readiness_activation(
+                certificate,
+                selected_plan,
+                environment=environment,
+            )
+        except Exception as error:
+            raise CampaignReadinessError(
+                f"readiness activation replay failed: {error}",
+                code="READINESS_ACTIVATION_INVALID",
+                blockers=(str(error),),
+            ) from error
+        valid = getattr(report, "valid", None)
+        if valid is not True:
+            blockers = self._report_blockers(report)
+            raise CampaignReadinessError(
+                "readiness activation failed" + (f": {'; '.join(blockers)}" if blockers else ""),
+                code="READINESS_ACTIVATION_INVALID",
+                blockers=blockers,
+            )
+        claim_id = getattr(report, "claim_id", None)
+        if not isinstance(claim_id, str) or claim_id not in self.claim_graph:
+            raise CampaignReadinessError(
+                "verified readiness claim must be recorded before activation",
+                code="READINESS_CLAIM_NOT_RECORDED",
+            )
+        claim = self.claim_graph.get(claim_id)
+        evidence_ids = {
+            item.ref for item in claim.evidence if item.kind is EvidenceKind.CERTIFICATE
+        }
+        if (
+            claim.schema_version != CLAIM_SCHEMA_V2
+            or claim.domain is not ClaimDomain.ENVIRONMENTAL
+            or claim.id != certificate.claim_id
+            or claim.what.statement_hash != certificate.statement_hash
+            or claim.boundary_hash != certificate.claim_boundary_hash
+            or certificate.certificate_id not in evidence_ids
+        ):
+            raise CampaignReadinessError(
+                "recorded environmental claim does not bind the exact readiness certificate",
+                code="READINESS_CLAIM_CERTIFICATE_MISMATCH",
+            )
+        self._active_readiness = _ReadinessActivation(
+            certificate=certificate,
+            plan=selected_plan,
+            claim_id=claim_id,
+            required_verifiers=profile.required_verifiers,
+        )
+        return report
+
+    def deactivate_readiness(self) -> VerificationCertificate | None:
+        """Remove runtime dispatch authority while retaining claim history."""
+
+        previous = self._active_readiness
+        self._active_readiness = None
+        return None if previous is None else previous.certificate
+
+    def _require_dispatch_readiness(
+        self,
+        task: CampaignTask,
+        recommendation: Recommendation | None = None,
+    ) -> str | None:
+        activation = self._active_readiness
+        if activation is None:
+            if self.strict_readiness:
+                raise CampaignReadinessError(
+                    "campaign dispatch requires an active readiness theorem",
+                    code="READINESS_NOT_ACTIVE",
+                    blockers=("no readiness certificate is active",),
+                )
+            return None
+        try:
+            report = self._validate_readiness_activation(
+                activation.certificate,
+                activation.plan,
+            )
+        except Exception as error:
+            if isinstance(error, CampaignReadinessError):
+                raise
+            raise CampaignReadinessError(
+                f"readiness revalidation failed: {error}",
+                code="READINESS_REVALIDATION_FAILED",
+                blockers=(str(error),),
+            ) from error
+        blockers = self._report_blockers(report)
+        if getattr(report, "valid", None) is not True:
+            raise CampaignReadinessError(
+                "active readiness theorem is stale or mismatched"
+                + (f": {'; '.join(blockers)}" if blockers else ""),
+                code="READINESS_STALE",
+                blockers=blockers,
+            )
+        task_ids = getattr(report, "task_ids", ())
+        if not isinstance(task_ids, tuple) or task.campaign_task_id not in task_ids:
+            blocker = f"task {task.campaign_task_id} is outside the certified plan roster"
+            raise CampaignReadinessError(
+                blocker,
+                code="READINESS_TASK_NOT_COVERED",
+                blockers=(blocker,),
+            )
+        if recommendation is not None and recommendation not in activation.plan.recommendations:
+            blocker = "recommendation is not part of the exact activated campaign plan"
+            raise CampaignReadinessError(
+                blocker,
+                code="READINESS_RECOMMENDATION_NOT_COVERED",
+                blockers=(blocker,),
+            )
+        return activation.claim_id
+
+    def _readiness_artifact_custody_blockers(
+        self,
+        certificate: VerificationCertificate,
+    ) -> tuple[str, ...]:
+        """Replay the certified artifact fixture without writing new bytes."""
+
+        from arbogast.bootstrap import ObligationStatus, readiness_receipt
+
+        try:
+            receipt = readiness_receipt(certificate)
+            obligation = next(
+                item for item in receipt.obligations if item.id == "artifact-store.roundtrip"
+            )
+            if obligation.status is not ObligationStatus.SATISFIED:
+                return ("certified artifact-store custody is not satisfied",)
+            if obligation.evidence.get("outcome") != "completed":
+                return ("artifact-store custody evidence did not complete",)
+            raw_reference = obligation.evidence.get("reference")
+            if not isinstance(raw_reference, Mapping):
+                return ("artifact-store custody reference is malformed",)
+            reference = ArtifactRef.from_dict(cast(Mapping[str, Any], raw_reference))
+            input_hex = obligation.evidence.get("input_hex")
+            if not isinstance(input_hex, str):
+                return ("artifact-store custody bytes are malformed",)
+            expected = bytes.fromhex(input_hex)
+            store = getattr(self.executor, "store", None)
+            verify = getattr(store, "verify", None)
+            get_bytes = getattr(store, "get_bytes", None)
+            if not callable(verify) or not callable(get_bytes):
+                return ("current executor has no readable artifact custody",)
+            if verify(reference) is not True or get_bytes(reference) != expected:
+                return ("certified artifact fixture is absent or corrupt",)
+        except Exception as error:
+            return (f"artifact-store custody replay failed: {type(error).__name__}: {error}",)
+        return ()
+
+    def _dispatch_artifact_probe(
+        self,
+        payload: Mapping[str, object],
+    ) -> FrozenMapping:
+        """Write and read the exact lease-bound operational probe document."""
+
+        store = getattr(self.executor, "store", None)
+        put_json = getattr(store, "put_json", None)
+        get_bytes = getattr(store, "get_bytes", None)
+        get_json = getattr(store, "get_json", None)
+        verify = getattr(store, "verify", None)
+        if (
+            not callable(put_json)
+            or not callable(get_bytes)
+            or not callable(get_json)
+            or not callable(verify)
+        ):
+            raise CampaignReadinessError(
+                "the current artifact store cannot perform a lease-bound write/read probe",
+                code="READINESS_ARTIFACT_PROBE_FAILED",
+                blockers=("artifact store lacks put_json/get_bytes/get_json/verify",),
+            )
+        canonical_payload = normalize_json(payload)
+        try:
+            reference = put_json(canonical_payload)
+            if not isinstance(reference, ArtifactRef):
+                raise TypeError("artifact store returned a non-ArtifactRef")
+            if verify(reference) is not True:
+                raise ValueError("artifact reference failed live verification")
+            read_bytes = get_bytes(reference)
+            if read_bytes != canonical_bytes(canonical_payload):
+                raise ValueError("artifact probe read bytes differ from canonical payload")
+            replayed = get_json(reference)
+            if replayed != canonical_payload:
+                raise ValueError("artifact probe replay differs from the exact payload")
+        except Exception as error:
+            blocker = f"artifact write/read probe failed: {type(error).__name__}: {error}"
+            raise CampaignReadinessError(
+                "lease-scoped artifact readiness probe refused operation execution",
+                code="READINESS_ARTIFACT_PROBE_FAILED",
+                blockers=(blocker,),
+            ) from error
+        return FrozenMapping(
+            {
+                "payload": canonical_payload,
+                "read_bytes_hex": read_bytes.hex(),
+                "read_outcome": "completed",
+                "reference": reference.to_dict(),
+                "schema": "arbogast.bootstrap.dispatch-artifact-probe-receipt/v1",
+                "write_outcome": "completed",
+            }
+        )
+
+    def _lease_dispatch_readiness_context(
+        self,
+        task: CampaignTask,
+        recommendation: Recommendation | None,
+        operation: FleetOperation,
+    ) -> AbstractContextManager[None]:
+        """Bind live readiness replay to each acquired built-in worker lease."""
+
+        activation = self._active_readiness
+        if activation is None:
+            return nullcontext()
+        install = getattr(self.executor, "_guard_lease_readiness", None)
+        if not callable(install):
+            if callable(getattr(self.executor, "lease_records", None)):
+                raise CampaignReadinessError(
+                    "the lease-aware executor cannot enforce dispatch readiness",
+                    code="READINESS_LEASE_GUARD_UNSUPPORTED",
+                    blockers=("executor has leases but no readiness guard boundary",),
+                )
+            return nullcontext()
+        expected_certificate_id = activation.certificate.certificate_id
+
+        def validate(
+            fleet_task: TaskSpec,
+            shard: ShardSpec,
+            worker: Worker,
+            lease: LeaseRecord,
+            fleet_plan_hash: str,
+            dispatch_id: str,
+            dispatch_ordinal: int,
+            dispatch_runtime_nonce: str,
+            checked_at: str,
+            lease_blockers: tuple[str, ...],
+        ) -> Callable[[LeaseRecord, str, tuple[str, ...]], None]:
+            current_activation = self._active_readiness
+            blockers = list(lease_blockers)
+            if (
+                current_activation is None
+                or current_activation.certificate.certificate_id != expected_certificate_id
+            ):
+                blockers.append("the active readiness certificate changed after dispatch")
+            if fleet_task != task.task:
+                blockers.append("worker lease names a different exact fleet task")
+            if shard.task_hash != task.task.task_hash:
+                blockers.append("worker lease shard is outside the exact campaign task")
+            if lease.state is not LeaseState.ACTIVE:
+                blockers.append("worker lease is not active")
+            missing = self._missing_capabilities(task)
+            if missing:
+                blockers.append("campaign capabilities changed; missing: " + ", ".join(missing))
+            try:
+                report_claim_id = self._require_dispatch_readiness(task, recommendation)
+                if report_claim_id != activation.claim_id:
+                    blockers.append("lease replay returned a different readiness claim")
+            except CampaignReadinessError as error:
+                blockers.extend(error.blockers or (str(error),))
+            current_plan = None
+            try:
+                current_plan = self.executor.plan(fleet_task, operation)
+                if current_plan.plan_hash != fleet_plan_hash:
+                    blockers.append("current fleet plan identity changed after lease acquisition")
+                if shard not in current_plan.shards:
+                    blockers.append("leased shard is absent from the current exact fleet plan")
+            except Exception as error:
+                blockers.append(
+                    f"current fleet plan replay failed: {type(error).__name__}: {error}"
+                )
+            resolve = getattr(self.operation_registry, "resolve", None)
+            if not callable(resolve):
+                blockers.append("current operation registry cannot resolve the leased operation")
+            else:
+                try:
+                    if resolve(fleet_task.operation) is not operation:
+                        blockers.append(
+                            "leased operation is not the exact current registry implementation"
+                        )
+                except Exception as error:
+                    blockers.append(
+                        f"current operation resolution failed: {type(error).__name__}: {error}"
+                    )
+            blockers.extend(self._readiness_artifact_custody_blockers(activation.certificate))
+            if blockers:
+                unique = tuple(dict.fromkeys(blockers))
+                raise CampaignReadinessError(
+                    "lease-scoped readiness refresh refused operation execution: "
+                    + "; ".join(unique),
+                    code="READINESS_LEASE_STALE",
+                    blockers=unique,
+                )
+            from arbogast.bootstrap import (
+                DispatchReadinessReceipt,
+                readiness_receipt,
+            )
+
+            assert current_plan is not None
+            theorem_receipt = readiness_receipt(activation.certificate)
+            bindings = theorem_receipt.profile.bindings
+            try:
+                readiness_claim = self.claim_graph.get(activation.claim_id)
+            except Exception as error:
+                raise CampaignReadinessError(
+                    "active readiness claim is absent from the campaign claim graph",
+                    code="READINESS_CLAIM_UNVERIFIED",
+                ) from error
+            with self._dispatch_readiness_lock:
+                campaign_attempt = self._active_attempts.get(task.campaign_task_id)
+                if campaign_attempt is None or not campaign_attempt.live:
+                    raise CampaignReadinessError(
+                        "dispatch readiness has no live campaign attempt",
+                        code="READINESS_DISPATCH_ATTEMPT_MISSING",
+                    )
+                campaign_attempt_id = campaign_attempt.attempt_id
+                campaign_attempt_number = campaign_attempt.attempt
+
+            probe_payload = {
+                "campaign_attempt_id": campaign_attempt_id,
+                "campaign_id": bindings["C"],
+                "campaign_plan_id": bindings["P"],
+                "campaign_target_id": task.target_id,
+                "campaign_task_id": task.campaign_task_id,
+                "dispatch_id": dispatch_id,
+                "environment_id": theorem_receipt.environment.environment_id,
+                "fleet_plan_hash": fleet_plan_hash,
+                "lease_id": lease.id,
+                "profile_id": theorem_receipt.profile.profile_id,
+                "readiness_certificate_id": activation.certificate.certificate_id,
+                "schema": "arbogast.bootstrap.dispatch-artifact-probe/v1",
+                "shard_hash": shard.shard_hash,
+                "task_hash": fleet_task.task_hash,
+                "worker_id": worker.id,
+            }
+            artifact_probe = self._dispatch_artifact_probe(probe_payload)
+
+            def finalize(
+                final_lease: LeaseRecord,
+                final_checked_at: str,
+                final_lease_blockers: tuple[str, ...],
+            ) -> None:
+                final_blockers = list(final_lease_blockers)
+                live_activation = self._active_readiness
+                if (
+                    live_activation is None
+                    or live_activation.certificate.certificate_id != expected_certificate_id
+                ):
+                    final_blockers.append("the active readiness certificate changed before launch")
+                with self._dispatch_readiness_lock:
+                    active_attempt = self._active_attempts.get(task.campaign_task_id)
+                    if (
+                        active_attempt is None
+                        or not active_attempt.live
+                        or active_attempt.attempt_id != campaign_attempt_id
+                    ):
+                        final_blockers.append("the live campaign attempt changed before launch")
+                if final_lease != lease:
+                    final_blockers.append("the final lease differs from the refreshed active lease")
+                if final_blockers:
+                    unique = tuple(dict.fromkeys(final_blockers))
+                    raise CampaignReadinessError(
+                        "final lease-scoped readiness check refused operation execution: "
+                        + "; ".join(unique),
+                        code="READINESS_LEASE_STALE",
+                        blockers=unique,
+                    )
+                dispatch_receipt = DispatchReadinessReceipt(
+                    environment_id=theorem_receipt.environment.environment_id,
+                    profile_id=theorem_receipt.profile.profile_id,
+                    readiness_receipt_id=theorem_receipt.receipt_id,
+                    readiness_certificate_id=activation.certificate.certificate_id,
+                    readiness_claim_id=activation.claim_id,
+                    readiness_certificate=FrozenMapping(activation.certificate.to_dict()),
+                    readiness_claim=FrozenMapping(readiness_claim.to_dict()),
+                    campaign_id=bindings["C"],
+                    campaign_plan_id=bindings["P"],
+                    campaign_task_id=task.campaign_task_id,
+                    campaign_target_id=task.target_id,
+                    campaign_attempt=campaign_attempt_number,
+                    campaign_attempt_id=campaign_attempt_id,
+                    operation_registry_id=bindings["G"],
+                    verifier_registry_id=bindings["V"],
+                    executor_id=bindings["X"],
+                    artifact_store_id=bindings["A"],
+                    dispatch_id=dispatch_id,
+                    dispatch_ordinal=dispatch_ordinal,
+                    dispatch_runtime_nonce=dispatch_runtime_nonce,
+                    fleet_task=fleet_task,
+                    fleet_plan_hash=fleet_plan_hash,
+                    fleet_plan_shard_hashes=tuple(item.shard_hash for item in current_plan.shards),
+                    shard=shard,
+                    worker=FrozenMapping(worker.to_dict()),
+                    lease=final_lease,
+                    artifact_probe=artifact_probe,
+                    checked_at=final_checked_at,
+                )
+                self._record_dispatch_readiness_receipt(task, dispatch_receipt)
+
+            return finalize
+
+        guarded = install(task.task, validate)
+        if not isinstance(guarded, AbstractContextManager):
+            raise CampaignReadinessError(
+                "executor returned an invalid lease readiness guard",
+                code="READINESS_LEASE_GUARD_UNSUPPORTED",
+            )
+        return guarded
+
+    def _next_active_readiness_recommendation(self) -> Recommendation | None:
+        activation = self._active_readiness
+        if activation is None:
+            return None
+        return next(
+            (
+                item
+                for item in activation.plan.recommendations
+                if self.ledger.status(item.task.target_id).open
+                and not self.ledger.observations_for_task(item.task.campaign_task_id)
+            ),
+            None,
+        )
+
+    def _lease_validity_projections(
+        self,
+        *,
+        runtime_valid: bool,
+    ) -> tuple[dict[str, object], ...]:
+        """Project every durable receipt; none alone represents concurrent authority."""
+
+        from arbogast.bootstrap import DispatchReadinessReceipt
+
+        receipts: list[DispatchReadinessReceipt] = []
+        seen: set[str] = set()
+        for event in self.ledger.events:
+            if event.kind is not EventKind.ATTEMPT_RECORDED:
+                continue
+            raw_attempt = thaw_json(event.payload["attempt"])
+            if not isinstance(raw_attempt, Mapping):
+                continue
+            try:
+                attempt = AttemptRecord.from_dict(raw_attempt)
+                raw_receipt = attempt.dispatch_readiness_receipt
+                if raw_receipt is None:
+                    continue
+                receipt = DispatchReadinessReceipt.from_dict(raw_receipt.to_dict())
+            except (KeyError, TypeError, ValueError):
+                continue
+            if receipt.receipt_id in seen:
+                continue
+            seen.add(receipt.receipt_id)
+            receipts.append(receipt)
+
+        records = getattr(self.executor, "lease_records", None)
+        current_by_id: dict[str, LeaseRecord] = {}
+        if callable(records):
+            try:
+                for item in records():
+                    current_by_id[item.id] = item
+            except Exception:
+                current_by_id = {}
+        now_method = getattr(self.executor, "_now", None)
+        try:
+            now = now_method() if callable(now_method) else datetime.now(UTC)
+        except Exception:
+            now = datetime.now(UTC)
+        activation = self._active_readiness
+        projections: list[dict[str, object]] = []
+        for receipt in receipts:
+            current_lease = current_by_id.get(receipt.lease.id)
+            expires = datetime.strptime(
+                receipt.lease.expires_at,
+                "%Y-%m-%dT%H:%M:%S.%fZ",
+            ).replace(tzinfo=UTC)
+            same_activation = (
+                activation is not None
+                and activation.certificate.certificate_id == receipt.readiness_certificate_id
+            )
+            candidate_current = bool(
+                runtime_valid
+                and same_activation
+                and current_lease is not None
+                and current_lease.state is LeaseState.ACTIVE
+                and now < expires
+            )
+            current_valid = False
+            if candidate_current:
+                validate_context = getattr(
+                    self.executor,
+                    "validate_dispatch_context",
+                    None,
+                )
+                if callable(validate_context):
+                    try:
+                        replayed_lease = validate_context(
+                            task=receipt.fleet_task,
+                            lease=receipt.lease,
+                            dispatch_id=receipt.dispatch_id,
+                            dispatch_ordinal=receipt.dispatch_ordinal,
+                            dispatch_runtime_nonce=receipt.dispatch_runtime_nonce,
+                            plan_hash=receipt.fleet_plan_hash,
+                            worker_id=receipt.lease.worker_id,
+                        )
+                        current_valid = replayed_lease == receipt.lease
+                    except Exception:
+                        current_valid = False
+            if current_valid:
+                state = "current-active"
+                reason = "the exact checked lease remains active in the current runtime"
+            elif current_lease is not None and current_lease.terminal:
+                state = "historical-terminal"
+                reason = f"the checked lease is now terminal ({current_lease.state.value})"
+            elif now >= expires:
+                state = "historical-expired"
+                reason = "the checked lease validity interval has expired"
+            else:
+                state = "historical-stale-runtime"
+                reason = "the historical receipt is not current runtime dispatch authority"
+            projections.append(
+                {
+                    "receipt_id": receipt.receipt_id,
+                    "task_id": receipt.campaign_task_id,
+                    "dispatch_id": receipt.dispatch_id,
+                    "shard_hash": receipt.shard.shard_hash,
+                    "worker_id": receipt.lease.worker_id,
+                    "lease_id": receipt.lease.id,
+                    "lease_state_at_check": receipt.lease.state.value,
+                    "lease_state_current": (
+                        None if current_lease is None else current_lease.state.value
+                    ),
+                    "acquired_at": receipt.lease.acquired_at,
+                    "checked_at": receipt.checked_at,
+                    "expires_at": receipt.lease.expires_at,
+                    "receipt_valid": receipt.valid,
+                    "valid": current_valid,
+                    "current_valid": current_valid,
+                    "historical": not current_valid,
+                    "status": state,
+                    "reason": reason,
+                }
+            )
+        return tuple(projections)
+
+    def _lease_validity_projection(self, *, runtime_valid: bool) -> dict[str, object] | None:
+        """Retain the latest historical projection for additive compatibility."""
+
+        projections = self._lease_validity_projections(runtime_valid=runtime_valid)
+        return None if not projections else projections[-1]
+
+    def _readiness_projection(self) -> FrozenMapping:
+        activation = self._active_readiness
+        if activation is None:
+            blockers = ["no readiness certificate is active"] if self.strict_readiness else []
+            lease_validities = self._lease_validity_projections(runtime_valid=False)
+            return FrozenMapping(
+                {
+                    "active": False,
+                    "blockers": blockers,
+                    "campaign_id": self.campaign_id,
+                    "certificate_id": None,
+                    "checks": [],
+                    "claim_id": None,
+                    "environment_id": None,
+                    "lease_validity": (None if not lease_validities else lease_validities[-1]),
+                    "lease_validities": lease_validities,
+                    "current_lease_validities": tuple(
+                        item for item in lease_validities if item["current_valid"] is True
+                    ),
+                    "plan_id": None,
+                    "profile_id": None,
+                    "required": self.strict_readiness,
+                    "stale": False,
+                    "task_ids": [],
+                    "valid": False,
+                }
+            )
+        try:
+            report = self._validate_readiness_activation(
+                activation.certificate,
+                activation.plan,
+            )
+            valid = getattr(report, "valid", None) is True
+            blockers = list(self._report_blockers(report))
+            checks = getattr(report, "checks", ())
+            task_ids = getattr(report, "task_ids", ())
+            if not isinstance(checks, tuple):
+                checks = ()
+            if not isinstance(task_ids, tuple):
+                task_ids = ()
+            lease_validities = self._lease_validity_projections(runtime_valid=valid)
+            return FrozenMapping(
+                {
+                    "active": True,
+                    "blockers": blockers,
+                    "campaign_id": getattr(report, "campaign_id", self.campaign_id),
+                    "certificate_id": activation.certificate.certificate_id,
+                    "checks": list(checks),
+                    "claim_id": activation.claim_id,
+                    "environment_id": getattr(report, "environment_id", None),
+                    "lease_validity": (None if not lease_validities else lease_validities[-1]),
+                    "lease_validities": lease_validities,
+                    "current_lease_validities": tuple(
+                        item for item in lease_validities if item["current_valid"] is True
+                    ),
+                    "plan_id": getattr(report, "plan_id", activation.plan.plan_id),
+                    "profile_id": getattr(report, "profile_id", None),
+                    "required": self.strict_readiness,
+                    "stale": not valid,
+                    "task_ids": list(task_ids),
+                    "valid": valid,
+                }
+            )
+        except Exception as error:
+            lease_validities = self._lease_validity_projections(runtime_valid=False)
+            return FrozenMapping(
+                {
+                    "active": True,
+                    "blockers": [str(error)],
+                    "campaign_id": self.campaign_id,
+                    "certificate_id": activation.certificate.certificate_id,
+                    "checks": [],
+                    "claim_id": activation.claim_id,
+                    "environment_id": None,
+                    "lease_validity": (None if not lease_validities else lease_validities[-1]),
+                    "lease_validities": lease_validities,
+                    "current_lease_validities": tuple(
+                        item for item in lease_validities if item["current_valid"] is True
+                    ),
+                    "plan_id": activation.plan.plan_id,
+                    "profile_id": None,
+                    "required": self.strict_readiness,
+                    "stale": True,
+                    "task_ids": [item.campaign_task_id for item in activation.plan.tasks],
+                    "valid": False,
+                }
+            )
+
     def _claims_for_target(self, target_id: str) -> tuple[Claim, ...]:
         return tuple(
             claim
@@ -359,7 +1210,7 @@ class Campaign:
         if self.claim_graph.graph_id != expected_graph_id:
             raise CampaignInvariantError("campaign claim graph is not bound to this CampaignSpec")
         for observation in self.ledger.observations:
-            if not observation.closes_target:
+            if not observation.closes_target_with(self.verifier_registry):
                 continue
             task = self._tasks.get(observation.task_id)
             if task is None:
@@ -443,6 +1294,13 @@ class Campaign:
                 progress_completed=live.progress_completed,
                 progress_total=live.progress_total,
                 resources=live.resources,
+                readiness_claim_id=live.readiness_claim_id,
+                dispatch_readiness_receipt_id=live.dispatch_readiness_receipt_id,
+                dispatch_readiness_receipt=(
+                    None
+                    if live.dispatch_readiness_receipt is None
+                    else live.dispatch_readiness_receipt.to_dict()
+                ),
             )
             event = self.ledger.record_attempt(terminal)
             if event is not None:
@@ -505,7 +1363,7 @@ class Campaign:
                 **decision.details.to_dict(),
             },
         )
-        if not observation.verified:
+        if not observation.verify(self.verifier_registry):
             raise CampaignInvariantError(
                 f"exact gate {gate.name!r} certificate failed its registered verifier"
             )
@@ -622,6 +1480,7 @@ class Campaign:
 
     def _blockers_for_target(self, target_id: str) -> tuple[str, ...]:
         blockers: list[str] = []
+        readiness = self._readiness_projection()
         for task in self.tasks:
             if task.target_id != target_id:
                 continue
@@ -642,7 +1501,32 @@ class Campaign:
                 blockers.append(
                     f"task {task.campaign_task_id} is deferred by its exact preflight gate"
                 )
+            for reason in self._readiness_blockers_for_task(task, readiness):
+                blockers.append(f"task {task.campaign_task_id} is readiness-blocked; {reason}")
         return tuple(sorted(blockers))
+
+    def _readiness_blockers_for_task(
+        self,
+        task: CampaignTask,
+        projection: FrozenMapping | None = None,
+    ) -> tuple[str, ...]:
+        readiness = self._readiness_projection() if projection is None else projection
+        active = readiness.get("active") is True
+        if not active and not self.strict_readiness:
+            return ()
+        raw_blockers: object = readiness.get("blockers", [])
+        blockers = (
+            tuple(item for item in raw_blockers if isinstance(item, str))
+            if isinstance(raw_blockers, list | tuple)
+            else ()
+        )
+        if readiness.get("valid") is not True:
+            return blockers or ("no valid readiness theorem is active",)
+        raw_task_ids: object = readiness.get("task_ids", [])
+        task_ids = set(raw_task_ids) if isinstance(raw_task_ids, list | tuple) else set()
+        if task.campaign_task_id not in task_ids:
+            return ("task is outside the certified plan roster",)
+        return ()
 
     def _fleet_status_projection(
         self,
@@ -689,6 +1573,7 @@ class Campaign:
         states = tuple(self.ledger.status(target) for target in self.ledger.targets)
         observations = self.ledger.observations
         observed_task_ids = {item.task_id for item in observations}
+        readiness = self._readiness_projection()
         blocked_task_ids = {
             task.campaign_task_id
             for task in self.tasks
@@ -698,6 +1583,7 @@ class Campaign:
                 self._missing_capabilities(task)
                 or self._worker_ineligibility(task)
                 or self._checkpoint_resume_blocker(task)
+                or self._readiness_blockers_for_task(task, readiness)
             )
         }
         counts = Counter(item.outcome.value for item in observations)
@@ -761,6 +1647,7 @@ class Campaign:
             available_workers=available_workers,
             busy_workers=busy_workers,
             fleet_status=fleet_status,
+            readiness=readiness,
             last_event_id=(None if not self.ledger.events else self.ledger.events[-1].event_id),
         )
 
@@ -1248,7 +2135,12 @@ class Campaign:
         self._observe(observation, trusted_runtime=True)
         return observation
 
-    def _begin_attempt(self, task: CampaignTask) -> AttemptRecord:
+    def _begin_attempt(
+        self,
+        task: CampaignTask,
+        *,
+        readiness_claim_id: str | None = None,
+    ) -> AttemptRecord:
         prior = self.ledger.attempts_for_task(task.campaign_task_id)
         attempt_number = max((item.attempt for item in prior), default=0) + 1
         attempt = AttemptRecord(
@@ -1256,12 +2148,132 @@ class Campaign:
             task.campaign_task_id,
             attempt_number,
             OperationalState.RUNNING,
+            readiness_claim_id=readiness_claim_id,
         )
         event = self.ledger.record_attempt(attempt)
         self._active_attempts[task.campaign_task_id] = attempt
         if event is not None:
             self._emit_latest()
         return attempt
+
+    def _record_dispatch_readiness_receipt(
+        self,
+        task: CampaignTask,
+        receipt: DispatchReadinessReceipt,
+    ) -> AttemptRecord:
+        """Durably append operational lease authorization before work begins."""
+
+        from arbogast.bootstrap import DispatchReadinessReceipt, readiness_receipt
+
+        if not isinstance(receipt, DispatchReadinessReceipt) or not receipt.verify():
+            raise CampaignReadinessError(
+                "dispatch readiness receipt failed strict replay",
+                code="READINESS_DISPATCH_RECEIPT_INVALID",
+            )
+        activation = self._active_readiness
+        theorem_receipt = None if activation is None else readiness_receipt(activation.certificate)
+        bindings = None if theorem_receipt is None else theorem_receipt.profile.bindings
+        try:
+            active_claim = None if activation is None else self.claim_graph.get(activation.claim_id)
+        except Exception:
+            active_claim = None
+        if (
+            activation is None
+            or theorem_receipt is None
+            or bindings is None
+            or active_claim is None
+            or receipt.environment_id != theorem_receipt.environment.environment_id
+            or receipt.profile_id != theorem_receipt.profile.profile_id
+            or receipt.readiness_receipt_id != theorem_receipt.receipt_id
+            or receipt.campaign_id != self.campaign_id
+            or receipt.campaign_plan_id != activation.plan.plan_id
+            or receipt.campaign_task_id != task.campaign_task_id
+            or receipt.campaign_target_id != task.target_id
+            or receipt.fleet_task != task.task
+            or receipt.readiness_certificate_id != activation.certificate.certificate_id
+            or receipt.readiness_claim_id != activation.claim_id
+            or receipt.readiness_certificate.to_dict() != activation.certificate.to_dict()
+            or receipt.readiness_claim.to_dict() != active_claim.to_dict()
+            or receipt.operation_registry_id != bindings["G"]
+            or receipt.verifier_registry_id != bindings["V"]
+            or receipt.executor_id != bindings["X"]
+            or receipt.artifact_store_id != bindings["A"]
+        ):
+            raise CampaignReadinessError(
+                "dispatch readiness receipt is outside the active campaign boundary",
+                code="READINESS_DISPATCH_RECEIPT_MISMATCH",
+            )
+        with self._dispatch_readiness_lock:
+            active = self._active_attempts.get(task.campaign_task_id)
+            if active is None or not active.live:
+                raise CampaignReadinessError(
+                    "dispatch readiness receipt has no live campaign attempt",
+                    code="READINESS_DISPATCH_ATTEMPT_MISSING",
+                )
+            if (
+                receipt.campaign_attempt != active.attempt
+                or receipt.campaign_attempt_id != active.attempt_id
+            ):
+                raise CampaignReadinessError(
+                    "dispatch readiness receipt names a different campaign attempt",
+                    code="READINESS_DISPATCH_RECEIPT_MISMATCH",
+                )
+            validate_context = getattr(
+                self.executor,
+                "validate_dispatch_context",
+                None,
+            )
+            if not callable(validate_context):
+                raise CampaignReadinessError(
+                    "executor cannot replay active dispatch custody",
+                    code="READINESS_LEASE_GUARD_UNSUPPORTED",
+                )
+            try:
+                current_lease = validate_context(
+                    task=receipt.fleet_task,
+                    lease=receipt.lease,
+                    dispatch_id=receipt.dispatch_id,
+                    dispatch_ordinal=receipt.dispatch_ordinal,
+                    dispatch_runtime_nonce=receipt.dispatch_runtime_nonce,
+                    plan_hash=receipt.fleet_plan_hash,
+                    worker_id=receipt.lease.worker_id,
+                )
+            except Exception as error:
+                raise CampaignReadinessError(
+                    "dispatch readiness receipt is not current scheduler authority",
+                    code="READINESS_LEASE_STALE",
+                    blockers=(str(error),),
+                ) from error
+            if current_lease != receipt.lease:
+                raise CampaignReadinessError(
+                    "dispatch readiness lease changed before provenance recording",
+                    code="READINESS_LEASE_STALE",
+                )
+            if active.dispatch_readiness_receipt_id == receipt.receipt_id:
+                return active
+            updated = AttemptRecord(
+                task.target_id,
+                task.campaign_task_id,
+                active.attempt,
+                OperationalState.RUNNING,
+                worker_id=active.worker_id,
+                checkpoint_ref=active.checkpoint_ref,
+                detail=active.detail,
+                progress_completed=active.progress_completed,
+                progress_total=active.progress_total,
+                resources=active.resources,
+                spent=active.spent,
+                readiness_claim_id=active.readiness_claim_id,
+                dispatch_readiness_receipt_id=receipt.receipt_id,
+                dispatch_readiness_receipt=receipt.to_dict(),
+            )
+            self.ledger.record_attempt(updated)
+            self._active_attempts[task.campaign_task_id] = updated
+            # This is the final scheduler-to-run launch path.  Do not invoke
+            # user sinks here: they are re-entrant and may block or mutate the
+            # bound clock after custody was checked.  The next terminal attempt
+            # event emits the complete history, including this receipt.
+            return updated
 
     def _finish_attempt(
         self,
@@ -1320,6 +2332,43 @@ class Campaign:
             progress_total=total,
             resources=resources,
             spent=spent,
+            readiness_claim_id=active.readiness_claim_id,
+            dispatch_readiness_receipt_id=active.dispatch_readiness_receipt_id,
+            dispatch_readiness_receipt=(
+                None
+                if active.dispatch_readiness_receipt is None
+                else active.dispatch_readiness_receipt.to_dict()
+            ),
+        )
+        event = self.ledger.record_attempt(terminal)
+        if event is not None:
+            self._emit_latest()
+
+    def _finish_readiness_refusal(self, task: CampaignTask) -> None:
+        """Close an operational attempt without inventing an Observation."""
+
+        active = self._active_attempts.pop(task.campaign_task_id, None)
+        if active is None:
+            return
+        terminal = AttemptRecord(
+            task.target_id,
+            task.campaign_task_id,
+            active.attempt,
+            OperationalState.UNKNOWN,
+            worker_id=active.worker_id,
+            checkpoint_ref=active.checkpoint_ref,
+            detail="dispatch readiness was refused before operation execution",
+            progress_completed=active.progress_completed,
+            progress_total=active.progress_total,
+            resources=active.resources,
+            spent=active.spent,
+            readiness_claim_id=active.readiness_claim_id,
+            dispatch_readiness_receipt_id=active.dispatch_readiness_receipt_id,
+            dispatch_readiness_receipt=(
+                None
+                if active.dispatch_readiness_receipt is None
+                else active.dispatch_readiness_receipt.to_dict()
+            ),
         )
         event = self.ledger.record_attempt(terminal)
         if event is not None:
@@ -1409,9 +2458,35 @@ class Campaign:
         *,
         raise_errors: bool = False,
     ) -> Observation:
+        if task is None and self._active_readiness is None and self.strict_readiness:
+            # ``_resolve_task(None)`` records a newly computed plan, so reject
+            # before calling it when no runtime theorem can authorize work.
+            raise CampaignReadinessError(
+                "campaign dispatch requires an active readiness theorem",
+                code="READINESS_NOT_ACTIVE",
+                blockers=("no readiness certificate is active",),
+            )
+        if task is None and self._active_readiness is not None:
+            # An active theorem authorizes its recorded plan, not a newly
+            # recomputed one.  Select the next untouched exact recommendation
+            # without appending a replacement plan to the ledger.
+            task = self._next_active_readiness_recommendation()
+            if task is None:
+                raise CampaignReadinessError(
+                    "the active readiness plan has no untouched dispatchable recommendation",
+                    code="READINESS_PLAN_EXHAUSTED",
+                )
+        recommendation = task if isinstance(task, Recommendation) else None
         selected = self._resolve_task(task)
         if self.ledger.status(selected.target_id).closed:
             raise CampaignInvariantError("cannot dispatch work for a closed target")
+        # This check deliberately precedes mathematical preflight and every
+        # ledger mutation.  Failure to authorize execution is not an
+        # Observation about the campaign's mathematical target.
+        readiness_claim_id = self._require_dispatch_readiness(
+            selected,
+            recommendation,
+        )
         strategy = next(
             (item for item in self.spec.strategies if item.name == selected.strategy),
             None,
@@ -1459,23 +2534,32 @@ class Campaign:
             if not callable(execute_checkpointed):
                 raise CampaignError("executor does not support typed checkpoint resume")
             typed_checkpoint = self._typed_checkpoint_for_task(selected)
+        readiness_context = self._lease_dispatch_readiness_context(
+            selected,
+            recommendation,
+            operation,
+        )
         event = self.ledger.start_task(selected.campaign_task_id)
         if event is not None:
             self._emit_latest()
-        self._begin_attempt(selected)
+        self._begin_attempt(
+            selected,
+            readiness_claim_id=readiness_claim_id,
+        )
         try:
-            verify = False if strategy is None else strategy.verify_results
-            if selected.checkpoint_ref is None:
-                run = self.executor.execute(selected.task, operation, verify=verify)
-            else:
-                assert callable(execute_checkpointed)
-                assert typed_checkpoint is not None
-                run = execute_checkpointed(
-                    selected.task,
-                    operation,
-                    checkpoint_ref=typed_checkpoint,
-                    verify=verify,
-                )
+            with readiness_context:
+                verify = False if strategy is None else strategy.verify_results
+                if selected.checkpoint_ref is None:
+                    run = self.executor.execute(selected.task, operation, verify=verify)
+                else:
+                    assert callable(execute_checkpointed)
+                    assert typed_checkpoint is not None
+                    run = execute_checkpointed(
+                        selected.task,
+                        operation,
+                        checkpoint_ref=typed_checkpoint,
+                        verify=verify,
+                    )
             return self.harvest(selected, run)
         except FleetInterruption as interruption:
             observation = self._record_interruption(selected, interruption)
@@ -1487,6 +2571,12 @@ class Campaign:
             if raise_errors:
                 raise
             return observation
+        except CampaignReadinessError:
+            # The worker-pool guard can reject after a lease is active but
+            # before its operation begins.  Never convert that environmental
+            # refusal into a mathematical Observation.
+            self._finish_readiness_refusal(selected)
+            raise
         except Exception as error:
             observation = self._record_failed_dispatch(selected, error)
             self._finish_attempt(selected, observation)
@@ -1606,7 +2696,7 @@ class Campaign:
                 source_refs=task.provenance.source_refs,
                 details=details,
             )
-            if outcome in CLOSING_OUTCOMES and not observation.verified:
+            if outcome in CLOSING_OUTCOMES and not observation.verify(self.verifier_registry):
                 details["rejected_unverified_outcome"] = outcome.value
                 return Observation(
                     task.target_id,
@@ -1680,7 +2770,7 @@ class Campaign:
             )
         if not trusted_runtime:
             if observation.result_ref is not None and (
-                not observation.verified
+                not observation.verify(self.verifier_registry)
                 or self._certificate_witness_value(observation, "result_ref")
                 != observation.result_ref
             ):
@@ -1691,7 +2781,7 @@ class Campaign:
                 observation.checkpoint_ref is not None
                 and observation.checkpoint_ref != task.checkpoint_ref
                 and (
-                    not observation.verified
+                    not observation.verify(self.verifier_registry)
                     or self._certificate_witness_value(observation, "checkpoint_ref")
                     != observation.checkpoint_ref
                 )
@@ -1700,10 +2790,19 @@ class Campaign:
                     "an external checkpoint_ref must be bound by its verified certificate witness"
                 )
         if observation.outcome in CLOSING_OUTCOMES:
-            if not observation.verified:
+            if not observation.verify(self.verifier_registry):
                 raise CampaignInvariantError(
                     "mathematical closure failed its registered independent verifier"
                 )
+            activation = self._active_readiness
+            if activation is not None:
+                payload = observation.certificate_payload
+                verifier_name = None if payload is None else payload.get("verifier")
+                if verifier_name not in activation.required_verifiers:
+                    raise CampaignInvariantError(
+                        "mathematical closure certificate verifier is absent from "
+                        "the active readiness profile's certified required V roster"
+                    )
             if (
                 not gate_closure
                 and self._certificate_witness_value(observation, "task_hash") != task.task.task_hash
@@ -1846,6 +2945,7 @@ class Campaign:
         trusted_runtime: bool = False,
         gate_closure: bool = False,
     ) -> tuple[CampaignTask, ...]:
+        observation = observation.with_verifier_registry(self.verifier_registry)
         task = self._tasks.get(observation.task_id)
         if task is None:
             raise CampaignInvariantError("observation task was not planned by this campaign")
@@ -1866,7 +2966,7 @@ class Campaign:
         candidate_records = self._candidate_records_from_observation(observation)
         claim = (
             claim_for_observation(self.campaign_id, self.name, task, observation)
-            if observation.closes_target
+            if observation.closes_target_with(self.verifier_registry)
             else None
         )
         if (
@@ -1910,12 +3010,27 @@ class Campaign:
             isinstance(limit, bool) or not isinstance(limit, int) or limit < 0
         ):
             raise CampaignInvariantError("run limit must be a non-negative integer")
+        if limit != 0 and self.strict_readiness and self._active_readiness is None:
+            raise CampaignReadinessError(
+                "campaign run requires an active readiness theorem",
+                code="READINESS_NOT_ACTIVE",
+                blockers=("no readiness certificate is active",),
+            )
         results: list[Observation] = []
         while limit is None or len(results) < limit:
+            if self._active_readiness is not None:
+                recommendation = self._next_active_readiness_recommendation()
+                if recommendation is None:
+                    break
+                results.append(self.dispatch(recommendation))
+                continue
             plan = self.recommend(limit=1)
             if not plan.recommendations:
                 break
-            results.append(self.dispatch())
+            # Dispatch the exact recommendation just planned.  Calling
+            # dispatch() without it would invoke recommend() a second time and
+            # lose the plan identity certified by readiness.
+            results.append(self.dispatch(plan.recommendations[0]))
         return tuple(results)
 
     def export_claims(self) -> dict[str, JSONValue]:
@@ -1931,7 +3046,7 @@ class Campaign:
 
         candidates: list[dict[str, JSONValue]] = []
         for observation in self.ledger.observations:
-            if not observation.closes_target:
+            if not observation.closes_target_with(self.verifier_registry):
                 continue
             result_is_evidence = (
                 observation.result_ref is not None
@@ -2011,6 +3126,8 @@ class Campaign:
         executor: LocalExecutor | None = None,
         operations: Mapping[str, FleetOperation] | None = None,
         operation_registry: _OperationRegistry | None = None,
+        verifier_registry: VerifierRegistry | None = None,
+        strict_readiness: bool = False,
         gates: Mapping[str, ExactGate] | None = None,
         task_factories: Mapping[str, TaskFactory] | None = None,
         derivations: Iterable[DerivationRule] | None = None,
@@ -2038,12 +3155,20 @@ class Campaign:
             claim_graph = ClaimGraph.from_dict(claims_value)
         except ClaimGraphError as error:
             raise CampaignSerializationError("campaign claim graph failed replay") from error
+        if verifier_registry is not None and not isinstance(verifier_registry, VerifierRegistry):
+            raise TypeError("verifier_registry must be a VerifierRegistry or None")
+        resolved_verifiers = default_verifiers if verifier_registry is None else verifier_registry
         return cls(
             spec,
-            ledger=TargetLedger.from_dict(ledger_value),
+            ledger=TargetLedger.from_dict(
+                ledger_value,
+                verifier_registry=resolved_verifiers,
+            ),
             executor=executor,
             operations=operations,
             operation_registry=operation_registry,
+            verifier_registry=verifier_registry,
+            strict_readiness=strict_readiness,
             gates=gates,
             task_factories=task_factories,
             derivations=derivations,

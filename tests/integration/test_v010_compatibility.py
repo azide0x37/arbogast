@@ -30,6 +30,7 @@ API_CLI_CONTRACTS_PATH = FIXTURE_ROOT / "api-cli-contracts.json"
 V020_API_CLI_CONTRACTS_PATH = PROJECT_ROOT / "tests/fixtures/compat/v0.2.0/api-cli-contracts.json"
 V030_API_CLI_CONTRACTS_PATH = PROJECT_ROOT / "tests/fixtures/compat/v0.3.0/api-cli-contracts.json"
 V040_API_CLI_CONTRACTS_PATH = PROJECT_ROOT / "tests/fixtures/compat/v0.4.0/api-cli-contracts.json"
+V050_API_CLI_CONTRACTS_PATH = PROJECT_ROOT / "tests/fixtures/compat/v0.5.0/api-cli-contracts.json"
 V010_CERTIFICATE_ID = "sha256:52b76eed5ad4ab3ee16fa7b34920c680cdb68e82470c72cefadf06a3d9439377"
 V010_CLAIM_ID = "cohom.h1.1574520bfd2136329bd615926e159f6fc568faedbf6cce2a988058c8904d562c"
 V010_H1_FIXTURE_SHA256 = "9768c82cb12a7d04f8850244c0b686ce33ba2bb633ffc777c4d72a9aba433743"
@@ -270,8 +271,14 @@ def _assert_additive_signature(expected: dict[str, object], value: object) -> No
             21,
             512,
         ),
+        (
+            V050_API_CLI_CONTRACTS_PATH,
+            "a4852ec2d2d8ab0655cf6d1c2cfa5e641ea763a0",
+            22,
+            587,
+        ),
     ),
-    ids=("v0.1.0", "v0.2.0", "v0.3.0", "v0.4.0"),
+    ids=("v0.1.0", "v0.2.0", "v0.3.0", "v0.4.0", "v0.5.0"),
 )
 def test_every_published_exported_type_identity_and_constructor_remains_additive(
     path: Path,
@@ -302,8 +309,9 @@ def test_every_published_exported_type_identity_and_constructor_remains_additive
         (V020_API_CLI_CONTRACTS_PATH, 17, 176),
         (V030_API_CLI_CONTRACTS_PATH, 18, 192),
         (V040_API_CLI_CONTRACTS_PATH, 19, 205),
+        (V050_API_CLI_CONTRACTS_PATH, 20, 224),
     ),
-    ids=("v0.2.0", "v0.3.0", "v0.4.0"),
+    ids=("v0.2.0", "v0.3.0", "v0.4.0", "v0.5.0"),
 )
 def test_every_published_exported_function_identity_and_signature_remains_additive(
     path: Path,
@@ -387,8 +395,9 @@ def _current_cli_contracts() -> dict[tuple[str, ...], dict[str, object]]:
         (V020_API_CLI_CONTRACTS_PATH, 16),
         (V030_API_CLI_CONTRACTS_PATH, 16),
         (V040_API_CLI_CONTRACTS_PATH, 16),
+        (V050_API_CLI_CONTRACTS_PATH, 16),
     ),
-    ids=("v0.1.0", "v0.2.0", "v0.3.0", "v0.4.0"),
+    ids=("v0.1.0", "v0.2.0", "v0.3.0", "v0.4.0", "v0.5.0"),
 )
 def test_every_published_cli_option_and_positional_contract_remains_additive(
     path: Path,

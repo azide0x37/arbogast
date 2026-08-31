@@ -138,6 +138,30 @@ def test_local_campaign_replays_verified_bounded_outcome(tmp_path: Path) -> None
     assert binding["target_id"] == target_id
 
 
+def test_local_campaign_operation_contract_binds_certifiable_closure_verifier() -> None:
+    script = "\n".join(
+        (
+            "import json",
+            "from arbogast.cert import default_verifiers",
+            "from arbogast.fleet import FleetOperationRegistry",
+            "from examples.campaigns.antieau_klueners_malle import run",
+            "operation = FleetOperationRegistry({run.OPERATION: run.RESIDUE_OPERATION})",
+            "entry = operation.readiness_manifest()['operations'][0]",
+            "verifier = default_verifiers.readiness_manifest((run.VERIFIER,))['verifiers'][0]",
+            "print(json.dumps({'operation': entry, 'verifier': verifier}))",
+        )
+    )
+
+    completed = run_example("-c", script)
+    assert completed.returncode == 0, completed.stderr
+    payload = json.loads(completed.stdout)
+    assert payload["operation"]["certifiable"] is True
+    assert payload["operation"]["contract"]["closure_verifiers"] == [
+        "examples.campaign.residue-scan.v1"
+    ]
+    assert payload["verifier"]["certifiable"] is True
+
+
 def test_m23_projection_carries_exact_certified_claims(tmp_path: Path) -> None:
     projection = tmp_path / "m23-claims.json"
     computed = run_example(M23_COMPUTE, "--output", projection)
