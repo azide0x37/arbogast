@@ -16,8 +16,9 @@ from arbogast.cert import (
     CertificateVerificationError,
     UnknownVerifierError,
     VerificationCertificate,
+    VerifierRegistry,
     certificate_from_dict,
-    verify_certificate,
+    default_verifiers,
 )
 from arbogast.formats import (
     FrozenMapping,
@@ -259,6 +260,12 @@ class Observation:
     source_refs: tuple[str, ...]
     parameters: FrozenMapping
     details: FrozenMapping
+    _verifier_registry: VerifierRegistry = field(
+        default=default_verifiers,
+        init=False,
+        compare=False,
+        repr=False,
+    )
 
     def __init__(
         self,
@@ -277,7 +284,10 @@ class Observation:
         source_refs: Iterable[str] = (),
         parameters: Mapping[str, Any] | None = None,
         details: Mapping[str, Any] | None = None,
+        verifier_registry: VerifierRegistry = default_verifiers,
     ) -> None:
+        if not isinstance(verifier_registry, VerifierRegistry):
+            raise TypeError("verifier_registry must be a VerifierRegistry")
         if not target_id.strip() or not task_id.strip():
             raise CampaignInvariantError("observation target_id and task_id cannot be blank")
         resolved_outcome = Outcome(outcome)
@@ -369,6 +379,7 @@ class Observation:
         object.__setattr__(self, "source_refs", normalized_sources)
         object.__setattr__(self, "parameters", FrozenMapping(parameters))
         object.__setattr__(self, "details", FrozenMapping(details))
+        object.__setattr__(self, "_verifier_registry", verifier_registry)
 
     @property
     def mathematical_outcome(self) -> MathematicalOutcome:
@@ -376,8 +387,12 @@ class Observation:
             return MathematicalOutcome(self.outcome.value)
         return MathematicalOutcome.UNKNOWN
 
-    @property
-    def verified(self) -> bool:
+    def verify(
+        self,
+        verifier_registry: VerifierRegistry = default_verifiers,
+    ) -> bool:
+        """Replay the embedded certificate with one explicit runtime registry."""
+
         if self.certificate_payload is None:
             return False
         try:
@@ -390,7 +405,7 @@ class Observation:
                 outcome=self.outcome,
                 outcome_scope=self.outcome_scope,
             )
-            report = verify_certificate(certificate)
+            report = verifier_registry.verify(certificate)
         except (
             CampaignInvariantError,
             CertificateVerificationError,
@@ -400,12 +415,52 @@ class Observation:
         return report.valid is True
 
     @property
-    def closes_target(self) -> bool:
+    def verified(self) -> bool:
+        """Preserve legacy default replay while honoring an injected ledger V."""
+
+        return self.verify(self._verifier_registry)
+
+    def with_verifier_registry(self, verifier_registry: VerifierRegistry) -> Observation:
+        """Return the same canonical observation with runtime-only verifier context."""
+
+        if not isinstance(verifier_registry, VerifierRegistry):
+            raise TypeError("verifier_registry must be a VerifierRegistry")
+        if verifier_registry is self._verifier_registry:
+            return self
+        return Observation(
+            target_id=self.target_id,
+            task_id=self.task_id,
+            outcome=self.outcome,
+            outcome_scope=self.outcome_scope,
+            operational_state=self.operational_state,
+            certificate_ref=self.certificate_ref,
+            certificate_payload=(
+                None if self.certificate_payload is None else self.certificate_payload.to_dict()
+            ),
+            result_ref=self.result_ref,
+            checkpoint_ref=self.checkpoint_ref,
+            input_refs=self.input_refs,
+            source_refs=self.source_refs,
+            parameters=self.parameters.to_dict(),
+            details=self.details.to_dict(),
+            verifier_registry=verifier_registry,
+        )
+
+    def closes_target_with(
+        self,
+        verifier_registry: VerifierRegistry = default_verifiers,
+    ) -> bool:
+        """Project mathematical closure through one explicit verifier registry."""
+
         return (
             self.outcome_scope is OutcomeScope.TARGET_GLOBAL
             and self.outcome in CLOSING_OUTCOMES
-            and self.verified
+            and self.verify(verifier_registry)
         )
+
+    @property
+    def closes_target(self) -> bool:
+        return self.closes_target_with(self._verifier_registry)
 
     @property
     def observation_id(self) -> str:
@@ -442,7 +497,12 @@ class Observation:
         return payload
 
     @classmethod
-    def from_dict(cls, value: Mapping[str, Any]) -> Observation:
+    def from_dict(
+        cls,
+        value: Mapping[str, Any],
+        *,
+        verifier_registry: VerifierRegistry = default_verifiers,
+    ) -> Observation:
         required = {
             "certificate_payload",
             "certificate_ref",
@@ -532,6 +592,7 @@ class Observation:
             source_refs=tuple(raw_sources),
             parameters=raw_parameters,
             details=raw_details,
+            verifier_registry=verifier_registry,
         )
         expected = value["observation_id"]
         if not isinstance(expected, str):

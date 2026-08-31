@@ -7,8 +7,13 @@ from types import ModuleType
 import pytest
 
 from arbogast.campaign import Outcome, OutcomeScope
-from arbogast.cert import CertificateVerificationError, certificate_from_dict, verify_certificate
-from arbogast.fleet import TaskSpec
+from arbogast.cert import (
+    CertificateVerificationError,
+    certificate_from_dict,
+    default_verifiers,
+    verify_certificate,
+)
+from arbogast.fleet import FleetOperationRegistry, TaskSpec
 
 
 def _load_example() -> ModuleType:
@@ -27,6 +32,24 @@ def _load_example() -> ModuleType:
 
 
 EXAMPLE = _load_example()
+
+
+def test_local_global_operation_contracts_bind_certifiable_closure_verifier() -> None:
+    registry = FleetOperationRegistry(
+        {
+            EXAMPLE.LOCAL_OPERATION: EXAMPLE.LOCAL_NORM_OPERATION,
+            EXAMPLE.GLOBAL_OPERATION: EXAMPLE.GLOBAL_NORM_OPERATION,
+        }
+    )
+    manifest = registry.readiness_manifest()
+
+    assert all(entry["certifiable"] is True for entry in manifest["operations"])
+    assert all(
+        entry["contract"]["closure_verifiers"] == [EXAMPLE.VERIFIER]
+        for entry in manifest["operations"]
+    )
+    verifier = default_verifiers.readiness_manifest((EXAMPLE.VERIFIER,))["verifiers"][0]
+    assert verifier["certifiable"] is True
 
 
 def test_certified_local_global_campaign_preserves_all_three_boundaries(tmp_path: Path) -> None:

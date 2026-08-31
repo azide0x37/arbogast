@@ -6,6 +6,49 @@ All notable changes to Arbogast are documented here. The project follows
 
 ## [Unreleased]
 
+## [0.6.0] - 2026-08-31
+
+### Added
+
+- A finite campaign-readiness theorem binding the exact environment, campaign, canonical plan,
+  executable operation registry, verifier registry, executor semantics, artifact store, and
+  complete required-obligation profile.
+- Strict `CertifiedReady`, `CertifiedBlocked`, `Partial`, `Unknown`, and `Unsupported` readiness
+  results, with independently replayable receipts nested in the central verification-certificate
+  boundary and five authoritative bootstrap artifacts.
+- Domain-bound claim v2 records for mathematical, environmental, software, execution, and data
+  claims while preserving every claim v1 encoding, digest, and certificate boundary unchanged.
+- Runtime-only readiness activation and dispatch gating. Historical environmental claims persist,
+  but a saved campaign never silently reactivates authority on a changed runtime.
+- Durable per-lease dispatch-readiness receipts with a post-refresh scheduler recheck, exact
+  worker/dispatch/custody binding, a live lease-bound artifact write/read check, offline attempt
+  cross-binding, and concurrent-current status projection.
+- Stable executable-operation and verifier manifests that bind implementation identities rather
+  than trusting registry names alone.
+- `arbogast doctor --mode {campaign,core,replay}` as a bounded diagnostic projection; it never
+  substitutes for the theorem-producing campaign-runtime API.
+- A repository operating contract, canonical agent-bootstrap guide, paste-ready bootstrap prompt,
+  and a copyable pinned campaign template with positive, failure-semantic, and fresh-process tests.
+- An immutable 0.5.0 compatibility fixture binding its published GitHub release, all three assets,
+  API and CLI contracts, schema catalog, and representative certificate records.
+
+### Proof and compatibility boundaries
+
+- Readiness authorizes a precisely scoped execution. It proves neither the campaign's mathematical
+  target nor that a locally unobstructed candidate is globally soluble.
+- A conclusive failed obligation may prove `CertifiedBlocked`; crashed, timed-out, unimplemented,
+  or incomplete probes remain `Unknown`, `Unsupported`, or `Partial` and never become mathematical
+  observations.
+- Environmental readiness is recorded independently from the logical dependencies of portable
+  mathematical claims. Initial v0.6 provenance binds readiness to dispatch without changing the
+  legacy claim-graph edge semantics.
+- Generic serialized campaign data never names importable callables. Custom operations and
+  verifiers must be injected by an explicitly selected campaign runtime.
+- Changed interpreters, package bytes, locks, registries, plans, executors, stores, workers, or
+  leases create new readiness subjects; earlier certificates remain historical evidence only.
+- Every 0.1 through 0.5 published fixture remains additive and replayable. No earlier API schema,
+  certificate ID, CLI contract, release note, or public asset is rebuilt as a 0.6 artifact.
+
 ## [0.5.0] - 2026-08-30
 
 ### Added
@@ -219,7 +262,8 @@ All notable changes to Arbogast are documented here. The project follows
   successors suspend. SSH, Slurm, cloud provisioning, and remote-license automation are extension
   points rather than bundled 0.1.0 features.
 
-[Unreleased]: https://github.com/azide0x37/arbogast/compare/v0.5.0...HEAD
+[Unreleased]: https://github.com/azide0x37/arbogast/compare/v0.6.0...HEAD
+[0.6.0]: https://github.com/azide0x37/arbogast/compare/v0.5.0...v0.6.0
 [0.5.0]: https://github.com/azide0x37/arbogast/compare/v0.4.0...v0.5.0
 [0.4.0]: https://github.com/azide0x37/arbogast/compare/v0.3.0...v0.4.0
 [0.3.0]: https://github.com/azide0x37/arbogast/compare/v0.2.0...v0.3.0

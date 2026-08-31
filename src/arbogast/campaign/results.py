@@ -397,6 +397,9 @@ class AttemptRecord:
     progress_total: int | None
     resources: FrozenMapping
     spent: FrozenMapping
+    readiness_claim_id: str | None
+    dispatch_readiness_receipt_id: str | None
+    dispatch_readiness_receipt: FrozenMapping | None
 
     schema = "arbogast.campaign.attempt.v1"
 
@@ -414,6 +417,9 @@ class AttemptRecord:
         progress_total: int | None = None,
         resources: Mapping[str, Any] | None = None,
         spent: Mapping[str, Any] | None = None,
+        readiness_claim_id: str | None = None,
+        dispatch_readiness_receipt_id: str | None = None,
+        dispatch_readiness_receipt: Mapping[str, Any] | None = None,
     ) -> None:
         if isinstance(attempt, bool) or not isinstance(attempt, int) or attempt < 1:
             raise CampaignInvariantError("attempt number must be a positive integer")
@@ -421,6 +427,70 @@ class AttemptRecord:
             raise CampaignInvariantError("attempt worker_id must be a non-blank string or null")
         if detail is not None and (not isinstance(detail, str) or not detail.strip()):
             raise CampaignInvariantError("attempt detail must be a non-blank string or null")
+        if readiness_claim_id is not None and (
+            not isinstance(readiness_claim_id, str) or not readiness_claim_id.strip()
+        ):
+            raise CampaignInvariantError(
+                "attempt readiness_claim_id must be a non-blank string or null"
+            )
+        if dispatch_readiness_receipt_id is not None:
+            dispatch_readiness_receipt_id = _content_ref(
+                dispatch_readiness_receipt_id,
+                "attempt dispatch_readiness_receipt_id",
+            )
+        if (dispatch_readiness_receipt_id is None) != (dispatch_readiness_receipt is None):
+            raise CampaignInvariantError(
+                "attempt dispatch receipt ID and data must be present together"
+            )
+        replayed_dispatch: FrozenMapping | None = None
+        if dispatch_readiness_receipt is not None:
+            if dispatch_readiness_receipt_id is None:
+                raise CampaignInvariantError(
+                    "attempt dispatch receipt data requires its receipt ID"
+                )
+            from arbogast.bootstrap.dispatch import DispatchReadinessReceipt
+
+            try:
+                replayed = DispatchReadinessReceipt.from_dict(dispatch_readiness_receipt)
+            except (KeyError, TypeError, ValueError) as error:
+                raise CampaignInvariantError(
+                    "attempt dispatch readiness receipt failed strict replay"
+                ) from error
+            if replayed.receipt_id != dispatch_readiness_receipt_id:
+                raise CampaignInvariantError(
+                    "attempt dispatch receipt ID differs from its canonical data"
+                )
+            if replayed.campaign_task_id != task_id:
+                raise CampaignInvariantError(
+                    "attempt dispatch receipt belongs to a different campaign task"
+                )
+            if replayed.campaign_target_id != target_id:
+                raise CampaignInvariantError(
+                    "attempt dispatch receipt belongs to a different campaign target"
+                )
+            expected_attempt_id = "sha256:" + canonical_sha256(
+                {
+                    "attempt": attempt,
+                    "schema": "arbogast.campaign.attempt-identity.v1",
+                    "task_id": task_id,
+                }
+            )
+            if (
+                replayed.campaign_attempt != attempt
+                or replayed.campaign_attempt_id != expected_attempt_id
+            ):
+                raise CampaignInvariantError(
+                    "attempt dispatch receipt belongs to a different campaign attempt"
+                )
+            if worker_id is not None and replayed.lease.worker_id != worker_id:
+                raise CampaignInvariantError(
+                    "attempt worker differs from its dispatch receipt lease worker"
+                )
+            if readiness_claim_id != replayed.readiness_claim_id:
+                raise CampaignInvariantError(
+                    "attempt readiness claim differs from its dispatch receipt"
+                )
+            replayed_dispatch = FrozenMapping(replayed.to_dict())
         if progress_completed is not None and (
             isinstance(progress_completed, bool)
             or not isinstance(progress_completed, int)
@@ -461,6 +531,13 @@ class AttemptRecord:
             "spent",
             _counter_mapping(spent, field_name="attempt spend"),
         )
+        object.__setattr__(self, "readiness_claim_id", readiness_claim_id)
+        object.__setattr__(
+            self,
+            "dispatch_readiness_receipt_id",
+            dispatch_readiness_receipt_id,
+        )
+        object.__setattr__(self, "dispatch_readiness_receipt", replayed_dispatch)
 
     @property
     def attempt_id(self) -> str:
@@ -495,6 +572,15 @@ class AttemptRecord:
             "task_id": self.task_id,
             "worker_id": self.worker_id,
         }
+        # Preserve the exact v1 transport and record IDs for every legacy
+        # attempt.  The additive provenance field is emitted only for work
+        # actually authorized by an environmental readiness claim.
+        if self.readiness_claim_id is not None:
+            payload["readiness_claim_id"] = self.readiness_claim_id
+        if self.dispatch_readiness_receipt_id is not None:
+            payload["dispatch_readiness_receipt_id"] = self.dispatch_readiness_receipt_id
+        if self.dispatch_readiness_receipt is not None:
+            payload["dispatch_readiness_receipt"] = self.dispatch_readiness_receipt.to_dict()
         if include_record_id:
             payload["record_id"] = self.record_id
         return payload
@@ -517,7 +603,12 @@ class AttemptRecord:
             "task_id",
             "worker_id",
         }
-        if set(value) != required:
+        allowed = required | {
+            "readiness_claim_id",
+            "dispatch_readiness_receipt_id",
+            "dispatch_readiness_receipt",
+        }
+        if not required <= set(value) or not set(value) <= allowed:
             raise CampaignSerializationError("attempt has missing or unknown fields")
         if value["schema"] != cls.schema:
             raise CampaignSerializationError("unsupported attempt schema")
@@ -551,6 +642,19 @@ class AttemptRecord:
             if raw is not None and not isinstance(raw, str):
                 raise CampaignSerializationError(f"attempt {field_name} must be a string or null")
             strings[field_name] = raw
+        readiness_claim_id = value.get("readiness_claim_id")
+        if readiness_claim_id is not None and not isinstance(readiness_claim_id, str):
+            raise CampaignSerializationError("attempt readiness_claim_id must be a string or null")
+        dispatch_receipt_id = value.get("dispatch_readiness_receipt_id")
+        if dispatch_receipt_id is not None and not isinstance(dispatch_receipt_id, str):
+            raise CampaignSerializationError(
+                "attempt dispatch_readiness_receipt_id must be a string or null"
+            )
+        dispatch_receipt = value.get("dispatch_readiness_receipt")
+        if dispatch_receipt is not None and not isinstance(dispatch_receipt, Mapping):
+            raise CampaignSerializationError(
+                "attempt dispatch_readiness_receipt must be an object or null"
+            )
         if strings["state"] is None or strings["target_id"] is None or strings["task_id"] is None:
             raise CampaignSerializationError("attempt state and IDs cannot be null")
         record = cls(
@@ -565,6 +669,9 @@ class AttemptRecord:
             progress_total=total,
             resources=resources,
             spent=spent,
+            readiness_claim_id=readiness_claim_id,
+            dispatch_readiness_receipt_id=dispatch_receipt_id,
+            dispatch_readiness_receipt=dispatch_receipt,
         )
         if not isinstance(value["attempt_id"], str) or value["attempt_id"] != record.attempt_id:
             raise CampaignSerializationError("attempt_id does not match canonical identity")

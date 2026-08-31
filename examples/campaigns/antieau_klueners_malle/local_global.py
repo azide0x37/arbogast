@@ -34,9 +34,7 @@ from arbogast.cert import (
     FrozenMap,
     VerificationCertificate,
     VerificationReport,
-    certificate_from_dict,
     verifier,
-    verify_certificate,
 )
 from arbogast.export import export_json
 from arbogast.fleet import FunctionalOperation, LocalExecutor, ShardSpec, TaskSpec
@@ -520,6 +518,8 @@ def verify_norm_campaign(certificate: VerificationCertificate) -> VerificationRe
 
 def _verify_result(task: TaskSpec, result: JSONValue) -> bool:
     try:
+        from arbogast.cert import certificate_from_dict
+
         if not isinstance(result, dict):
             return False
         raw = result.get("certificate")
@@ -530,7 +530,9 @@ def _verify_result(task: TaskSpec, result: JSONValue) -> bool:
         certificate = certificate_from_dict(raw)
         if not isinstance(certificate, VerificationCertificate):
             return False
-        report = verify_certificate(certificate)
+        report = verify_norm_campaign(certificate)
+        if not isinstance(report, VerificationReport):
+            return False
         return (
             report.valid
             and certificate.witness["task_hash"] == task.task_hash
@@ -553,12 +555,14 @@ LOCAL_NORM_OPERATION = FunctionalOperation(
     runner=evaluate_local,
     reducer=reduce_local,
     verifier=_verify_result,
+    closure_verifiers=(VERIFIER,),
 )
 GLOBAL_NORM_OPERATION = FunctionalOperation(
     planner=plan_global,
     runner=evaluate_global,
     reducer=reduce_global,
     verifier=_verify_result,
+    closure_verifiers=(VERIFIER,),
 )
 
 

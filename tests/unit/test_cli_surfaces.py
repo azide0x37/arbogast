@@ -2,7 +2,7 @@ from __future__ import annotations
 
 import json
 
-from arbogast.claims import Claim, ClaimGraph, ClaimKind, EpistemicStatus
+from arbogast.claims import Claim, ClaimDomain, ClaimGraph, ClaimKind, EpistemicStatus
 from arbogast.cli import main
 from arbogast.proof import ObligationClass, ProofGap, ProofObligation
 
@@ -10,7 +10,7 @@ from arbogast.proof import ObligationClass, ProofGap, ProofObligation
 def test_version_and_describe_json_are_stable(capsys) -> None:  # type: ignore[no-untyped-def]
     assert main(("version", "--json")) == 0
     version = json.loads(capsys.readouterr().out)
-    assert version == {"schema": "arbogast.cli.version.v1", "version": "0.5.0"}
+    assert version == {"schema": "arbogast.cli.version.v1", "version": "0.6.0"}
 
     assert main(("describe", "cohom.h1", "--json")) == 0
     description = json.loads(capsys.readouterr().out)
@@ -99,6 +99,43 @@ def test_proof_gap_rejects_ambiguous_ad_hoc_documents(tmp_path, capsys) -> None:
     captured = capsys.readouterr()
     assert captured.out == ""
     assert "expects an arbogast.claim-graph/v1" in captured.err
+
+
+def test_claim_cli_rejects_malformed_schema_graph_and_accepts_claim_v2(tmp_path, capsys) -> None:  # type: ignore[no-untyped-def]
+    malformed = tmp_path / "malformed-graph.json"
+    malformed.write_text(
+        json.dumps(
+            {
+                "schema_version": "arbogast.claim-graph/v1",
+                "graph_id": "malformed",
+                "claims": [{"id": "not-a-canonical-claim"}],
+            }
+        ),
+        encoding="utf-8",
+    )
+    assert main(("claims", str(malformed), "--json")) == 2
+    captured = capsys.readouterr()
+    assert captured.out == ""
+    assert "invalid arbogast.claim-graph/v1 claim graph" in captured.err
+
+    gap = ProofGap(
+        "domain-qualified",
+        (ProofObligation.create("finite", "Check finite witness", ObligationClass.DECIDABLE),),
+    )
+    claim = Claim(
+        "domain-qualified",
+        statement="P",
+        kind=ClaimKind.CONJECTURED,
+        status=EpistemicStatus.UNKNOWN,
+        formalization=gap,
+        domain=ClaimDomain.MATHEMATICAL,
+    )
+    path = tmp_path / "claim-v2.json"
+    path.write_text(json.dumps(claim.to_dict()), encoding="utf-8")
+    assert main(("proof-gap", str(path), "--json")) == 0
+    payload = json.loads(capsys.readouterr().out)
+    assert payload["claim"] == "domain-qualified"
+    assert payload["summary"]["total"] == 1
 
 
 def test_route_reports_only_real_registered_capabilities(capsys) -> None:  # type: ignore[no-untyped-def]

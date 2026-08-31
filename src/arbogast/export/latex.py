@@ -2,17 +2,22 @@
 
 from __future__ import annotations
 
-from arbogast.claims import Claim, ClaimGraph, ClaimKind, FormalStatement
+from arbogast.claims import Claim, ClaimDomain, ClaimGraph, ClaimKind, FormalStatement
 from arbogast.claims.statement import StatementError
+from arbogast.formats import CLAIM_SCHEMA_V2
 from arbogast.proof import ProofGap, ProofObligation
 
+from ._domains import DomainFilter, domain_label, normalize_domains, select_claims
 from ._lifting import claim_graph_for_export
 
 
-def export_latex(value: object) -> str:
+def export_latex(value: object, *, domains: DomainFilter = None) -> str:
+    selected_domains = normalize_domains(domains)
     if isinstance(value, ClaimGraph):
-        return "\n\n".join(_claim(claim).rstrip() for claim in value) + "\n"
+        return _claims_projection(value, selected_domains)
     if isinstance(value, Claim):
+        if selected_domains is not None and value.domain not in selected_domains:
+            return _empty_projection(selected_domains)
         return _claim(value)
     if isinstance(value, ProofGap):
         return _gap(value)
@@ -20,11 +25,13 @@ def export_latex(value: object) -> str:
         return _obligation(value)
     lifted = claim_graph_for_export(value)
     if lifted is not None:
-        return "\n\n".join(_claim(claim).rstrip() for claim in lifted) + "\n"
+        return _claims_projection(lifted, selected_domains)
     raise TypeError(f"LaTeX export does not support {type(value).__qualname__}")
 
 
 def _claim(claim: Claim) -> str:
+    if claim.domain is not ClaimDomain.MATHEMATICAL:
+        return _nonmathematical_claim(claim)
     environment = "conjecture" if claim.kind is ClaimKind.CONJECTURED else "proposition"
     statement = _statement(claim.what)
     lines = [
@@ -74,8 +81,62 @@ def _claim(claim: Claim) -> str:
             "\\end{quote}",
         ]
     )
+    if claim.schema_version == CLAIM_SCHEMA_V2:
+        lines.insert(-1, f"Domain: \\texttt{{{_escape(claim.domain.value)}}}.")
     if claim.formalization is not None:
         lines.extend(["", _gap(claim.formalization).rstrip()])
+    return "\n".join(lines) + "\n"
+
+
+def _claims_projection(
+    graph: ClaimGraph,
+    domains: frozenset[ClaimDomain] | None,
+) -> str:
+    claims = select_claims(graph, domains)
+    if not claims:
+        return _empty_projection(domains or frozenset())
+    return "\n\n".join(_claim(claim).rstrip() for claim in claims) + "\n"
+
+
+def _empty_projection(domains: frozenset[ClaimDomain]) -> str:
+    return f"% No claims matched domain filter: {domain_label(domains)}.\n"
+
+
+def _nonmathematical_claim(claim: Claim) -> str:
+    evidence = (
+        ", ".join(f"\\texttt{{{_escape(item.ref)}}}" for item in claim.evidence) or "none recorded"
+    )
+    sources = ", ".join(f"\\texttt{{{_escape(item)}}}" for item in claim.source) or "none recorded"
+    lines = [
+        "\\begin{quote}",
+        f"\\textbf{{{_escape(claim.domain.value.title())} claim "
+        f"\\texttt{{{_escape(claim.id)}}}.}}\\\\",
+        _statement(claim.what),
+    ]
+    if claim.hypotheses:
+        lines.extend(
+            [
+                "",
+                "\\textbf{Recorded operational conditions (not theorem premises).}",
+                "\\begin{itemize}",
+                *(f"\\item {_statement(item)}" for item in claim.hypotheses),
+                "\\end{itemize}",
+            ]
+        )
+    lines.extend(
+        [
+            "",
+            f"Claim kind: \\texttt{{{_escape(claim.kind.value)}}}; "
+            f"status: \\texttt{{{_escape(claim.status.value)}}}.\\\\",
+            "Recorded method: "
+            + (_escape(claim.how.method) if claim.how is not None else "none recorded")
+            + ".\\\\",
+            f"Evidence: {evidence}.\\\\",
+            f"Source: {sources}.\\\\",
+            "This typed operational claim is not projected as a mathematical proposition.",
+            "\\end{quote}",
+        ]
+    )
     return "\n".join(lines) + "\n"
 
 

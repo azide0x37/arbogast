@@ -122,6 +122,7 @@ def _found_operation() -> FunctionalOperation[dict[str, object], dict[str, objec
         verifier=lambda _task, result: (
             isinstance(result, dict) and result.get("outcome") == "FOUND"
         ),
+        closure_verifiers=("test.campaign-found",),
     )
 
 

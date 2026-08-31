@@ -214,6 +214,35 @@ _MODULE_PROFILES = {
         ("Canonical encodings are deterministic and use the strict JSON subset.",),
         ("Do not use repr, memory addresses, floats, or raw bytes as canonical identity.",),
     ),
+    "arbogast.bootstrap": _ModuleProfile(
+        "Finite, replayable environmental readiness for exact campaign plans.",
+        (
+            "CertifiedBlocked",
+            "CertifiedReady",
+            "DispatchReadinessReceipt",
+            "EnvironmentSnapshot",
+            "Partial",
+            "ReadinessObligation",
+            "ReadinessProfile",
+            "ReadinessReceipt",
+            "RuntimeBinding",
+            "Unknown",
+            "Unsupported",
+        ),
+        (
+            (
+                "A readiness verdict binds the exact environment, campaign, plan, operation "
+                "registry, verifier registry, executor, artifact store, and profile identities."
+            ),
+            "Required and optional obligations remain distinct in every receipt.",
+            "Readiness claims use the ENVIRONMENTAL domain and never close mathematics.",
+        ),
+        (
+            "Do not treat a stale readiness certificate as live dispatch authorization.",
+            "Do not promote probe failure to CertifiedBlocked.",
+            "Do not infer a mathematical conclusion from READY or BLOCKED.",
+        ),
+    ),
     "arbogast.linalg": _ModuleProfile(
         "Exact dense and sparse finite-field linear algebra.",
         ("DenseMatrix", "LinearSubspace", "PrimeField", "SparseMatrix"),

@@ -10,8 +10,9 @@ from __future__ import annotations
 
 import re
 import uuid
-from collections.abc import Callable, Mapping, Sequence
+from collections.abc import Callable, Iterator, Mapping, Sequence
 from concurrent.futures import ThreadPoolExecutor
+from contextlib import contextmanager
 from dataclasses import dataclass
 from datetime import UTC, datetime, timedelta
 from pathlib import Path
@@ -551,6 +552,40 @@ class _WorkerQueueError(RuntimeError):
         self.cause = cause
 
 
+@dataclass(frozen=True, slots=True)
+class _LeaseReadinessGuard:
+    """Runtime-only callback installed by a readiness-aware campaign.
+
+    The callback is deliberately neither serialized nor accepted through a
+    public executor constructor.  Persisted task data can therefore never
+    select code to run at the lease boundary.
+    """
+
+    callback: Callable[
+        [
+            TaskSpec,
+            ShardSpec,
+            Worker,
+            LeaseRecord,
+            str,
+            str,
+            int,
+            str,
+            str,
+            tuple[str, ...],
+        ],
+        Callable[[LeaseRecord, str, tuple[str, ...]], None],
+    ]
+
+
+class _LeaseReadinessRefusal(RuntimeError):
+    """Carry a campaign refusal through deterministic worker-queue joins."""
+
+    def __init__(self, cause: Exception) -> None:
+        super().__init__(str(cause))
+        self.cause = cause
+
+
 def _utc_now() -> datetime:
     return datetime.now(UTC)
 
@@ -971,18 +1006,15 @@ class LeaseCustody:
                 )
             acquired_text = _timestamp(acquired)
             expires_text = _timestamp(expires)
-            lease_hash = canonical_sha256(
-                {
-                    "acquired_at": acquired_text,
-                    "attempt": attempt,
-                    "expires_at": expires_text,
-                    "shard_hash": shard.shard_hash,
-                    "task_hash": task.task_hash,
-                    "worker_id": worker.id,
-                }
-            )
             lease = LeaseRecord(
-                id=f"lease:{lease_hash}",
+                id=LeaseRecord.canonical_id(
+                    task_hash=task.task_hash,
+                    shard_hash=shard.shard_hash,
+                    worker_id=worker.id,
+                    attempt=attempt,
+                    acquired_at=acquired_text,
+                    expires_at=expires_text,
+                ),
                 task_hash=task.task_hash,
                 shard_hash=shard.shard_hash,
                 worker_id=worker.id,
@@ -1079,6 +1111,16 @@ class LeaseCustody:
                 )
             )
 
+    def validate_active(self, lease_id: str, *, now: datetime) -> LeaseRecord:
+        """Return the exact current ACTIVE lease after expiring stale custody."""
+
+        with self._lock:
+            self._expire_stale(now)
+            current = self._require_current(lease_id)
+            if current.state is not LeaseState.ACTIVE:
+                raise StaleLeaseError(f"lease {lease_id!r} is not active")
+            return current
+
 
 def _resource_projection(resources: ResourceHint) -> dict[str, JSONValue]:
     return resources.to_dict()
@@ -1152,10 +1194,13 @@ class WorkerPoolExecutor(LocalExecutor):
         # per-executor nonce prevents fresh-process receipt collisions while
         # the counter gives stable ordering inside one runtime.
         self._executor_nonce = uuid.uuid4().hex
+        self._dispatch_contexts: dict[str, tuple[int, str, str, str]] = {}
+        self._active_dispatch_by_lease: dict[str, str] = {}
         self._receipts: dict[tuple[str, str, str], FleetExecutionReceipt] = {}
         self._receipts_by_run: dict[int, tuple[FleetRun, FleetExecutionReceipt]] = {}
         self._checkpoint_records: dict[str, CheckpointCustodyRecord] = {}
         self._interrupted_manifests: dict[str, CheckpointManifest] = {}
+        self._lease_readiness_guards: dict[str, _LeaseReadinessGuard] = {}
 
     def _now(self) -> datetime:
         return _as_utc(self._clock())
@@ -1164,6 +1209,202 @@ class WorkerPoolExecutor(LocalExecutor):
         """Return exact backend/resource eligibility diagnostics for planning."""
 
         return self.workers.matches(task)
+
+    def validate_dispatch_context(
+        self,
+        *,
+        task: TaskSpec,
+        lease: LeaseRecord,
+        dispatch_id: str,
+        dispatch_ordinal: int,
+        dispatch_runtime_nonce: str,
+        plan_hash: str,
+        worker_id: str,
+    ) -> LeaseRecord:
+        """Require the exact lease and dispatch to remain live in this runtime."""
+
+        expected_dispatch = "dispatch:" + canonical_sha256(
+            {
+                "ordinal": dispatch_ordinal,
+                "plan_hash": plan_hash,
+                "runtime_nonce": dispatch_runtime_nonce,
+                "task_hash": task.task_hash,
+            }
+        )
+        with self._attempt_lock:
+            context = self._dispatch_contexts.get(dispatch_id)
+        expected_context = (
+            dispatch_ordinal,
+            dispatch_runtime_nonce,
+            task.task_hash,
+            plan_hash,
+        )
+        if dispatch_id != expected_dispatch or context != expected_context:
+            raise FleetExecutionError(
+                "dispatch identity is absent or mismatched in the active scheduler runtime"
+            )
+        with self._condition:
+            current = self.custody.validate_active(lease.id, now=self._now())
+            if (
+                current != lease
+                or self._active_by_worker.get(worker_id) != lease
+                or self._active_tasks.get(worker_id) != task
+                or self._active_dispatch_by_lease.get(lease.id) != dispatch_id
+            ):
+                raise FleetExecutionError(
+                    "lease is not the exact active scheduler custody/dispatch record"
+                )
+        return current
+
+    @contextmanager
+    def _guard_lease_readiness(
+        self,
+        task: TaskSpec,
+        callback: Callable[
+            [
+                TaskSpec,
+                ShardSpec,
+                Worker,
+                LeaseRecord,
+                str,
+                str,
+                int,
+                str,
+                str,
+                tuple[str, ...],
+            ],
+            Callable[[LeaseRecord, str, tuple[str, ...]], None],
+        ],
+    ) -> Iterator[None]:
+        """Install a runtime-only guard for leases of one exact task.
+
+        This is an internal integration seam for :class:`Campaign`.  It is a
+        context manager so the callback cannot survive the dispatch that
+        supplied it, and it is keyed by the mathematical task hash so
+        concurrent dispatches for unrelated tasks remain independent.
+        """
+
+        if not isinstance(task, TaskSpec):
+            raise TypeError("lease readiness guard task must be a TaskSpec")
+        if not callable(callback):
+            raise TypeError("lease readiness guard callback must be callable")
+        guard = _LeaseReadinessGuard(callback)
+        with self._attempt_lock:
+            if task.task_hash in self._lease_readiness_guards:
+                raise FleetExecutionError(
+                    "a lease readiness guard is already active for this exact task"
+                )
+            self._lease_readiness_guards[task.task_hash] = guard
+        try:
+            yield
+        finally:
+            with self._attempt_lock:
+                if self._lease_readiness_guards.get(task.task_hash) is guard:
+                    del self._lease_readiness_guards[task.task_hash]
+
+    def _apply_lease_readiness_guard(
+        self,
+        task: TaskSpec,
+        shard: ShardSpec,
+        worker: Worker,
+        lease: LeaseRecord,
+        plan_hash: str,
+        dispatch_id: str,
+    ) -> None:
+        with self._attempt_lock:
+            guard = self._lease_readiness_guards.get(task.task_hash)
+        if guard is None:
+            return
+
+        def launch_state(
+            now: datetime,
+        ) -> tuple[LeaseRecord, int, str, tuple[str, ...]]:
+            blockers: list[str] = []
+            if shard.task_hash != task.task_hash:
+                blockers.append("leased shard is bound to a different fleet task")
+            if lease.task_hash != task.task_hash or lease.shard_hash != shard.shard_hash:
+                blockers.append("active lease is not bound to the exact task and shard")
+            if lease.worker_id != worker.id:
+                blockers.append("active lease is not bound to the selected worker")
+            if lease.state is not LeaseState.ACTIVE:
+                blockers.append(f"lease state is {lease.state.value}, not active")
+            match = worker.match(task)
+            if not match.eligible:
+                blockers.extend(f"worker {worker.id}: {reason}" for reason in match.reasons)
+            if not isinstance(plan_hash, str) or not _SHA256_RE.fullmatch(plan_hash):
+                blockers.append("fleet plan hash is not canonical")
+            with self._attempt_lock:
+                context = self._dispatch_contexts.get(dispatch_id)
+            ordinal = -1
+            runtime_nonce = ""
+            if context is None:
+                blockers.append("dispatch identity is absent from the active scheduler runtime")
+            else:
+                ordinal, runtime_nonce, context_task, context_plan = context
+                expected_dispatch = "dispatch:" + canonical_sha256(
+                    {
+                        "ordinal": ordinal,
+                        "plan_hash": plan_hash,
+                        "runtime_nonce": runtime_nonce,
+                        "task_hash": task.task_hash,
+                    }
+                )
+                if (
+                    context_task != task.task_hash
+                    or context_plan != plan_hash
+                    or expected_dispatch != dispatch_id
+                ):
+                    blockers.append("dispatch identity does not match its scheduler context")
+            current = lease
+            with self._condition:
+                active_worker_lease = self._active_by_worker.get(worker.id)
+                active_task = self._active_tasks.get(worker.id)
+                active_dispatch = self._active_dispatch_by_lease.get(lease.id)
+                try:
+                    current = self.custody.validate_active(lease.id, now=now)
+                except LeaseCustodyError as error:
+                    latest = self.custody.latest(shard.shard_hash)
+                    if latest is not None:
+                        current = latest
+                    blockers.append(f"active scheduler custody failed: {error}")
+                if active_worker_lease != current or current != lease:
+                    blockers.append("lease is no longer the exact active worker custody record")
+                if active_task != task:
+                    blockers.append("active worker task differs from the authorized task")
+                if active_dispatch != dispatch_id:
+                    blockers.append("active lease belongs to a different scheduler dispatch")
+            try:
+                expires = datetime.fromisoformat(lease.expires_at.replace("Z", "+00:00"))
+                if expires.tzinfo is None or expires <= now:
+                    blockers.append("lease expired before readiness authorization")
+            except ValueError:
+                blockers.append("lease expiry is not a canonical timestamp")
+            return current, ordinal, runtime_nonce, tuple(dict.fromkeys(blockers))
+
+        checked_at = self._now()
+        current, ordinal, runtime_nonce, blockers = launch_state(checked_at)
+        try:
+            finalize = guard.callback(
+                task,
+                shard,
+                worker,
+                current,
+                plan_hash,
+                dispatch_id,
+                ordinal,
+                runtime_nonce,
+                _timestamp(checked_at),
+                blockers,
+            )
+            if not callable(finalize):
+                raise FleetExecutionError(
+                    "lease readiness callback did not return a launch finalizer"
+                )
+            final_checked_at = self._now()
+            final_lease, _, _, final_blockers = launch_state(final_checked_at)
+            finalize(final_lease, _timestamp(final_checked_at), final_blockers)
+        except Exception as error:
+            raise _LeaseReadinessRefusal(error) from error
 
     def supports_checkpoint_resume(self, task: TaskSpec | None = None) -> bool:
         """Return true for the persisted typed-custody resume implementation."""
@@ -1397,14 +1638,23 @@ class WorkerPoolExecutor(LocalExecutor):
         with self._attempt_lock:
             ordinal = self._dispatch_counter
             self._dispatch_counter += 1
-        return "dispatch:" + canonical_sha256(
+            runtime_nonce = self._executor_nonce
+        dispatch_id = "dispatch:" + canonical_sha256(
             {
                 "ordinal": ordinal,
                 "plan_hash": plan.plan_hash,
-                "runtime_nonce": self._executor_nonce,
+                "runtime_nonce": runtime_nonce,
                 "task_hash": task.task_hash,
             }
         )
+        with self._attempt_lock:
+            self._dispatch_contexts[dispatch_id] = (
+                ordinal,
+                runtime_nonce,
+                task.task_hash,
+                plan.plan_hash,
+            )
+        return dispatch_id
 
     def _record_attempt(self, record: AttemptRecord) -> None:
         with self._attempt_lock:
@@ -1412,6 +1662,7 @@ class WorkerPoolExecutor(LocalExecutor):
 
     def _acquire(
         self,
+        dispatch_id: str,
         task: TaskSpec,
         shard: ShardSpec,
         worker: Worker,
@@ -1432,6 +1683,7 @@ class WorkerPoolExecutor(LocalExecutor):
             active = self.custody.activate(offered.id, now=acquired)
             self._active_by_worker[worker.id] = active
             self._active_tasks[worker.id] = task
+            self._active_dispatch_by_lease[active.id] = dispatch_id
             return active
 
     def _release(self, worker_id: str, lease_id: str) -> None:
@@ -1440,6 +1692,7 @@ class WorkerPoolExecutor(LocalExecutor):
             if current is not None and current.id == lease_id:
                 del self._active_by_worker[worker_id]
                 self._active_tasks.pop(worker_id, None)
+                self._active_dispatch_by_lease.pop(lease_id, None)
                 self._condition.notify_all()
 
     def _terminal_failure(
@@ -1490,7 +1743,7 @@ class WorkerPoolExecutor(LocalExecutor):
 
         for offset in range(self.retry_policy.max_attempts):
             attempt = start_attempt + offset
-            lease = self._acquire(task, shard, worker, attempt)
+            lease = self._acquire(dispatch_id, task, shard, worker, attempt)
             try:
                 cached_after_wait = self.store.resolve(
                     key,
@@ -1509,9 +1762,8 @@ class WorkerPoolExecutor(LocalExecutor):
                         cached_after_wait.state,
                         resumed=True,
                     )
-                if resumed_from is None:
-                    raw_value = operation.run(task, shard)
-                else:
+                resume_runner: object | None = None
+                if resumed_from is not None:
                     self.validate_checkpoint(shard, resumed_from)
                     resumer = getattr(operation, "resume", None)
                     if not callable(resumer):
@@ -1519,7 +1771,21 @@ class WorkerPoolExecutor(LocalExecutor):
                             f"operation {task.operation!r} cannot resume checkpointed shard "
                             f"{shard.key!r}"
                         )
-                    raw_value = resumer(task, shard, resumed_from)
+                    resume_runner = resumer
+                run_operation = operation.run
+                self._apply_lease_readiness_guard(
+                    task,
+                    shard,
+                    worker,
+                    lease,
+                    plan_hash,
+                    dispatch_id,
+                )
+                if resumed_from is None:
+                    raw_value = run_operation(task, shard)
+                else:
+                    assert callable(resume_runner)
+                    raw_value = resume_runner(task, shard, resumed_from)
                 value = normalize_json(raw_value)
                 artifact = self.store.put_json(value)
 
@@ -1628,6 +1894,21 @@ class WorkerPoolExecutor(LocalExecutor):
                     raise
                 retry_of = terminal.id
                 resumed_from = terminal.checkpoint
+            except _LeaseReadinessRefusal:
+                try:
+                    released = self.custody.terminate(
+                        lease.id,
+                        LeaseState.RELEASED,
+                        now=self._now(),
+                        detail="dispatch readiness refused before operation execution",
+                    )
+                except StaleLeaseError:
+                    latest = self.custody.latest(shard.shard_hash)
+                    if latest is None:
+                        raise
+                    released = latest
+                self._record_attempt(AttemptRecord(dispatch_id, released, retry_of, resumed_from))
+                raise
             except StaleLeaseError as error:
                 latest = self.custody.latest(shard.shard_hash)
                 if latest is not None and latest.terminal:
@@ -1743,6 +2024,17 @@ class WorkerPoolExecutor(LocalExecutor):
                     indexed_items.extend(error.completed)
                     errors.append(error)
         if errors:
+            readiness_refusals = tuple(
+                error.cause for error in errors if isinstance(error.cause, _LeaseReadinessRefusal)
+            )
+            if readiness_refusals:
+                # A readiness refusal is an authorization decision, not a
+                # mathematical or scheduler failure.  In particular, do not
+                # synthesize a checkpoint manifest (which would itself write
+                # an artifact) and do not aggregate it into FleetDispatchError.
+                first = readiness_refusals[0]
+                assert isinstance(first, _LeaseReadinessRefusal)
+                raise first.cause
             manifest = self._build_checkpoint_manifest(
                 task,
                 plan,

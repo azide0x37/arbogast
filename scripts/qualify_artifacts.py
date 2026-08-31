@@ -36,6 +36,40 @@ COMPATIBILITY_INDEX: Final = "tests/fixtures/compat/index.json"
 DEFORMATION_INTRODUCED: Final = (0, 3, 0)
 NUMERIC_INTRODUCED: Final = (0, 4, 0)
 PADIC_INTRODUCED: Final = (0, 5, 0)
+BOOTSTRAP_INTRODUCED: Final = (0, 6, 0)
+DOCTOR_SCHEMA: Final = "arbogast.environment-preflight.v1"
+DOCTOR_MODES: Final = ("campaign", "core", "replay")
+DOCTOR_FIELDS: Final = frozenset(
+    {
+        "schema",
+        "mode",
+        "profile",
+        "authoritative",
+        "status",
+        "ready",
+        "captured_at",
+        "environment_digest",
+        "arbogast",
+        "python",
+        "uv",
+        "project",
+        "portable_core",
+        "capabilities",
+        "checks",
+        "required_blockers",
+        "optional_blockers",
+        "warnings",
+        "next_commands",
+    }
+)
+DOCTOR_NONREADY_STATUSES: Final = frozenset({"BLOCKED", "PARTIAL", "UNKNOWN", "UNSUPPORTED"})
+DOCTOR_CHECK_FIELDS: Final = frozenset({"name", "requirement", "status", "detail", "evidence"})
+DOCTOR_CHECK_REQUIREMENTS: Final = frozenset({"REQUIRED", "OPTIONAL", "INFORMATIONAL"})
+DOCTOR_CHECK_STATUSES: Final = frozenset(
+    {"SATISFIED", "UNSATISFIED", "UNKNOWN", "UNSUPPORTED", "PARTIAL"}
+)
+CAMPAIGN_TEMPLATE_ROOT: Final = "examples/campaigns/_template"
+CAMPAIGN_TEMPLATE_PYTEST: Final = "pytest==9.1.1"
 WHEEL_REQUIRED: Final = (
     "arbogast/__init__.py",
     "arbogast/py.typed",
@@ -190,6 +224,46 @@ PADIC_SDIST_REQUIRED: Final = (
     "tests/unit/test_padic_three_point_reduction.py",
     "tests/unit/test_padic_wewers_lifts_descent.py",
 )
+BOOTSTRAP_WHEEL_REQUIRED: Final = (
+    "arbogast/bootstrap/__init__.py",
+    "arbogast/bootstrap/capture.py",
+    "arbogast/bootstrap/dispatch.py",
+    "arbogast/bootstrap/models.py",
+    "arbogast/bootstrap/preflight.py",
+    "arbogast/bootstrap/readiness.py",
+    "arbogast/bootstrap/report.py",
+    "arbogast/bootstrap/runtime.py",
+    "arbogast/bootstrap/semantic.py",
+)
+BOOTSTRAP_SDIST_REQUIRED: Final = (
+    "AGENTS.md",
+    "docs/agent-bootstrap.md",
+    "docs/agent-and-lean-exports.md",
+    "prompts/campaign-bootstrap.md",
+    f"{CAMPAIGN_TEMPLATE_ROOT}/.python-version",
+    f"{CAMPAIGN_TEMPLATE_ROOT}/AGENTS.md",
+    f"{CAMPAIGN_TEMPLATE_ROOT}/README.md",
+    f"{CAMPAIGN_TEMPLATE_ROOT}/pyproject.toml",
+    f"{CAMPAIGN_TEMPLATE_ROOT}/src/campaign_name/__init__.py",
+    f"{CAMPAIGN_TEMPLATE_ROOT}/src/campaign_name/operations.py",
+    f"{CAMPAIGN_TEMPLATE_ROOT}/src/campaign_name/runtime.py",
+    f"{CAMPAIGN_TEMPLATE_ROOT}/src/campaign_name/specification.py",
+    f"{CAMPAIGN_TEMPLATE_ROOT}/src/campaign_name/verifiers.py",
+    f"{CAMPAIGN_TEMPLATE_ROOT}/tests/test_failure_semantics.py",
+    f"{CAMPAIGN_TEMPLATE_ROOT}/tests/test_fresh_process_verifier.py",
+    f"{CAMPAIGN_TEMPLATE_ROOT}/tests/test_preflight.py",
+    f"{CAMPAIGN_TEMPLATE_ROOT}/tests/test_small_positive.py",
+    *(f"src/{relative}" for relative in BOOTSTRAP_WHEEL_REQUIRED),
+    "tests/integration/test_campaign_readiness.py",
+    "tests/integration/test_campaign_lease_readiness.py",
+    "tests/unit/test_bootstrap_readiness.py",
+    "tests/unit/test_bootstrap_surface_registry.py",
+    "tests/unit/test_claim_domains.py",
+    "tests/unit/test_cli_doctor.py",
+    "tests/unit/test_cli_surfaces.py",
+    "tests/unit/test_environment_preflight.py",
+    "tests/unit/test_registry_readiness_manifests.py",
+)
 POST_V020_COMPATIBILITY_REQUIRED: Final = (
     COMPATIBILITY_INDEX,
     "tests/integration/test_release_compatibility_index.py",
@@ -339,7 +413,8 @@ def required_wheel_paths(version: str) -> tuple[str, ...]:
     deformation = DEFORMATION_WHEEL_REQUIRED if version_key >= DEFORMATION_INTRODUCED else ()
     numeric = NUMERIC_WHEEL_REQUIRED if version_key >= NUMERIC_INTRODUCED else ()
     padic = PADIC_WHEEL_REQUIRED if version_key >= PADIC_INTRODUCED else ()
-    return tuple(dict.fromkeys((*WHEEL_REQUIRED, *deformation, *numeric, *padic)))
+    bootstrap = BOOTSTRAP_WHEEL_REQUIRED if version_key >= BOOTSTRAP_INTRODUCED else ()
+    return tuple(dict.fromkeys((*WHEEL_REQUIRED, *deformation, *numeric, *padic, *bootstrap)))
 
 
 def required_sdist_paths(
@@ -360,6 +435,8 @@ def required_sdist_paths(
         additive = (*additive, *NUMERIC_SDIST_REQUIRED)
     if version_key >= PADIC_INTRODUCED:
         additive = (*additive, *PADIC_SDIST_REQUIRED)
+    if version_key >= BOOTSTRAP_INTRODUCED:
+        additive = (*additive, *BOOTSTRAP_SDIST_REQUIRED)
     return tuple(
         dict.fromkeys(
             (
@@ -485,6 +562,17 @@ def inspect_wheel(path: Path, version: str) -> dict[str, object]:
     missing = sorted(set(required) - payloads.keys())
     if missing:
         raise QualificationError(f"wheel omits required files: {', '.join(missing)}")
+    if _version_key(version) >= BOOTSTRAP_INTRODUCED:
+        metadata_prefix = f"arbogast-{version}.dist-info/"
+        foreign = sorted(
+            name
+            for name in payloads
+            if not name.startswith("arbogast/") and not name.startswith(metadata_prefix)
+        )
+        if foreign:
+            raise QualificationError(
+                "wheel must contain package and dist-info files only: " + ", ".join(foreign)
+            )
     metadata_paths = sorted(name for name in payloads if name.endswith(".dist-info/METADATA"))
     wheel_paths = sorted(name for name in payloads if name.endswith(".dist-info/WHEEL"))
     if len(metadata_paths) != 1 or len(wheel_paths) != 1:
@@ -719,6 +807,153 @@ def _run(
     return completed
 
 
+def _decode_json_object(output: str, *, label: str) -> dict[str, object]:
+    try:
+        payload = json.loads(output)
+    except json.JSONDecodeError as error:
+        raise QualificationError(f"{label} did not emit valid JSON: {error}") from error
+    if not isinstance(payload, dict):
+        raise QualificationError(f"{label} must emit one JSON object")
+    return payload
+
+
+def _validate_doctor_result(
+    completed: subprocess.CompletedProcess[str],
+    *,
+    mode: str,
+    expected_ready: bool | None,
+) -> None:
+    label = f"installed doctor --mode {mode}"
+    payload = _decode_json_object(completed.stdout, label=label)
+    if set(payload) != DOCTOR_FIELDS:
+        missing = sorted(DOCTOR_FIELDS - set(payload))
+        extra = sorted(set(payload) - DOCTOR_FIELDS)
+        raise QualificationError(
+            f"{label} projection fields mismatch: missing={missing!r}, extra={extra!r}"
+        )
+    if payload.get("schema") != DOCTOR_SCHEMA:
+        raise QualificationError(f"{label} schema mismatch: {payload.get('schema')!r}")
+    if payload.get("mode") != mode:
+        raise QualificationError(f"{label} mode mismatch: {payload.get('mode')!r}")
+    if payload.get("authoritative") is not False:
+        raise QualificationError(f"{label} must remain a non-authoritative diagnostic projection")
+    captured_at = payload.get("captured_at")
+    if not isinstance(captured_at, str) or not captured_at:
+        raise QualificationError(f"{label} captured_at must be a nonempty string")
+    environment_digest = payload.get("environment_digest")
+    if (
+        not isinstance(environment_digest, str)
+        or not environment_digest.startswith("sha256:")
+        or len(environment_digest) != 71
+    ):
+        raise QualificationError(f"{label} environment_digest must be a canonical SHA-256 ID")
+    try:
+        int(environment_digest.removeprefix("sha256:"), 16)
+    except ValueError as error:
+        raise QualificationError(
+            f"{label} environment_digest must be a canonical SHA-256 ID"
+        ) from error
+    for field in ("profile", "arbogast", "python", "uv", "project", "portable_core"):
+        if not isinstance(payload.get(field), dict):
+            raise QualificationError(f"{label} {field} must be a JSON object")
+    capabilities = payload.get("capabilities")
+    if not isinstance(capabilities, list) or any(
+        not isinstance(item, dict) for item in capabilities
+    ):
+        raise QualificationError(f"{label} capabilities must be an array of JSON objects")
+    for field in ("required_blockers", "optional_blockers", "warnings", "next_commands"):
+        value = payload.get(field)
+        if not isinstance(value, list) or any(not isinstance(item, str) for item in value):
+            raise QualificationError(f"{label} {field} must be an array of strings")
+
+    checks = payload.get("checks")
+    if not isinstance(checks, list) or not checks:
+        raise QualificationError(f"{label} must report a nonempty checks array")
+    required_checks: list[dict[str, object]] = []
+    for index, check in enumerate(checks):
+        if not isinstance(check, dict):
+            raise QualificationError(f"{label} checks[{index}] must be a JSON object")
+        if set(check) != DOCTOR_CHECK_FIELDS:
+            raise QualificationError(f"{label} checks[{index}] fields mismatch")
+        if not isinstance(check.get("name"), str) or not check["name"]:
+            raise QualificationError(f"{label} checks[{index}].name must be nonempty")
+        if check.get("requirement") not in DOCTOR_CHECK_REQUIREMENTS:
+            raise QualificationError(f"{label} checks[{index}].requirement is invalid")
+        if check.get("status") not in DOCTOR_CHECK_STATUSES:
+            raise QualificationError(f"{label} checks[{index}].status is invalid")
+        if not isinstance(check.get("detail"), str):
+            raise QualificationError(f"{label} checks[{index}].detail must be a string")
+        if not isinstance(check.get("evidence"), dict):
+            raise QualificationError(f"{label} checks[{index}].evidence must be a JSON object")
+        if check.get("requirement") == "REQUIRED":
+            required_checks.append(check)
+    if not required_checks:
+        raise QualificationError(f"{label} must report at least one required check")
+
+    required_statuses = {check["status"] for check in required_checks}
+    if "UNSATISFIED" in required_statuses:
+        derived_status = "BLOCKED"
+    elif "UNKNOWN" in required_statuses:
+        derived_status = "UNKNOWN"
+    elif "UNSUPPORTED" in required_statuses:
+        derived_status = "UNSUPPORTED"
+    elif required_statuses == {"SATISFIED"}:
+        derived_status = "READY"
+    else:
+        derived_status = "PARTIAL"
+    ready = payload.get("ready")
+    status = payload.get("status")
+    if status != derived_status:
+        raise QualificationError(f"{label} status does not match its required checks")
+    derived_ready = status == "READY"
+    if not isinstance(ready, bool) or ready is not derived_ready:
+        raise QualificationError(f"{label} ready flag does not match its required checks")
+    if ready:
+        if status != "READY":
+            raise QualificationError(f"{label} ready report must have status READY")
+        expected_exit = 0
+    else:
+        if status not in DOCTOR_NONREADY_STATUSES:
+            raise QualificationError(f"{label} has invalid non-ready status: {status!r}")
+        expected_exit = 1
+    if completed.returncode != expected_exit:
+        detail = (completed.stderr or completed.stdout).strip()
+        raise QualificationError(
+            f"{label} exit semantics mismatch: expected {expected_exit}, "
+            f"found {completed.returncode}\n{detail}"
+        )
+    if expected_ready is not None and ready is not expected_ready:
+        raise QualificationError(f"{label} expected ready={expected_ready}, found {ready}")
+
+
+def _smoke_doctor_modes(
+    python: Path,
+    *,
+    cwd: Path,
+    environment: Mapping[str, str] | None = None,
+    expected_readiness: Mapping[str, bool] | None = None,
+) -> None:
+    """Validate all installed doctor projections and their exact exit mapping."""
+
+    env = dict(environment) if environment is not None else None
+    for mode in DOCTOR_MODES:
+        completed = subprocess.run(
+            (str(python), "-I", "-m", "arbogast.cli", "doctor", "--mode", mode, "--json"),
+            cwd=cwd,
+            env=env,
+            check=False,
+            capture_output=True,
+            text=True,
+            timeout=COMMAND_TIMEOUT_SECONDS,
+        )
+        expected_ready = None
+        if expected_readiness is not None:
+            if mode not in expected_readiness:
+                raise QualificationError(f"doctor readiness expectation omits mode {mode!r}")
+            expected_ready = expected_readiness[mode]
+        _validate_doctor_result(completed, mode=mode, expected_ready=expected_ready)
+
+
 def _venv_python(venv: Path) -> Path:
     if os.name == "nt":
         return venv / "Scripts/python.exe"
@@ -785,6 +1020,13 @@ def _smoke_install(
         raise QualificationError("PARI backend must report unavailable when PATH is empty")
     if require_gp and status.get("available") is not True:
         raise QualificationError("PARI backend must pass its algebraic probe when GP is required")
+    if _version_key(version) >= BOOTSTRAP_INTRODUCED:
+        _smoke_doctor_modes(
+            python,
+            cwd=cwd,
+            environment=environment,
+            expected_readiness={"campaign": False, "core": False, "replay": True},
+        )
 
 
 def _smoke_v010_replay(python: Path, fixture: Path, *, cwd: Path) -> None:
@@ -916,6 +1158,29 @@ def _run_packaged_examples(
         _run(command, cwd=source_root)
 
 
+def _campaign_template_test_commands(
+    uv: str,
+    python: Path,
+    source_root: Path,
+) -> tuple[tuple[str, ...], ...]:
+    """Install and test the packaged template without resolving its future Git tag."""
+
+    template_root = source_root / CAMPAIGN_TEMPLATE_ROOT
+    return (
+        (uv, "pip", "install", "--python", str(python), CAMPAIGN_TEMPLATE_PYTEST),
+        (str(python), "-I", "-m", "pytest", "-q", str(template_root / "tests")),
+    )
+
+
+def _run_packaged_campaign_template_tests(
+    uv: str,
+    python: Path,
+    source_root: Path,
+) -> None:
+    for command in _campaign_template_test_commands(uv, python, source_root):
+        _run(command, cwd=source_root)
+
+
 def qualify_installs(
     artifacts: Sequence[Path],
     *,
@@ -972,6 +1237,9 @@ def qualify_installs(
                     require_gp=require_gp,
                 )
                 reports[index]["packaged_examples"] = "passed"
+                if _version_key(version) >= BOOTSTRAP_INTRODUCED:
+                    _run_packaged_campaign_template_tests(uv, python, source_root)
+                    reports[index]["packaged_campaign_template_tests"] = "passed"
     return tuple(reports)
 
 

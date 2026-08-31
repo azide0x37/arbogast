@@ -4,10 +4,12 @@ from __future__ import annotations
 
 import re
 
-from arbogast.claims import Claim, ClaimGraph
+from arbogast.claims import Claim, ClaimDomain, ClaimGraph
 from arbogast.claims.statement import StatementError
+from arbogast.formats import CLAIM_SCHEMA_V2
 from arbogast.proof import ProofGap, ProofObligation
 
+from ._domains import DomainFilter, domain_label, normalize_domains, select_claims
 from ._lifting import claim_graph_for_export
 
 _LEAN_KEYWORDS = frozenset(
@@ -58,12 +60,19 @@ _LEAN_KEYWORDS = frozenset(
 )
 
 
-def export_lean(value: object, *, namespace: str = "Arbogast.Generated") -> str:
+def export_lean(
+    value: object,
+    *,
+    namespace: str = "Arbogast.Generated",
+    domains: DomainFilter = None,
+) -> str:
+    selected_domains = normalize_domains(domains)
     lifted = claim_graph_for_export(value)
     if lifted is not None:
         value = lifted
-    obligations = _obligations(value)
-    claims = _claims(value)
+    claims = _claims(value, selected_domains)
+    obligations = _obligations(value, claims)
+    nonmathematical_obligations = _nonmathematical_obligation_ids(claims)
     _require_unique_generated_names(obligations, claims)
     namespace_parts = namespace.split(".")
     if any(
@@ -91,6 +100,8 @@ def export_lean(value: object, *, namespace: str = "Arbogast.Generated") -> str:
         "",
         "def proofObligations : List ProofObligationData := [",
     ]
+    if selected_domains is not None:
+        lines[3:3] = [f"/- Domain projection: {domain_label(selected_domains)}. -/", ""]
     for index, obligation in enumerate(obligations):
         comma = "," if index + 1 < len(obligations) else ""
         lines.extend(
@@ -109,6 +120,12 @@ def export_lean(value: object, *, namespace: str = "Arbogast.Generated") -> str:
         )
     lines.extend(["]", ""])
     for obligation in obligations:
+        if obligation.id in nonmathematical_obligations:
+            lines.append(
+                f"-- obligation {obligation.id} axiom omitted: owning claim domain "
+                "is not mathematical"
+            )
+            continue
         proposition = _conditional_lean_proposition(
             obligation.context,
             obligation.statement,
@@ -125,14 +142,22 @@ def export_lean(value: object, *, namespace: str = "Arbogast.Generated") -> str:
     for claim in claims:
         lean_name = _lean_name(claim.id)
         lines.append(f'def claimData_{lean_name} : String := "{_lean_string(claim.id)}"')
+        if claim.schema_version == CLAIM_SCHEMA_V2:
+            lines.append(f'def claimDomain_{lean_name} : String := "{claim.domain.value}"')
         lines.append(
             f"def claimHypotheses_{lean_name} : List String := "
             f"{_lean_statement_text_list(claim.hypotheses)}"
         )
-        lines.append(
-            f"-- claim {claim.id} [{claim.kind.value}/{claim.status.value}]: "
-            f"{_comment(claim.what.text)}"
-        )
+        boundary = f"{claim.kind.value}/{claim.status.value}"
+        if claim.schema_version == CLAIM_SCHEMA_V2:
+            boundary = f"{claim.domain.value}/{boundary}"
+        lines.append(f"-- claim {claim.id} [{boundary}]: {_comment(claim.what.text)}")
+        if claim.domain is not ClaimDomain.MATHEMATICAL:
+            lines.append(
+                f"-- claim {claim.id} axiom omitted: domain {claim.domain.value} "
+                "is not mathematical"
+            )
+            continue
         proposition = _conditional_lean_proposition(claim.hypotheses, claim.what)
         if proposition is not None:
             lines.append(f"axiom claim_{lean_name} : {proposition}")
@@ -144,18 +169,26 @@ def export_lean(value: object, *, namespace: str = "Arbogast.Generated") -> str:
     return "\n".join(lines)
 
 
-def _obligations(value: object) -> tuple[ProofObligation, ...]:
+def _obligations(
+    value: object,
+    claims: tuple[Claim, ...],
+) -> tuple[ProofObligation, ...]:
     if isinstance(value, ProofGap):
         return value.obligations
     if isinstance(value, ProofObligation):
         return (value,)
-    if isinstance(value, ClaimGraph):
-        return tuple(
-            obligation for claim in value.claims for obligation in _claim_obligations(claim)
-        )
-    if isinstance(value, Claim):
-        return _claim_obligations(value)
+    if isinstance(value, (ClaimGraph, Claim)):
+        return tuple(obligation for claim in claims for obligation in _claim_obligations(claim))
     return ()
+
+
+def _nonmathematical_obligation_ids(claims: tuple[Claim, ...]) -> frozenset[str]:
+    return frozenset(
+        obligation.id
+        for claim in claims
+        if claim.domain is not ClaimDomain.MATHEMATICAL
+        for obligation in _claim_obligations(claim)
+    )
 
 
 def _claim_obligations(claim: Claim) -> tuple[ProofObligation, ...]:
@@ -181,11 +214,14 @@ def _claim_obligations(claim: Claim) -> tuple[ProofObligation, ...]:
     )
 
 
-def _claims(value: object) -> tuple[Claim, ...]:
+def _claims(
+    value: object,
+    domains: frozenset[ClaimDomain] | None,
+) -> tuple[Claim, ...]:
     if isinstance(value, ClaimGraph):
-        return value.claims
+        return select_claims(value, domains)
     if isinstance(value, Claim):
-        return (value,)
+        return select_claims((value,), domains)
     return ()
 
 

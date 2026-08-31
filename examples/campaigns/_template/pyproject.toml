@@ -1,0 +1,36 @@
+[build-system]
+requires = ["hatchling>=1.27"]
+build-backend = "hatchling.build"
+
+[project]
+name = "campaign-name"
+version = "0.1.0"
+description = "A certificate-first Arbogast research campaign"
+requires-python = ">=3.11,<3.15"
+dependencies = [
+  "arbogast @ git+https://github.com/azide0x37/arbogast.git@v0.6.0",
+]
+
+[project.scripts]
+campaign-name = "campaign_name.runtime:main"
+
+[dependency-groups]
+dev = ["pytest>=8.4"]
+
+[tool.hatch.build.targets.wheel]
+packages = ["src/campaign_name"]
+
+[tool.pytest.ini_options]
+addopts = "--strict-config --strict-markers"
+testpaths = ["tests"]
+
+[tool.ruff]
+line-length = 100
+target-version = "py311"
+
+[tool.ruff.lint]
+select = ["E", "F", "I", "UP", "B", "SIM", "RUF"]
+
+[tool.ruff.format]
+quote-style = "double"
+indent-style = "space"

@@ -39,6 +39,46 @@ decompose → aim → obstruct → frame → certify
 
 Discovery may be expensive. Verification should not be.
 
+## The zeroth theorem: campaign readiness
+
+An Arbogast campaign begins by proving a finite proposition:
+
+> A named environment snapshot satisfies a named readiness profile for this campaign and this
+> canonical plan.
+
+The readiness certificate binds the Python interpreter, Arbogast distribution or source
+identity, dependency lock, campaign operation registry, verifier registry, required
+capabilities, executor semantics, and artifact-custody checks. The resulting environmental
+claim belongs in the campaign claim graph, while its use as permission to dispatch is recorded
+as an execution precondition rather than a logical premise of a portable mathematical result.
+For verified strategies, required closure verifiers are derived from the exact registered
+operation contracts; caller-supplied verifier names may add requirements but cannot weaken that
+derived set.
+
+A changed environment does not falsify an earlier readiness theorem. It creates a new
+environment subject and requires a new claim. Readiness authorizes execution; it does not
+establish the campaign's mathematical target.
+
+New campaigns should construct or load `Campaign(..., strict_readiness=True)`. The constructor's
+legacy default remains `False` only to preserve the published 0.1--0.5 behavior; the v0.6 blank
+campaign template opts in explicitly.
+
+> [!IMPORTANT]
+> A stale Python interpreter or missing optional backend is a blocked capability, not permission
+> to reimplement Arbogast and not a mathematical result.
+
+Before editing campaign code or spawning subagents:
+
+1. pin and capture the environment;
+2. construct the campaign's initial canonical plan;
+3. certify readiness for that plan and replay its certificate;
+4. record the readiness theorem in the campaign claim graph; and
+5. dispatch only tasks covered by the active readiness claim.
+
+Start with the [AI agent bootstrap guide](docs/agent-bootstrap.md), copy the
+[campaign bootstrap prompt](prompts/campaign-bootstrap.md), or use the
+[blank campaign template](examples/campaigns/_template/README.md).
+
 ## The motivating workflow: Antieau, Klüners, and Malle
 
 The supplied Antieau interview describes a Klüners--Malle research workflow around explicit
@@ -249,13 +289,13 @@ implemented in 0.1.0:
 
 See [the theorem boundary](docs/theorem-boundaries.md) for the exact epistemic contract.
 
-## Install
+## Installation and contributor checkout
 
-Arbogast 0.5.0 requires Python 3.11 or newer. Pin the exact GitHub source tag with
+Arbogast 0.6.0 supports Python 3.11 through 3.14. Pin the exact GitHub source tag with
 [uv](https://docs.astral.sh/uv/):
 
 ```bash
-uv add "arbogast @ git+https://github.com/azide0x37/arbogast.git@v0.5.0"
+uv add "arbogast @ git+https://github.com/azide0x37/arbogast.git@v0.6.0"
 ```
 
 For a contributor checkout:
@@ -263,13 +303,14 @@ For a contributor checkout:
 ```bash
 git clone https://github.com/azide0x37/arbogast.git
 cd arbogast
-uv sync --extra dev
-uv run arbogast version
+uv lock --check
+uv sync --locked --extra dev
+uv run --no-sync arbogast version --json
 ```
 
 No external algebra backend is required for the portable examples. If an operation can use an
 external backend, install that system independently and inspect capability discovery before
-depending on it. The 0.5.0 surface retains the narrow FLINT matrix and GAP permutation-group
+depending on it. The 0.6.0 surface retains the narrow FLINT matrix and GAP permutation-group
 discovery adapters, the closed operation-specific PARI arithmetic adapter, the portable
 finite-exact deformation layer, the backend-free validated numeric-to-exact bridge, and bounded
 finite-precision p-adic arithmetic with portable exact replay. The PARI path keeps explicit
@@ -396,7 +437,7 @@ preconditions hold; missing transformations are reported as missing capabilities
 Campaign files serialize specifications, their campaign-owned `ClaimGraph`, and the authoritative
 event ledger, never executable Python callables. With the default `--fleet off`, `run` fails
 closed if the current runtime has no injected implementation for a named operation.
-`--fleet auto` creates an audited local worker pool and registry. In 0.5.0 that registry contains
+`--fleet auto` creates an audited local worker pool and registry. In 0.6.0 that registry contains
 the non-closing `fleet.echo.v1` plumbing plus declared local-`H^1`, localization, Selmer assembly,
 PARI replay, and portable Python certificate-replay tasks. Registry membership never turns a
 scheduler outcome into mathematics or executes a callable named by JSON. The runnable campaign
@@ -601,11 +642,12 @@ future work. See [Agent and Lean exports](docs/agent-and-lean-exports.md).
 ## Development
 
 ```bash
-uv sync --extra dev
-uv run ruff check .
-uv run ruff format --check .
-uv run mypy
-uv run pytest
+uv lock --check
+uv sync --locked --extra dev
+uv run --no-sync ruff check .
+uv run --no-sync ruff format --check .
+uv run --no-sync mypy
+uv run --no-sync pytest
 uv build
 ```
 
@@ -623,7 +665,7 @@ additional permission.
 
 ## Status and citation
 
-Arbogast 0.5.0 is alpha research software. Certificate verification is intended to be small
+Arbogast 0.6.0 is alpha research software. Certificate verification is intended to be small
 and inspectable, but users remain responsible for auditing the hypotheses and imported facts
 of any theorem they rely on. See [SECURITY.md](SECURITY.md) for reporting integrity or
 parser issues and [CITATION.cff](CITATION.cff) for citation metadata.

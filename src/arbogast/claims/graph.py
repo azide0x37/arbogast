@@ -1,4 +1,4 @@
-"""A deterministic theorem DAG whose edges are mathematical dependencies."""
+"""A deterministic claim graph whose v1 ``why`` edges remain mathematical."""
 
 from __future__ import annotations
 
@@ -12,6 +12,7 @@ from arbogast.cert.registry import VerifierRegistry, default_verifiers
 
 from .claim import (
     Claim,
+    ClaimDomain,
     ClaimError,
     ClaimKind,
     ClaimVerificationError,
@@ -41,9 +42,12 @@ class ClaimCycleError(ClaimGraphError):
 class ClaimGraph:
     """Mutable builder with deterministic validation and immutable claim nodes.
 
-    Edges are taken from each claim's ``why`` field.  By default, adding a claim requires all
-    dependencies to already exist; bulk construction and decoding validate after all nodes are
-    loaded so serialized order does not matter.
+    Edges are taken from mathematical claims' ``why`` fields.  Domain-qualified
+    non-mathematical claims are permitted as additive leaf nodes, but cannot use
+    ``why`` and cannot become logical premises of mathematical claims.  By
+    default, adding a claim requires all dependencies to already exist; bulk
+    construction and decoding validate after all nodes are loaded so serialized
+    order does not matter.
     """
 
     schema_version = "arbogast.claim-graph/v1"
@@ -118,13 +122,25 @@ class ClaimGraph:
         self._claims[claim.id] = claim
 
     def validate(self, *, allow_unresolved: bool = False) -> ClaimGraph:
-        """Require a complete directed acyclic mathematical dependency graph."""
+        """Require a complete acyclic graph with domain-safe v1 dependency edges."""
 
         missing_by_claim: dict[str, list[str]] = {}
         for claim in self._claims.values():
             missing = sorted(set(claim.dependency_ids) - self._claims.keys())
             if missing:
                 missing_by_claim[claim.id] = missing
+            if claim.domain is ClaimDomain.MATHEMATICAL:
+                nonmathematical = sorted(
+                    dependency_id
+                    for dependency_id in claim.dependency_ids
+                    if dependency_id in self._claims
+                    and self._claims[dependency_id].domain is not ClaimDomain.MATHEMATICAL
+                )
+                if nonmathematical:
+                    raise ClaimGraphError(
+                        f"mathematical claim {claim.id} cannot depend on non-mathematical "
+                        f"claims: {', '.join(nonmathematical)}"
+                    )
         if missing_by_claim and not allow_unresolved:
             detail = "; ".join(
                 f"{claim}: {','.join(missing)}"
@@ -210,7 +226,8 @@ class ClaimGraph:
         return tuple(
             claim
             for claim in self
-            if claim.kind in {ClaimKind.ASSUMED, ClaimKind.IMPORTED, ClaimKind.CONJECTURED}
+            if claim.domain is ClaimDomain.MATHEMATICAL
+            and claim.kind in {ClaimKind.ASSUMED, ClaimKind.IMPORTED, ClaimKind.CONJECTURED}
         )
 
     def verify(
@@ -222,11 +239,14 @@ class ClaimGraph:
         structural_only: bool = False,
         raise_on_failure: bool = True,
     ) -> ClaimGraphVerificationReport:
-        """Verify the theorem DAG in dependency order.
+        """Verify every claim node in dependency order, across all domains.
 
-        A structural-only check proves no mathematics and reports ``verified=False``.  Full
-        verification replays computed certificates, resolves imported theorem records, and only
-        then admits derived nodes whose dependencies have all passed.
+        A structural-only check proves no claim and reports ``verified=False``.  Full verification
+        replays every independent node and preserves its per-node report.  An unrelated
+        non-mathematical failure therefore makes the all-node aggregate false without invalidating
+        a successfully verified mathematical node or becoming its logical dependency.  Only
+        explicit ``why`` edges govern theorem dependencies.  Domain-filtered exports are
+        presentation projections; they do not weaken this all-node aggregate verification.
         """
 
         self.validate()
@@ -238,7 +258,7 @@ class ClaimGraph:
                 claims=tuple(
                     claim.verify(structural_only=True, raise_on_failure=False) for claim in self
                 ),
-                error="structural DAG validation does not verify mathematical evidence",
+                error="structural DAG validation does not replay claim evidence in any domain",
             )
         reports: list[ClaimVerificationReport] = []
         verified_ids: set[str] = set()

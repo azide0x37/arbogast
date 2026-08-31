@@ -347,6 +347,22 @@ PADIC_VERIFICATION = FailureMode(
     ),
     "PAdicVerificationError | CertificateVerificationError",
 )
+READINESS_NONCONCLUSION = FailureMode(
+    "environment_not_certified_ready",
+    (
+        "the exact environmental predicate closes as blocked, partial, unknown, or "
+        "unsupported instead of READY"
+    ),
+    "CertifiedBlocked | Partial | Unknown | Unsupported",
+)
+READINESS_VERIFICATION = FailureMode(
+    "readiness_verification_failed",
+    (
+        "the E,C,P,G,V,X,A,R binding, obligation evidence, verdict, or environmental "
+        "claim boundary fails strict replay"
+    ),
+    "BootstrapError | CertificateVerificationError",
+)
 
 
 def _spec(
@@ -3842,7 +3858,40 @@ M23_OPERATION_SPECS: tuple[OperationSpec, ...] = (
 BUILTIN_OPERATION_SPECS += M23_OPERATION_SPECS
 
 
+BOOTSTRAP_OPERATION_SPECS: tuple[OperationSpec, ...] = (
+    _spec(
+        "bootstrap.certify_campaign_readiness",
+        "environmental campaign readiness (non-mathematical)",
+        (
+            "canonical EnvironmentSnapshot identifying the exact execution environment",
+            (
+                "complete ReadinessProfile binding campaign, plan, operation registry, "
+                "verifier registry, executor, artifact store, and every v1 obligation"
+            ),
+        ),
+        (
+            "returns exactly one typed readiness verdict for the bound E,C,P,G,V,X,A,R subject",
+            "nests replayable evidence inside the central VerificationCertificate envelope",
+            "emits an ENVIRONMENTAL claim that never establishes a mathematical conclusion",
+            "does not promote UNKNOWN, UNSUPPORTED, or PARTIAL to certified non-readiness",
+        ),
+        "finite registry and capability checks plus bounded artifact and fresh-process probes",
+        "arbogast.cert.VerificationCertificate",
+        "certify_campaign_readiness(environment=environment, profile=profile).verify()",
+        failure_modes=(INVALID_INPUT, READINESS_NONCONCLUSION, READINESS_VERIFICATION),
+        input_types=("EnvironmentSnapshot", "ReadinessProfile"),
+        output_type=("CertifiedReady | CertifiedBlocked | Partial | Unknown | Unsupported"),
+    ),
+)
+
+BUILTIN_OPERATION_SPECS += BOOTSTRAP_OPERATION_SPECS
+
+
 BUILTIN_IMPLEMENTATIONS: dict[str, tuple[str, str]] = {
+    "bootstrap.certify_campaign_readiness": (
+        "arbogast.bootstrap",
+        "certify_campaign_readiness",
+    ),
     "linalg.as_dense": ("arbogast.linalg", "as_dense"),
     "linalg.rref": ("arbogast.linalg", "rref"),
     "linalg.rank": ("arbogast.linalg", "rank"),
@@ -4076,6 +4125,7 @@ BUILTIN_IMPLEMENTATIONS: dict[str, tuple[str, str]] = {
 # Keeping this map explicit makes additions to any mathematical module fail the audit until a
 # maintainer either supplies a contract or records a narrowly justified helper exception.
 OPERATION_CONTRACT_MODULES = (
+    "arbogast.bootstrap",
     "arbogast.linalg",
     "arbogast.rep",
     "arbogast.cohom",
@@ -4092,6 +4142,9 @@ OPERATION_CONTRACT_MODULES = (
 # that yields discovery-only receipts.  The top-level mathematical wrappers above are the public
 # operations whose mathematical guarantees are stable enough to advertise.
 PUBLIC_FUNCTION_OPERATIONS: dict[str, dict[str, str]] = {
+    "arbogast.bootstrap": {
+        "certify_campaign_readiness": "bootstrap.certify_campaign_readiness",
+    },
     "arbogast.linalg": {
         "as_dense": "linalg.as_dense",
         "column_space": "linalg.image",
@@ -4233,6 +4286,26 @@ PUBLIC_FUNCTION_OPERATIONS: dict[str, dict[str, str]] = {
 }
 
 PUBLIC_NON_OPERATION_HELPERS: dict[str, dict[str, str]] = {
+    "arbogast.bootstrap": {
+        "capture_environment": (
+            "captures bounded diagnostic input evidence but does not certify readiness"
+        ),
+        "environment_preflight": (
+            "returns a non-authoritative installation diagnostic rather than a campaign theorem"
+        ),
+        "readiness_receipt": (
+            "strictly decodes an existing readiness certificate and computes no new result"
+        ),
+        "register_readiness_verifier": (
+            "idempotently installs the fixed verifier and computes no readiness verdict"
+        ),
+        "validate_readiness_activation": (
+            "checks live dispatch authorization without producing a mathematical result"
+        ),
+        "verify_readiness_certificate": (
+            "is the independent verifier entry point, not a theorem-producing operation"
+        ),
+    },
     "arbogast.padic": {
         "certified_result": (
             "constructs the proof-bearing result envelope used by documented exact fixtures"
@@ -4289,6 +4362,7 @@ def bind_builtin_implementations(
 
 
 __all__ = [
+    "BOOTSTRAP_OPERATION_SPECS",
     "BUILTIN_IMPLEMENTATIONS",
     "BUILTIN_OPERATION_SPECS",
     "OPERATION_CONTRACT_MODULES",

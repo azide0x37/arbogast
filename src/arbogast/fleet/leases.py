@@ -15,6 +15,7 @@ from .models import ArtifactRef, ShardSpec, TaskSpec
 from .workers import Worker, WorkerPool
 
 _SHA256_RE = re.compile(r"^[0-9a-f]{64}$")
+_LEASE_ID_RE = re.compile(r"^lease:[0-9a-f]{64}$")
 
 
 def _require_canonical_utc_timestamp(value: object) -> str:
@@ -140,6 +141,27 @@ class LeaseRecord:
     checkpoint: CheckpointRef | None = None
     detail: str | None = None
 
+    @staticmethod
+    def canonical_id(
+        *,
+        task_hash: str,
+        shard_hash: str,
+        worker_id: str,
+        attempt: int,
+        acquired_at: str,
+        expires_at: str,
+    ) -> str:
+        return "lease:" + canonical_sha256(
+            {
+                "acquired_at": acquired_at,
+                "attempt": attempt,
+                "expires_at": expires_at,
+                "shard_hash": shard_hash,
+                "task_hash": task_hash,
+                "worker_id": worker_id,
+            }
+        )
+
     def __post_init__(self) -> None:
         identity = (self.id, self.task_hash, self.shard_hash, self.worker_id)
         if any(not isinstance(value, str) or not value for value in identity):
@@ -157,6 +179,27 @@ class LeaseRecord:
             or not self.expires_at.strip()
         ):
             raise ValueError("lease timestamps must be non-empty strings")
+        try:
+            acquired = datetime.fromisoformat(self.acquired_at.replace("Z", "+00:00"))
+            expires = datetime.fromisoformat(self.expires_at.replace("Z", "+00:00"))
+        except ValueError as error:
+            raise ValueError("lease timestamps must be parseable") from error
+        if acquired.tzinfo is None or expires.tzinfo is None:
+            raise ValueError("lease timestamps must be timezone-aware")
+        if expires <= acquired:
+            raise ValueError("lease expiry must be later than acquisition")
+        if not _LEASE_ID_RE.fullmatch(self.id):
+            raise ValueError("lease id must be lease:<64 lowercase hex>")
+        expected_id = self.canonical_id(
+            task_hash=self.task_hash,
+            shard_hash=self.shard_hash,
+            worker_id=self.worker_id,
+            attempt=self.attempt,
+            acquired_at=self.acquired_at,
+            expires_at=self.expires_at,
+        )
+        if self.id != expected_id:
+            raise ValueError("lease id does not match its canonical identity")
         if self.detail is not None and not isinstance(self.detail, str):
             raise ValueError("lease detail must be a string or None")
         if self.checkpoint is not None and not isinstance(self.checkpoint, CheckpointRef):
@@ -525,18 +568,15 @@ class SchedulerProtocol:
         if shard.task_hash != task.task_hash:
             raise ValueError("cannot lease a shard belonging to a different task")
         worker = self.select(pool, task)
-        lease_hash = canonical_sha256(
-            {
-                "acquired_at": acquired_at,
-                "attempt": attempt,
-                "expires_at": expires_at,
-                "shard_hash": shard.shard_hash,
-                "task_hash": task.task_hash,
-                "worker_id": worker.id,
-            }
-        )
         return LeaseRecord(
-            id=f"lease:{lease_hash}",
+            id=LeaseRecord.canonical_id(
+                task_hash=task.task_hash,
+                shard_hash=shard.shard_hash,
+                worker_id=worker.id,
+                attempt=attempt,
+                acquired_at=acquired_at,
+                expires_at=expires_at,
+            ),
             task_hash=task.task_hash,
             shard_hash=shard.shard_hash,
             worker_id=worker.id,

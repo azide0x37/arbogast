@@ -6,6 +6,7 @@ from .engine import Campaign, CampaignStatus, TargetExplanation
 from .errors import (
     CampaignError,
     CampaignInvariantError,
+    CampaignReadinessError,
     CampaignSerializationError,
     CapabilityUnavailableError,
     UnknownOperationError,
@@ -60,6 +61,7 @@ __all__ = [
     "CampaignInvariantError",
     "CampaignOutcome",
     "CampaignPlan",
+    "CampaignReadinessError",
     "CampaignSerializationError",
     "CampaignSpec",
     "CampaignStatus",
