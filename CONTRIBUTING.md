@@ -25,18 +25,20 @@ Arbogast uses uv and supports Python 3.11 through 3.14.
 ```bash
 git clone https://github.com/azide0x37/arbogast.git
 cd arbogast
-uv sync --extra dev
+uv sync --locked --extra dev
 uv run pytest
 ```
 
 Before submitting a pull request, run the same checks as CI:
 
 ```bash
+uv lock --check
+uv sync --locked --extra dev
 uv run ruff check .
 uv run ruff format --check .
 uv run mypy
 uv run pytest
-uv build
+uv build --no-sources
 uv run python examples/group_cohomology/cyclic_action_h1.py
 uv run python examples/campaigns/antieau_klueners_malle/run.py \
   --output /tmp/arbogast-campaign
@@ -99,3 +101,10 @@ an external backend, literature result, or Lean proof is bundled when it is not.
 Keep changes focused. Explain the theorem boundary, tests, and certificate compatibility in the
 pull-request description. Do not include generated caches, local backend output, credentials,
 or proprietary datasets.
+
+## Package publication
+
+Package-index publication is a separate approval boundary after GitHub release qualification.
+Follow [the publishing runbook](docs/publishing.md). Promote only the exact approved wheel and
+Python source distribution; never upload a wildcard directory, Git source archive, qualification
+report, or locally rebuilt file under an existing version.

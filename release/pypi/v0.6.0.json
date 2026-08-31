@@ -1,0 +1,21 @@
+{
+  "artifacts": [
+    {
+      "filename": "arbogast-0.6.0-py3-none-any.whl",
+      "kind": "wheel",
+      "sha256": "65e9891d93de84e3a8937a9c507babf0aa471cc4d48d182170094d0acfde6b18",
+      "size": 918629
+    },
+    {
+      "filename": "arbogast-0.6.0.tar.gz",
+      "kind": "sdist",
+      "sha256": "5e9c7cba2f9b4df7b8c15ba3db45ea133313ec9d4bfbaba5cf345f059371558a",
+      "size": 2276578
+    }
+  ],
+  "project": "arbogast",
+  "schema": "arbogast.pypi-release-manifest/v1",
+  "source_commit": "893af39a7b826728793ba3f3b7b5a5f5bc5a8e7c",
+  "tag": "v0.6.0",
+  "version": "0.6.0"
+}

@@ -25,16 +25,42 @@ PINNED_BUILD_BACKEND: Final = "hatchling==1.27.0"
 PINNED_SETUP_UV_ACTION: Final = (
     "uses: astral-sh/setup-uv@c771a70e6277c0a99b617c7a806ffedaca235ff9 # v9.0.0"
 )
+PINNED_CHECKOUT_ACTION: Final = (
+    "uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2"
+)
+PINNED_UPLOAD_ARTIFACT_ACTION: Final = (
+    "uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1"
+)
+PINNED_DOWNLOAD_ARTIFACT_ACTION: Final = (
+    "uses: actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c # v8.0.1"
+)
+PINNED_ATTEST_ACTION: Final = (
+    "uses: astral-sh/attest-action@f589a42a7efb6fe400b4f400de60b4bc90390027 # v0.0.6"
+)
+# The publication workflow is a credential-bearing policy artifact. Pinning the
+# complete file closes YAML-equivalent spellings and cross-block changes that a
+# deliberately narrow line-oriented checker cannot safely interpret.
+PINNED_PYPI_WORKFLOW_SHA256: Final = (
+    "0be8f34db768d3b4374e09d8f6925d1d225abd2cfd58ac0ac81feac16deb9f48"
+)
+# Credential-bearing job blocks are byte-pinned after splitlines/join normalization.
+# Any shell-line change therefore needs deliberate checker and tamper-fixture review.
+PINNED_PYPI_PUBLISHER_BLOCKS: Final = {
+    "publish-testpypi": "5451ce7508f3eccd57c37da2a47047deced2e0dfe3792196ad559a3bb827f3e8",
+    "publish-pypi": "e24fde088cd9378a7aef8705526ef30a0400f5facb0ae10f814951a55c3a9a59",
+}
 REQUIRED_UV_JOBS: Final = frozenset(
     {"test", "release-qualification", "live-pari", "pari-anchor-agreement"}
 )
 REQUIRED_PATHS: Final = (
     ".github/workflows/ci.yml",
+    ".github/workflows/publish-pypi.yml",
     "README.md",
     "CHANGELOG.md",
     "CITATION.cff",
     "SECURITY.md",
     "docs/certified-arithmetic.md",
+    "docs/publishing.md",
     "pyproject.toml",
     "uv.lock",
     "assets/arbogast-mark.png",
@@ -64,6 +90,8 @@ REQUIRED_PATHS: Final = (
     "scripts/build_source_archive.py",
     "scripts/pari_anchor_payload.py",
     "scripts/qualify_artifacts.py",
+    "scripts/verify_pypi_artifacts.py",
+    "scripts/verify_pypi_registry.py",
     "scripts/snapshot_api_cli.py",
     "scripts/snapshot_semantic_contracts.py",
     "scripts/snapshot_v010_api_cli.py",
@@ -204,6 +232,7 @@ PADIC_REQUIRED_PATHS: Final = (
     "tests/unit/test_padic_wewers_lifts_descent.py",
 )
 BOOTSTRAP_INTRODUCED: Final = (0, 6, 0)
+PYPI_INTRODUCED: Final = (0, 6, 0)
 BOOTSTRAP_REQUIRED_PATHS: Final = (
     "AGENTS.md",
     "docs/agent-bootstrap.md",
@@ -394,6 +423,13 @@ def _bootstrap_release(version: str) -> bool:
     return (major, minor, patch) >= BOOTSTRAP_INTRODUCED
 
 
+def _pypi_release(version: str) -> bool:
+    if FINAL_VERSION_RE.fullmatch(version) is None:
+        return False
+    major, minor, patch = (int(part) for part in version.split("."))
+    return (major, minor, patch) >= PYPI_INTRODUCED
+
+
 def required_paths(version: str, *, root: Path = PROJECT_ROOT) -> tuple[str, ...]:
     """Return the release surface for ``version`` without forgetting old fixtures."""
 
@@ -434,6 +470,7 @@ def required_paths(version: str, *, root: Path = PROJECT_ROOT) -> tuple[str, ...
     numeric = NUMERIC_REQUIRED_PATHS if _numeric_release(version) else ()
     padic = PADIC_REQUIRED_PATHS if _padic_release(version) else ()
     bootstrap = BOOTSTRAP_REQUIRED_PATHS if _bootstrap_release(version) else ()
+    pypi = (f"release/pypi/v{version}.json",) if _pypi_release(version) else ()
     paths = (
         *REQUIRED_PATHS,
         *indexed,
@@ -441,6 +478,7 @@ def required_paths(version: str, *, root: Path = PROJECT_ROOT) -> tuple[str, ...
         *numeric,
         *padic,
         *bootstrap,
+        *pypi,
         f"docs/release-notes-{version}.md",
     )
     return tuple(dict.fromkeys(paths))
@@ -1469,6 +1507,471 @@ def _check_ci_install_contract(root: Path, failures: list[str]) -> None:
             failures.append(f"CI job {job_name!r} must install uv, check the lock, then sync it")
 
 
+def _publisher_step_blocks(block: str) -> list[tuple[str, list[str]]]:
+    """Return publisher steps without interpreting general YAML."""
+
+    lines = block.splitlines()
+    try:
+        steps_index = lines.index("    steps:")
+    except ValueError:
+        return []
+    starts = [
+        index
+        for index in range(steps_index + 1, len(lines))
+        if re.fullmatch(r"      - name: .+", lines[index]) is not None
+    ]
+    if not starts:
+        return []
+    starts.append(len(lines))
+    return [
+        (lines[start].removeprefix("      - name: "), lines[start:end])
+        for start, end in pairwise(starts)
+    ]
+
+
+def _publisher_step_keys(lines: list[str]) -> list[str]:
+    if not lines:
+        return []
+    keys = ["name"]
+    keys.extend(
+        match.group(1)
+        for line in lines[1:]
+        if (match := re.fullmatch(r"        ([A-Za-z0-9_-]+):(?: .*)?", line)) is not None
+    )
+    return keys
+
+
+def _check_publisher_job(
+    job_name: str,
+    block: str,
+    *,
+    target: str,
+    environment_name: str,
+    environment_url: str,
+    publish_url: str,
+    check_url: str,
+    failures: list[str],
+) -> None:
+    """Enforce the reviewed, credential-bearing publisher as a closed surface."""
+
+    lines = block.splitlines()
+    expected_top_level_keys = [
+        "name",
+        "if",
+        "needs",
+        "runs-on",
+        "environment",
+        "permissions",
+        "steps",
+    ]
+    top_level_entries = [
+        (match.group(1), match.group(2).strip())
+        for line in lines[1:]
+        if (match := re.fullmatch(r"    ([A-Za-z0-9_-]+):(.*)", line)) is not None
+    ]
+    if [key for key, _value in top_level_entries] != expected_top_level_keys:
+        failures.append(
+            f"PyPI publisher job {job_name!r} must have exactly the reviewed top-level contract"
+        )
+    top_level = dict(top_level_entries)
+    expected_condition = f"${{{{ inputs.target == '{target}' }}}}"
+    if top_level.get("if") != expected_condition:
+        failures.append(
+            f"PyPI publisher job {job_name!r} must use exact condition {expected_condition!r}"
+        )
+    if top_level.get("needs") != "validate":
+        failures.append(f"PyPI publisher job {job_name!r} must need only the validate job")
+    if top_level.get("runs-on") != "ubuntu-latest":
+        failures.append(f"PyPI publisher job {job_name!r} must run on ubuntu-latest")
+
+    expected_environment = [
+        "    environment:",
+        f"      name: {environment_name}",
+        f"      url: {environment_url}",
+    ]
+    try:
+        environment_index = lines.index("    environment:")
+    except ValueError:
+        environment_block: list[str] = []
+    else:
+        environment_block = lines[environment_index : environment_index + 3]
+    if environment_block != expected_environment:
+        failures.append(
+            f"PyPI publisher job {job_name!r} must use the exact {environment_name!r} environment"
+        )
+
+    expected_permissions = ["    permissions:", "      id-token: write"]
+    try:
+        permissions_index = lines.index("    permissions:")
+    except ValueError:
+        permissions_block: list[str] = []
+    else:
+        permissions_end = next(
+            (
+                index
+                for index in range(permissions_index + 1, len(lines))
+                if re.fullmatch(r"    [A-Za-z0-9_-]+:.*", lines[index]) is not None
+            ),
+            len(lines),
+        )
+        permissions_block = [line for line in lines[permissions_index:permissions_end] if line]
+    if permissions_block != expected_permissions:
+        failures.append(f"PyPI publisher job {job_name!r} must grant only id-token: write")
+
+    step_blocks = _publisher_step_blocks(block)
+    expected_step_names = [
+        "Install pinned uv",
+        "Download the validated pair",
+        "Recheck exact custody at the credential boundary",
+        "Revalidate the current public release after environment approval",
+        "Generate PEP 740 attestations",
+        "Recheck exact files and hashes after attestation",
+        "Publish only the exact pair",
+    ]
+    step_names = [name for name, _lines in step_blocks]
+    if step_names != expected_step_names:
+        failures.append(
+            f"PyPI publisher job {job_name!r} must contain exactly the reviewed ordered steps"
+        )
+    steps = {name: step_lines for name, step_lines in step_blocks}
+    expected_step_keys = {
+        "Install pinned uv": ["name", "uses", "with"],
+        "Download the validated pair": ["name", "uses", "with"],
+        "Recheck exact custody at the credential boundary": ["name", "env", "run"],
+        "Revalidate the current public release after environment approval": [
+            "name",
+            "env",
+            "run",
+        ],
+        "Generate PEP 740 attestations": ["name", "uses", "with"],
+        "Recheck exact files and hashes after attestation": ["name", "env", "run"],
+        "Publish only the exact pair": ["name", "env", "run"],
+    }
+    for step_name, expected_keys in expected_step_keys.items():
+        step_lines = steps.get(step_name)
+        if step_lines is not None and _publisher_step_keys(step_lines) != expected_keys:
+            failures.append(
+                f"PyPI publisher job {job_name!r} step {step_name!r} has an unreviewed contract"
+            )
+
+    expected_actions = {
+        "Install pinned uv": PINNED_SETUP_UV_ACTION,
+        "Download the validated pair": PINNED_DOWNLOAD_ARTIFACT_ACTION,
+        "Generate PEP 740 attestations": PINNED_ATTEST_ACTION,
+    }
+    for step_name, expected_action in expected_actions.items():
+        step_lines = steps.get(step_name, [])
+        candidates = [line.strip() for line in step_lines if "uses:" in line]
+        if candidates != [expected_action]:
+            failures.append(
+                f"PyPI publisher job {job_name!r} step {step_name!r} must use "
+                f"only {expected_action!r}"
+            )
+
+    attestation = "\n".join(steps.get("Generate PEP 740 attestations", []))
+    expected_attestation_paths = (
+        "          paths: |\n"
+        "            dist/arbogast-${{ inputs.version }}-py3-none-any.whl\n"
+        "            dist/arbogast-${{ inputs.version }}.tar.gz"
+    )
+    if expected_attestation_paths not in attestation:
+        failures.append(
+            f"PyPI publisher job {job_name!r} must attest exactly the wheel and source distribution"
+        )
+
+    if "continue-on-error:" in block:
+        failures.append(f"PyPI publisher job {job_name!r} must not continue on error")
+
+    custody = "\n".join(steps.get("Recheck exact custody at the credential boundary", []))
+    custody_requirements = (
+        "set -euo pipefail",
+        "find dist -mindepth 1 -maxdepth 1",
+        '[[ -f "${wheel}" && ! -L "${wheel}" ]]',
+        '[[ -f "${sdist}" && ! -L "${sdist}" ]]',
+        "dist/arbogast-${PROJECT_VERSION}-py3-none-any.whl",
+        "dist/arbogast-${PROJECT_VERSION}.tar.gz",
+    )
+    if (
+        any(required not in custody for required in custody_requirements)
+        or custody.count("sha256sum --check --strict") != 2
+    ):
+        failures.append(
+            f"PyPI publisher job {job_name!r} must recheck the exact two-file custody boundary"
+        )
+
+    revalidation = "\n".join(
+        steps.get("Revalidate the current public release after environment approval", [])
+    )
+    revalidation_requirements = (
+        "set -euo pipefail",
+        "https://api.github.com/repos/${GITHUB_REPOSITORY}/releases/tags/${RELEASE_TAG}",
+        ".target_commitish == $commit",
+        "git ls-remote --tags",
+        "https://github.com/${GITHUB_REPOSITORY}.git",
+        '[[ "${resolved}" == "${SOURCE_COMMIT}" ]]',
+        "https://github.com/${GITHUB_REPOSITORY}/releases/download/${RELEASE_TAG}",
+        "current-release/arbogast-${PROJECT_VERSION}-py3-none-any.whl",
+        "current-release/arbogast-${PROJECT_VERSION}.tar.gz",
+    )
+    if (
+        any(required not in revalidation for required in revalidation_requirements)
+        or revalidation.count("sha256sum --check --strict") != 2
+        or revalidation.count("cmp --silent") != 2
+    ):
+        failures.append(
+            f"PyPI publisher job {job_name!r} must revalidate and byte-compare the public release"
+        )
+
+    post_attestation = "\n".join(steps.get("Recheck exact files and hashes after attestation", []))
+    if (
+        "set -euo pipefail" not in post_attestation
+        or "find dist -mindepth 1 -maxdepth 1" not in post_attestation
+        or '"4"' not in post_attestation
+        or post_attestation.count("sha256sum --check --strict") != 2
+        or post_attestation.count("[[ -f") != 4
+        or post_attestation.count("&& ! -L") != 4
+        or 'wheel_attestation="${wheel}.publish.attestation"' not in post_attestation
+        or 'sdist_attestation="${sdist}.publish.attestation"' not in post_attestation
+    ):
+        failures.append(
+            f"PyPI publisher job {job_name!r} must require exactly four regular files and "
+            "recheck both distribution hashes after attestation"
+        )
+
+    publish = "\n".join(steps.get("Publish only the exact pair", []))
+    publish_requirements = (
+        "uv publish --trusted-publishing always",
+        f"--publish-url {publish_url}",
+        f"--check-url {check_url}",
+        '"dist/arbogast-${PROJECT_VERSION}-py3-none-any.whl"',
+        '"dist/arbogast-${PROJECT_VERSION}-py3-none-any.whl.publish.attestation"',
+        '"dist/arbogast-${PROJECT_VERSION}.tar.gz"',
+        '"dist/arbogast-${PROJECT_VERSION}.tar.gz.publish.attestation"',
+    )
+    if any(required not in publish for required in publish_requirements):
+        failures.append(
+            f"PyPI publisher job {job_name!r} must publish only the exact pair to its registry"
+        )
+
+    for prohibited in ("actions/checkout@", "scripts/", "uv run", "uvx"):
+        if prohibited in block:
+            failures.append(
+                f"PyPI publisher job {job_name!r} executes prohibited surface {prohibited!r}"
+            )
+
+    expected_digest = PINNED_PYPI_PUBLISHER_BLOCKS[job_name]
+    actual_digest = hashlib.sha256(block.encode("utf-8")).hexdigest()
+    if actual_digest != expected_digest:
+        failures.append(
+            f"PyPI publisher job {job_name!r} differs from the reviewed contract: "
+            f"expected SHA-256 {expected_digest}, found {actual_digest}"
+        )
+
+
+def _check_pypi_workflow(root: Path, failures: list[str]) -> None:
+    workflow_path = root / ".github/workflows/publish-pypi.yml"
+    if not workflow_path.is_file():
+        return
+    workflow = workflow_path.read_text(encoding="utf-8")
+    workflow_sha256 = hashlib.sha256(workflow.encode("utf-8")).hexdigest()
+    if workflow_sha256 != PINNED_PYPI_WORKFLOW_SHA256:
+        failures.append(
+            "PyPI workflow differs from the complete reviewed contract: "
+            f"expected SHA-256 {PINNED_PYPI_WORKFLOW_SHA256}, found {workflow_sha256}"
+        )
+    lines = workflow.splitlines()
+
+    try:
+        on_index = lines.index("on:")
+    except ValueError:
+        failures.append("PyPI workflow must declare an event boundary")
+        return
+    trigger_lines: list[str] = []
+    for line in lines[on_index + 1 :]:
+        if line and not line.startswith(" "):
+            break
+        if line.startswith("  ") and not line.startswith("   "):
+            trigger_lines.append(line)
+    if trigger_lines != ["  workflow_dispatch:"]:
+        failures.append(
+            "PyPI workflow must be manual-only with exactly one workflow_dispatch trigger"
+        )
+
+    try:
+        jobs_index = lines.index("jobs:")
+    except ValueError:
+        failures.append("PyPI workflow must declare jobs")
+        return
+    job_starts = [
+        index
+        for index in range(jobs_index + 1, len(lines))
+        if lines[index].startswith("  ") and not lines[index].startswith("   ")
+    ]
+    expected_job_lines = [
+        "  validate:",
+        "  publish-testpypi:",
+        "  publish-pypi:",
+    ]
+    if [lines[index] for index in job_starts] != expected_job_lines:
+        failures.append(
+            "PyPI workflow must contain only validate, publish-testpypi, and publish-pypi jobs"
+        )
+        return
+    job_starts.append(len(lines))
+    job_blocks = {
+        lines[start].strip().removesuffix(":"): "\n".join(lines[start:end])
+        for start, end in pairwise(job_starts)
+    }
+    validate = job_blocks["validate"]
+    testpypi = job_blocks["publish-testpypi"]
+    pypi = job_blocks["publish-pypi"]
+
+    verifier_steps = [
+        step_lines
+        for step_name, step_lines in _publisher_step_blocks(validate)
+        if step_name == "Verify names, hashes, file set, and package metadata"
+    ]
+    expected_verifier_step = [
+        "      - name: Verify names, hashes, file set, and package metadata",
+        "        env:",
+        "          RELEASE_TAG: ${{ inputs.tag }}",
+        "          PROJECT_VERSION: ${{ inputs.version }}",
+        "          SOURCE_COMMIT: ${{ inputs.source_commit }}",
+        "          WHEEL_SHA256: ${{ inputs.wheel_sha256 }}",
+        "          SDIST_SHA256: ${{ inputs.sdist_sha256 }}",
+        "        run: >-",
+        "          uv run --no-project python scripts/verify_pypi_artifacts.py",
+        "          --dist-dir dist",
+        '          --manifest "release/pypi/${RELEASE_TAG}.json"',
+        '          --tag "${RELEASE_TAG}"',
+        '          --version "${PROJECT_VERSION}"',
+        '          --source-commit "${SOURCE_COMMIT}"',
+        '          --wheel-sha256 "${WHEEL_SHA256}"',
+        '          --sdist-sha256 "${SDIST_SHA256}"',
+    ]
+    if (
+        len(verifier_steps) != 1
+        or [line for line in verifier_steps[0] if line] != expected_verifier_step
+    ):
+        failures.append(
+            "PyPI validation must pass the canonical versioned manifest to the exact verifier"
+        )
+
+    required_inputs = (
+        "target:",
+        "tag:",
+        "version:",
+        "source_commit:",
+        "wheel_sha256:",
+        "sdist_sha256:",
+    )
+    on_block = "\n".join(lines[on_index:jobs_index])
+    for required in required_inputs:
+        if f"      {required}" not in on_block:
+            failures.append(f"PyPI workflow omits required manual input {required!r}")
+
+    expected_counts = {
+        PINNED_CHECKOUT_ACTION: 1,
+        PINNED_SETUP_UV_ACTION: 3,
+        PINNED_UPLOAD_ARTIFACT_ACTION: 1,
+        PINNED_DOWNLOAD_ARTIFACT_ACTION: 2,
+        PINNED_ATTEST_ACTION: 2,
+        "id-token: write": 2,
+        "--trusted-publishing always": 2,
+        "--trusted-publishing never": 1,
+        "--dry-run": 1,
+    }
+    for required, expected_count in expected_counts.items():
+        actual_count = workflow.count(required)
+        if actual_count != expected_count:
+            failures.append(
+                f"PyPI workflow must contain {required!r} exactly {expected_count} times, "
+                f"found {actual_count}"
+            )
+    pinned_actions = (
+        ("actions/checkout@", PINNED_CHECKOUT_ACTION, 1),
+        ("astral-sh/setup-uv@", PINNED_SETUP_UV_ACTION, 3),
+        ("actions/upload-artifact@", PINNED_UPLOAD_ARTIFACT_ACTION, 1),
+        ("actions/download-artifact@", PINNED_DOWNLOAD_ARTIFACT_ACTION, 2),
+        ("astral-sh/attest-action@", PINNED_ATTEST_ACTION, 2),
+    )
+    for prefix, pinned, expected_count in pinned_actions:
+        candidates = [line.strip() for line in lines if prefix in line]
+        if candidates != [pinned] * expected_count:
+            failures.append(
+                f"PyPI workflow must use only pinned action {pinned!r}, found {candidates!r}"
+            )
+
+    for prohibited in (
+        "secrets.",
+        "UV_PUBLISH_TOKEN",
+        "--token",
+        "--username",
+        "--password",
+        "uv build",
+        "dist/*",
+        "-source.tar.gz",
+        "qualification.json",
+    ):
+        if prohibited in workflow:
+            failures.append(f"PyPI workflow contains prohibited publication surface {prohibited!r}")
+
+    for required in (
+        '[[ "${GITHUB_REF}" == "refs/heads/main" ]]',
+        "gh release view",
+        ".targetCommitish == $commit",
+        "scripts/verify_pypi_artifacts.py",
+        '--manifest "release/pypi/${RELEASE_TAG}.json"',
+        "twine check --strict",
+        "compression-level: 0",
+        "if-no-files-found: error",
+    ):
+        if required not in validate:
+            failures.append(f"PyPI validation job omits {required!r}")
+    if "id-token" in validate:
+        failures.append("PyPI validation job must not receive OIDC publishing authority")
+
+    publish_contracts = (
+        (
+            "publish-testpypi",
+            testpypi,
+            "testpypi",
+            "testpypi",
+            "https://test.pypi.org/project/arbogast/${{ inputs.version }}/",
+            "https://test.pypi.org/legacy/",
+            "https://test.pypi.org/simple/",
+        ),
+        (
+            "publish-pypi",
+            pypi,
+            "pypi",
+            "pypi",
+            "https://pypi.org/project/arbogast/${{ inputs.version }}/",
+            "https://upload.pypi.org/legacy/",
+            "https://pypi.org/simple/",
+        ),
+    )
+    for (
+        job_name,
+        block,
+        target,
+        environment_name,
+        environment_url,
+        publish_url,
+        check_url,
+    ) in publish_contracts:
+        _check_publisher_job(
+            job_name,
+            block,
+            target=target,
+            environment_name=environment_name,
+            environment_url=environment_url,
+            publish_url=publish_url,
+            check_url=check_url,
+            failures=failures,
+        )
+
+
 def _check_security_policy(root: Path, failures: list[str], version: str) -> None:
     security_path = root / "SECURITY.md"
     if not security_path.is_file():
@@ -1552,6 +2055,7 @@ def check(root: Path, *, expected_version: str | None = None) -> dict[str, objec
     _check_v010_compatibility(root, failures)
     _check_live_pari_matrix(root, failures)
     _check_ci_install_contract(root, failures)
+    _check_pypi_workflow(root, failures)
     _check_security_policy(root, failures, version)
 
     checked_files = _text_files(root)

@@ -1,0 +1,456 @@
+name: Publish exact GitHub release artifacts to PyPI
+
+on:
+  workflow_dispatch:
+    inputs:
+      target:
+        description: Registry to receive the exact release artifacts
+        required: true
+        type: choice
+        options:
+          - testpypi
+          - pypi
+      tag:
+        description: Final GitHub release tag, for example v0.6.0
+        required: true
+        type: string
+      version:
+        description: Final package version, for example 0.6.0
+        required: true
+        type: string
+      source_commit:
+        description: Exact 40-character commit resolved by the release tag
+        required: true
+        type: string
+      wheel_sha256:
+        description: SHA-256 of the exact py3-none-any wheel
+        required: true
+        type: string
+      sdist_sha256:
+        description: SHA-256 of the exact Python source distribution
+        required: true
+        type: string
+
+permissions:
+  contents: read
+
+concurrency:
+  group: pypi-${{ inputs.target }}-${{ inputs.tag }}
+  cancel-in-progress: false
+
+jobs:
+  validate:
+    name: Validate exact release custody without publishing authority
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+
+    steps:
+      - name: Check out the trusted workflow revision
+        uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+        with:
+          fetch-depth: 0
+          persist-credentials: false
+
+      - name: Install pinned uv
+        uses: astral-sh/setup-uv@c771a70e6277c0a99b617c7a806ffedaca235ff9 # v9.0.0
+        with:
+          version: "0.12.3"
+          python-version: "3.13"
+          enable-cache: false
+
+      - name: Validate dispatch and public release identity
+        env:
+          RELEASE_TAG: ${{ inputs.tag }}
+          PROJECT_VERSION: ${{ inputs.version }}
+          SOURCE_COMMIT: ${{ inputs.source_commit }}
+          WHEEL_SHA256: ${{ inputs.wheel_sha256 }}
+          SDIST_SHA256: ${{ inputs.sdist_sha256 }}
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          set -euo pipefail
+          [[ "${GITHUB_REF}" == "refs/heads/main" ]]
+          [[ "${PROJECT_VERSION}" =~ ^[0-9]+\.[0-9]+\.[0-9]+$ ]]
+          [[ "${RELEASE_TAG}" == "v${PROJECT_VERSION}" ]]
+          [[ "${SOURCE_COMMIT}" =~ ^[0-9a-f]{40}$ ]]
+          [[ "${WHEEL_SHA256}" =~ ^[0-9a-f]{64}$ ]]
+          [[ "${SDIST_SHA256}" =~ ^[0-9a-f]{64}$ ]]
+
+          git fetch --force origin \
+            "refs/tags/${RELEASE_TAG}:refs/tags/${RELEASE_TAG}"
+          resolved_commit="$(git rev-list -n 1 "refs/tags/${RELEASE_TAG}")"
+          [[ "${resolved_commit}" == "${SOURCE_COMMIT}" ]]
+          git merge-base --is-ancestor "${SOURCE_COMMIT}" "origin/main"
+
+          release_json="$(gh release view "${RELEASE_TAG}" \
+            --repo "${GITHUB_REPOSITORY}" \
+            --json tagName,targetCommitish,isDraft,isPrerelease)"
+          jq --exit-status \
+            --arg tag "${RELEASE_TAG}" \
+            --arg commit "${SOURCE_COMMIT}" \
+            '.tagName == $tag and .targetCommitish == $commit and
+             (.isDraft | not) and (.isPrerelease | not)' \
+            <<<"${release_json}"
+
+      - name: Download only the two Python distributions
+        env:
+          RELEASE_TAG: ${{ inputs.tag }}
+          PROJECT_VERSION: ${{ inputs.version }}
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          set -euo pipefail
+          mkdir dist
+          gh release download "${RELEASE_TAG}" \
+            --repo "${GITHUB_REPOSITORY}" \
+            --pattern "arbogast-${PROJECT_VERSION}-py3-none-any.whl" \
+            --pattern "arbogast-${PROJECT_VERSION}.tar.gz" \
+            --dir dist
+
+      - name: Verify names, hashes, file set, and package metadata
+        env:
+          RELEASE_TAG: ${{ inputs.tag }}
+          PROJECT_VERSION: ${{ inputs.version }}
+          SOURCE_COMMIT: ${{ inputs.source_commit }}
+          WHEEL_SHA256: ${{ inputs.wheel_sha256 }}
+          SDIST_SHA256: ${{ inputs.sdist_sha256 }}
+        run: >-
+          uv run --no-project python scripts/verify_pypi_artifacts.py
+          --dist-dir dist
+          --manifest "release/pypi/${RELEASE_TAG}.json"
+          --tag "${RELEASE_TAG}"
+          --version "${PROJECT_VERSION}"
+          --source-commit "${SOURCE_COMMIT}"
+          --wheel-sha256 "${WHEEL_SHA256}"
+          --sdist-sha256 "${SDIST_SHA256}"
+
+      - name: Validate the PyPI description renderer
+        env:
+          PROJECT_VERSION: ${{ inputs.version }}
+        run: >-
+          uvx --from twine==7.0.0 twine check --strict
+          "dist/arbogast-${PROJECT_VERSION}-py3-none-any.whl"
+          "dist/arbogast-${PROJECT_VERSION}.tar.gz"
+
+      - name: Smoke-install the exact wheel
+        env:
+          PROJECT_VERSION: ${{ inputs.version }}
+        run: >-
+          uv run --isolated --no-project
+          --with "dist/arbogast-${PROJECT_VERSION}-py3-none-any.whl"
+          arbogast version --json
+
+      - name: Smoke-install the exact source distribution
+        env:
+          PROJECT_VERSION: ${{ inputs.version }}
+        run: >-
+          uv run --isolated --no-project
+          --with "dist/arbogast-${PROJECT_VERSION}.tar.gz"
+          arbogast version --json
+
+      - name: Dry-run the explicit two-file upload
+        env:
+          PUBLISH_TARGET: ${{ inputs.target }}
+          PROJECT_VERSION: ${{ inputs.version }}
+        run: |
+          set -euo pipefail
+          if [[ "${PUBLISH_TARGET}" == "pypi" ]]; then
+            publish_url="https://upload.pypi.org/legacy/"
+            check_url="https://pypi.org/simple/"
+          else
+            publish_url="https://test.pypi.org/legacy/"
+            check_url="https://test.pypi.org/simple/"
+          fi
+          uv publish --dry-run --trusted-publishing never \
+            --publish-url "${publish_url}" \
+            --check-url "${check_url}" \
+            "dist/arbogast-${PROJECT_VERSION}-py3-none-any.whl" \
+            "dist/arbogast-${PROJECT_VERSION}.tar.gz"
+
+      - name: Preserve the validated pair for the isolated publisher
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        with:
+          name: pypi-distributions-${{ github.run_id }}-${{ github.run_attempt }}
+          path: |
+            dist/arbogast-${{ inputs.version }}-py3-none-any.whl
+            dist/arbogast-${{ inputs.version }}.tar.gz
+          if-no-files-found: error
+          retention-days: 1
+          compression-level: 0
+
+  publish-testpypi:
+    name: Publish exact pair to TestPyPI
+    if: ${{ inputs.target == 'testpypi' }}
+    needs: validate
+    runs-on: ubuntu-latest
+    environment:
+      name: testpypi
+      url: https://test.pypi.org/project/arbogast/${{ inputs.version }}/
+    permissions:
+      id-token: write
+
+    steps:
+      - name: Install pinned uv
+        uses: astral-sh/setup-uv@c771a70e6277c0a99b617c7a806ffedaca235ff9 # v9.0.0
+        with:
+          version: "0.12.3"
+          enable-cache: false
+
+      - name: Download the validated pair
+        uses: actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c # v8.0.1
+        with:
+          name: pypi-distributions-${{ github.run_id }}-${{ github.run_attempt }}
+          path: dist
+
+      - name: Recheck exact custody at the credential boundary
+        env:
+          PROJECT_VERSION: ${{ inputs.version }}
+          WHEEL_SHA256: ${{ inputs.wheel_sha256 }}
+          SDIST_SHA256: ${{ inputs.sdist_sha256 }}
+        run: |
+          set -euo pipefail
+          wheel="dist/arbogast-${PROJECT_VERSION}-py3-none-any.whl"
+          sdist="dist/arbogast-${PROJECT_VERSION}.tar.gz"
+          [[ "$(find dist -mindepth 1 -maxdepth 1 | wc -l | tr -d ' ')" == "2" ]]
+          [[ -f "${wheel}" && ! -L "${wheel}" ]]
+          [[ -f "${sdist}" && ! -L "${sdist}" ]]
+          echo "${WHEEL_SHA256}  dist/arbogast-${PROJECT_VERSION}-py3-none-any.whl" \
+            | sha256sum --check --strict
+          echo "${SDIST_SHA256}  dist/arbogast-${PROJECT_VERSION}.tar.gz" \
+            | sha256sum --check --strict
+
+      - name: Revalidate the current public release after environment approval
+        env:
+          RELEASE_TAG: ${{ inputs.tag }}
+          PROJECT_VERSION: ${{ inputs.version }}
+          SOURCE_COMMIT: ${{ inputs.source_commit }}
+          WHEEL_SHA256: ${{ inputs.wheel_sha256 }}
+          SDIST_SHA256: ${{ inputs.sdist_sha256 }}
+        run: |
+          set -euo pipefail
+          [[ "${PROJECT_VERSION}" =~ ^[0-9]+\.[0-9]+\.[0-9]+$ ]]
+          [[ "${RELEASE_TAG}" == "v${PROJECT_VERSION}" ]]
+          [[ "${SOURCE_COMMIT}" =~ ^[0-9a-f]{40}$ ]]
+          [[ "${WHEEL_SHA256}" =~ ^[0-9a-f]{64}$ ]]
+          [[ "${SDIST_SHA256}" =~ ^[0-9a-f]{64}$ ]]
+
+          release_json="$(curl --fail --location --silent --show-error \
+            --proto '=https' --tlsv1.2 \
+            "https://api.github.com/repos/${GITHUB_REPOSITORY}/releases/tags/${RELEASE_TAG}")"
+          jq --exit-status \
+            --arg tag "${RELEASE_TAG}" \
+            --arg commit "${SOURCE_COMMIT}" \
+            '.tag_name == $tag and .target_commitish == $commit and
+             (.draft | not) and (.prerelease | not)' \
+            <<<"${release_json}"
+
+          compare_json="$(curl --fail --location --silent --show-error \
+            --proto '=https' --tlsv1.2 \
+            "https://api.github.com/repos/${GITHUB_REPOSITORY}/compare/${SOURCE_COMMIT}...main")"
+          jq --exit-status '.status == "ahead" or .status == "identical"' \
+            <<<"${compare_json}"
+
+          tag_refs="$(git ls-remote --tags \
+            "https://github.com/${GITHUB_REPOSITORY}.git" \
+            "refs/tags/${RELEASE_TAG}" "refs/tags/${RELEASE_TAG}^{}")"
+          direct="$(awk '$2 !~ /\^\{\}$/ {print $1}' <<<"${tag_refs}")"
+          peeled="$(awk '$2 ~ /\^\{\}$/ {print $1}' <<<"${tag_refs}")"
+          resolved="${peeled:-${direct}}"
+          [[ "${resolved}" == "${SOURCE_COMMIT}" ]]
+
+          mkdir current-release
+          base_url="https://github.com/${GITHUB_REPOSITORY}/releases/download/${RELEASE_TAG}"
+          curl --fail --location --silent --show-error --proto '=https' --tlsv1.2 \
+            --output "current-release/arbogast-${PROJECT_VERSION}-py3-none-any.whl" \
+            "${base_url}/arbogast-${PROJECT_VERSION}-py3-none-any.whl"
+          curl --fail --location --silent --show-error --proto '=https' --tlsv1.2 \
+            --output "current-release/arbogast-${PROJECT_VERSION}.tar.gz" \
+            "${base_url}/arbogast-${PROJECT_VERSION}.tar.gz"
+          echo "${WHEEL_SHA256}  current-release/arbogast-${PROJECT_VERSION}-py3-none-any.whl" \
+            | sha256sum --check --strict
+          echo "${SDIST_SHA256}  current-release/arbogast-${PROJECT_VERSION}.tar.gz" \
+            | sha256sum --check --strict
+          cmp --silent \
+            "dist/arbogast-${PROJECT_VERSION}-py3-none-any.whl" \
+            "current-release/arbogast-${PROJECT_VERSION}-py3-none-any.whl"
+          cmp --silent \
+            "dist/arbogast-${PROJECT_VERSION}.tar.gz" \
+            "current-release/arbogast-${PROJECT_VERSION}.tar.gz"
+
+      - name: Generate PEP 740 attestations
+        uses: astral-sh/attest-action@f589a42a7efb6fe400b4f400de60b4bc90390027 # v0.0.6
+        with:
+          paths: |
+            dist/arbogast-${{ inputs.version }}-py3-none-any.whl
+            dist/arbogast-${{ inputs.version }}.tar.gz
+
+      - name: Recheck exact files and hashes after attestation
+        env:
+          PROJECT_VERSION: ${{ inputs.version }}
+          WHEEL_SHA256: ${{ inputs.wheel_sha256 }}
+          SDIST_SHA256: ${{ inputs.sdist_sha256 }}
+        run: |
+          set -euo pipefail
+          wheel="dist/arbogast-${PROJECT_VERSION}-py3-none-any.whl"
+          sdist="dist/arbogast-${PROJECT_VERSION}.tar.gz"
+          wheel_attestation="${wheel}.publish.attestation"
+          sdist_attestation="${sdist}.publish.attestation"
+          [[ "$(find dist -mindepth 1 -maxdepth 1 | wc -l | tr -d ' ')" == "4" ]]
+          [[ -f "${wheel}" && ! -L "${wheel}" ]]
+          [[ -f "${sdist}" && ! -L "${sdist}" ]]
+          [[ -f "${wheel_attestation}" && ! -L "${wheel_attestation}" ]]
+          [[ -f "${sdist_attestation}" && ! -L "${sdist_attestation}" ]]
+          echo "${WHEEL_SHA256}  dist/arbogast-${PROJECT_VERSION}-py3-none-any.whl" \
+            | sha256sum --check --strict
+          echo "${SDIST_SHA256}  dist/arbogast-${PROJECT_VERSION}.tar.gz" \
+            | sha256sum --check --strict
+
+      - name: Publish only the exact pair
+        env:
+          PROJECT_VERSION: ${{ inputs.version }}
+        run: >-
+          uv publish --trusted-publishing always
+          --publish-url https://test.pypi.org/legacy/
+          --check-url https://test.pypi.org/simple/
+          "dist/arbogast-${PROJECT_VERSION}-py3-none-any.whl"
+          "dist/arbogast-${PROJECT_VERSION}-py3-none-any.whl.publish.attestation"
+          "dist/arbogast-${PROJECT_VERSION}.tar.gz"
+          "dist/arbogast-${PROJECT_VERSION}.tar.gz.publish.attestation"
+
+  publish-pypi:
+    name: Publish exact pair to production PyPI
+    if: ${{ inputs.target == 'pypi' }}
+    needs: validate
+    runs-on: ubuntu-latest
+    environment:
+      name: pypi
+      url: https://pypi.org/project/arbogast/${{ inputs.version }}/
+    permissions:
+      id-token: write
+
+    steps:
+      - name: Install pinned uv
+        uses: astral-sh/setup-uv@c771a70e6277c0a99b617c7a806ffedaca235ff9 # v9.0.0
+        with:
+          version: "0.12.3"
+          enable-cache: false
+
+      - name: Download the validated pair
+        uses: actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c # v8.0.1
+        with:
+          name: pypi-distributions-${{ github.run_id }}-${{ github.run_attempt }}
+          path: dist
+
+      - name: Recheck exact custody at the credential boundary
+        env:
+          PROJECT_VERSION: ${{ inputs.version }}
+          WHEEL_SHA256: ${{ inputs.wheel_sha256 }}
+          SDIST_SHA256: ${{ inputs.sdist_sha256 }}
+        run: |
+          set -euo pipefail
+          wheel="dist/arbogast-${PROJECT_VERSION}-py3-none-any.whl"
+          sdist="dist/arbogast-${PROJECT_VERSION}.tar.gz"
+          [[ "$(find dist -mindepth 1 -maxdepth 1 | wc -l | tr -d ' ')" == "2" ]]
+          [[ -f "${wheel}" && ! -L "${wheel}" ]]
+          [[ -f "${sdist}" && ! -L "${sdist}" ]]
+          echo "${WHEEL_SHA256}  dist/arbogast-${PROJECT_VERSION}-py3-none-any.whl" \
+            | sha256sum --check --strict
+          echo "${SDIST_SHA256}  dist/arbogast-${PROJECT_VERSION}.tar.gz" \
+            | sha256sum --check --strict
+
+      - name: Revalidate the current public release after environment approval
+        env:
+          RELEASE_TAG: ${{ inputs.tag }}
+          PROJECT_VERSION: ${{ inputs.version }}
+          SOURCE_COMMIT: ${{ inputs.source_commit }}
+          WHEEL_SHA256: ${{ inputs.wheel_sha256 }}
+          SDIST_SHA256: ${{ inputs.sdist_sha256 }}
+        run: |
+          set -euo pipefail
+          [[ "${PROJECT_VERSION}" =~ ^[0-9]+\.[0-9]+\.[0-9]+$ ]]
+          [[ "${RELEASE_TAG}" == "v${PROJECT_VERSION}" ]]
+          [[ "${SOURCE_COMMIT}" =~ ^[0-9a-f]{40}$ ]]
+          [[ "${WHEEL_SHA256}" =~ ^[0-9a-f]{64}$ ]]
+          [[ "${SDIST_SHA256}" =~ ^[0-9a-f]{64}$ ]]
+
+          release_json="$(curl --fail --location --silent --show-error \
+            --proto '=https' --tlsv1.2 \
+            "https://api.github.com/repos/${GITHUB_REPOSITORY}/releases/tags/${RELEASE_TAG}")"
+          jq --exit-status \
+            --arg tag "${RELEASE_TAG}" \
+            --arg commit "${SOURCE_COMMIT}" \
+            '.tag_name == $tag and .target_commitish == $commit and
+             (.draft | not) and (.prerelease | not)' \
+            <<<"${release_json}"
+
+          compare_json="$(curl --fail --location --silent --show-error \
+            --proto '=https' --tlsv1.2 \
+            "https://api.github.com/repos/${GITHUB_REPOSITORY}/compare/${SOURCE_COMMIT}...main")"
+          jq --exit-status '.status == "ahead" or .status == "identical"' \
+            <<<"${compare_json}"
+
+          tag_refs="$(git ls-remote --tags \
+            "https://github.com/${GITHUB_REPOSITORY}.git" \
+            "refs/tags/${RELEASE_TAG}" "refs/tags/${RELEASE_TAG}^{}")"
+          direct="$(awk '$2 !~ /\^\{\}$/ {print $1}' <<<"${tag_refs}")"
+          peeled="$(awk '$2 ~ /\^\{\}$/ {print $1}' <<<"${tag_refs}")"
+          resolved="${peeled:-${direct}}"
+          [[ "${resolved}" == "${SOURCE_COMMIT}" ]]
+
+          mkdir current-release
+          base_url="https://github.com/${GITHUB_REPOSITORY}/releases/download/${RELEASE_TAG}"
+          curl --fail --location --silent --show-error --proto '=https' --tlsv1.2 \
+            --output "current-release/arbogast-${PROJECT_VERSION}-py3-none-any.whl" \
+            "${base_url}/arbogast-${PROJECT_VERSION}-py3-none-any.whl"
+          curl --fail --location --silent --show-error --proto '=https' --tlsv1.2 \
+            --output "current-release/arbogast-${PROJECT_VERSION}.tar.gz" \
+            "${base_url}/arbogast-${PROJECT_VERSION}.tar.gz"
+          echo "${WHEEL_SHA256}  current-release/arbogast-${PROJECT_VERSION}-py3-none-any.whl" \
+            | sha256sum --check --strict
+          echo "${SDIST_SHA256}  current-release/arbogast-${PROJECT_VERSION}.tar.gz" \
+            | sha256sum --check --strict
+          cmp --silent \
+            "dist/arbogast-${PROJECT_VERSION}-py3-none-any.whl" \
+            "current-release/arbogast-${PROJECT_VERSION}-py3-none-any.whl"
+          cmp --silent \
+            "dist/arbogast-${PROJECT_VERSION}.tar.gz" \
+            "current-release/arbogast-${PROJECT_VERSION}.tar.gz"
+
+      - name: Generate PEP 740 attestations
+        uses: astral-sh/attest-action@f589a42a7efb6fe400b4f400de60b4bc90390027 # v0.0.6
+        with:
+          paths: |
+            dist/arbogast-${{ inputs.version }}-py3-none-any.whl
+            dist/arbogast-${{ inputs.version }}.tar.gz
+
+      - name: Recheck exact files and hashes after attestation
+        env:
+          PROJECT_VERSION: ${{ inputs.version }}
+          WHEEL_SHA256: ${{ inputs.wheel_sha256 }}
+          SDIST_SHA256: ${{ inputs.sdist_sha256 }}
+        run: |
+          set -euo pipefail
+          wheel="dist/arbogast-${PROJECT_VERSION}-py3-none-any.whl"
+          sdist="dist/arbogast-${PROJECT_VERSION}.tar.gz"
+          wheel_attestation="${wheel}.publish.attestation"
+          sdist_attestation="${sdist}.publish.attestation"
+          [[ "$(find dist -mindepth 1 -maxdepth 1 | wc -l | tr -d ' ')" == "4" ]]
+          [[ -f "${wheel}" && ! -L "${wheel}" ]]
+          [[ -f "${sdist}" && ! -L "${sdist}" ]]
+          [[ -f "${wheel_attestation}" && ! -L "${wheel_attestation}" ]]
+          [[ -f "${sdist_attestation}" && ! -L "${sdist_attestation}" ]]
+          echo "${WHEEL_SHA256}  dist/arbogast-${PROJECT_VERSION}-py3-none-any.whl" \
+            | sha256sum --check --strict
+          echo "${SDIST_SHA256}  dist/arbogast-${PROJECT_VERSION}.tar.gz" \
+            | sha256sum --check --strict
+
+      - name: Publish only the exact pair
+        env:
+          PROJECT_VERSION: ${{ inputs.version }}
+        run: >-
+          uv publish --trusted-publishing always
+          --publish-url https://upload.pypi.org/legacy/
+          --check-url https://pypi.org/simple/
+          "dist/arbogast-${PROJECT_VERSION}-py3-none-any.whl"
+          "dist/arbogast-${PROJECT_VERSION}-py3-none-any.whl.publish.attestation"
+          "dist/arbogast-${PROJECT_VERSION}.tar.gz"
+          "dist/arbogast-${PROJECT_VERSION}.tar.gz.publish.attestation"
