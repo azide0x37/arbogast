@@ -4,6 +4,21 @@ PyPI publication promotes the same qualified Python distributions that were appr
 published on the corresponding GitHub release. It never rebuilds a package under an existing
 version and never uploads the Git source archive or qualification report.
 
+## Current production state
+
+[Arbogast 0.6.0](https://pypi.org/project/arbogast/0.6.0/) is live on production PyPI. The
+[publication workflow](https://github.com/azide0x37/arbogast/actions/runs/33454286390) uploaded
+exactly the approved wheel and Python source distribution through the protected `pypi`
+environment. Independent registry downloads matched the approved bytes, both PEP 740 provenance
+records passed the pinned official verifier, and isolated installs from both distributions
+reported `0.6.0`.
+
+Consumers can now add the current public release directly from the default Python registry:
+
+```bash
+uv add arbogast
+```
+
 ## Trust and approval boundary
 
 The manual `.github/workflows/publish-pypi.yml` workflow accepts an exact final tag, version,
@@ -35,8 +50,8 @@ prevention as a further separation-of-duties control.
 
 ## One-time registry setup
 
-The PyPI and TestPyPI accounts and Trusted Publisher configurations are separate. Before the
-first upload, register pending publishers with these exact values:
+The initial PyPI and TestPyPI Trusted Publisher setup is complete. The accounts and configurations
+remain separate; use these exact values when auditing or deliberately recreating either publisher:
 
 | Field | TestPyPI | PyPI |
 | --- | --- | --- |
@@ -46,15 +61,15 @@ first upload, register pending publishers with these exact values:
 | Workflow | `publish-pypi.yml` | `publish-pypi.yml` |
 | Environment | `testpypi` | `pypi` |
 
-A pending publisher does not reserve the project name. Only a successful production upload
-creates the PyPI project and claims its normalized name.
+A pending publisher does not reserve a project name. The successful production 0.6.0 upload
+created the `arbogast` PyPI project and claimed its normalized name.
 
 ## Dispatch inputs for v0.6.0
 
-The exact approved inputs are:
+The exact approved and completed inputs were:
 
 ```text
-target: testpypi (first), then pypi only after separate approval
+target: testpypi first, then pypi after separate approval
 tag: v0.6.0
 version: 0.6.0
 source_commit: 893af39a7b826728793ba3f3b7b5a5f5bc5a8e7c
@@ -77,13 +92,13 @@ files into a new directory, compare their bytes with the approved GitHub assets,
 for the publication path; it does not authorize or imply the production upload.
 
 The byte-custody verifier performs the JSON, host, redirect, file-set, metadata, bounded-download,
-and byte-comparison checks. For v0.6.0 on TestPyPI, run it against the separately retained approved
-pair. Set `approved_dir` to that pair's directory and `verified_dir` to a fresh destination; the
-destination must not already exist:
+and byte-comparison checks. For v0.6.0 on production PyPI, run it against the separately retained
+approved pair. Set `approved_dir` to that pair's directory and `verified_dir` to a fresh
+destination; the destination must not already exist:
 
 ```bash
 uv run --no-project python scripts/verify_pypi_registry.py \
-  --target testpypi \
+  --target pypi \
   --project arbogast \
   --version 0.6.0 \
   --wheel-filename arbogast-0.6.0-py3-none-any.whl \
@@ -98,8 +113,7 @@ uv run --no-project python scripts/verify_pypi_registry.py \
 ```
 
 Legacy version JSON does not expose PEP 740 provenance, so verify it separately through the
-Integrity API and the pinned official verifier. TestPyPI uses the production Sigstore trust root;
-do not pass `--staging`:
+Integrity API and the pinned official verifier:
 
 ```bash
 for filename in \
@@ -109,14 +123,14 @@ do
   curl --fail --location --silent --show-error \
     -H 'Accept: application/vnd.pypi.integrity.v1+json' \
     --output "${verified_dir}/${filename}.provenance" \
-    "https://test.pypi.org/integrity/arbogast/0.6.0/${filename}/provenance"
+    "https://pypi.org/integrity/arbogast/0.6.0/${filename}/provenance"
   jq --exit-status '
     .version == 1 and (.attestation_bundles | length) == 1 and
     all(.attestation_bundles[];
       .publisher.kind == "GitHub" and
       .publisher.repository == "azide0x37/arbogast" and
       .publisher.workflow == "publish-pypi.yml" and
-      .publisher.environment == "testpypi")
+      .publisher.environment == "pypi")
   ' "${verified_dir}/${filename}.provenance"
   uvx --from pypi-attestations==0.0.30 \
     pypi-attestations verify pypi \
@@ -126,8 +140,9 @@ do
 done
 ```
 
-For production, change the verifier target and hosts to `pypi`, and require publisher environment
-`pypi` instead of `testpypi`.
+For TestPyPI, change the registry and Integrity API hosts to `test.pypi.org`, use verifier target
+`testpypi`, and require publisher environment `testpypi`. TestPyPI uses the production Sigstore
+trust root, so do not pass `--staging`.
 
 PyPI filenames are immutable. A changed file requires a new package version. Yanking or deleting
 a release does not authorize reusing its version or filename.

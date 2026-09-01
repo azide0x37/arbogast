@@ -51,6 +51,8 @@ arb = "arbogast.cli:main"
 Homepage = "https://github.com/azide0x37/arbogast"
 Repository = "https://github.com/azide0x37/arbogast"
 Issues = "https://github.com/azide0x37/arbogast/issues"
+Documentation = "https://github.com/azide0x37/arbogast/tree/main/docs"
+Changelog = "https://github.com/azide0x37/arbogast/blob/main/CHANGELOG.md"
 
 [tool.hatch.build]
 exclude = ["/.git"]

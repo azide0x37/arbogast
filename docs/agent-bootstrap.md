@@ -39,9 +39,10 @@ Capture enough identity to distinguish one environment subject from another:
 - campaign, plan, operation-registry, verifier-registry, executor, and artifact-store identities;
 - backend names, versions, probe evidence, and whether each capability is required or optional.
 
-A Git tag is a useful human pin. The resolved commit and locked distribution identity provide
-the finite subject that the readiness certificate actually binds. Do not invent a commit or
-artifact hash before it exists; capture the value from the resolved installation.
+A release version or Git tag is a useful human pin. The resolved registry distribution or source
+commit and locked distribution identity provide the finite subject that the readiness certificate
+actually binds. Do not invent a commit or artifact hash before it exists; capture the value from
+the resolved installation.
 
 ## Provision before diagnosing
 
@@ -53,7 +54,7 @@ Arbogast itself supports Python 3.11 through 3.14.
 uv python install 3.13
 uv init --package --python 3.13 my-campaign
 cd my-campaign
-uv add "arbogast @ git+https://github.com/azide0x37/arbogast.git@v0.6.0"
+uv add "arbogast==0.6.0"
 uv lock
 uv sync --frozen
 ```

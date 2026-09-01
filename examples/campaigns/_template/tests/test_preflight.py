@@ -16,9 +16,7 @@ from campaign_name.specification import OPERATION, VERIFIER  # noqa: E402
 
 def test_preflight_binds_release_registries_and_artifact_custody(tmp_path: Path) -> None:
     project = tomllib.loads((TEMPLATE_ROOT / "pyproject.toml").read_text(encoding="utf-8"))
-    assert project["project"]["dependencies"] == [
-        "arbogast @ git+https://github.com/azide0x37/arbogast.git@v0.6.0"
-    ]
+    assert project["project"]["dependencies"] == ["arbogast==0.6.0"]
     assert arbogast.__version__ == "0.6.0"
     assert (TEMPLATE_ROOT / ".python-version").read_text(encoding="utf-8").strip() == "3.13"
     readme = (TEMPLATE_ROOT / "README.md").read_text(encoding="utf-8")
