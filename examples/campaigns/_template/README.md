@@ -11,8 +11,9 @@ the bootstrap gate passes.
 
 ## Provision the pinned release
 
-The dependency is pinned to the Arbogast `v0.6.0` Git tag. The generated `uv.lock` records the
-resolved commit; preserve its hash with the readiness evidence.
+The dependency is pinned to the production PyPI distribution `arbogast==0.6.0`. The generated
+`uv.lock` records the resolved registry artifacts and hashes; preserve its hash with the readiness
+evidence.
 
 ```bash
 uv python install 3.13

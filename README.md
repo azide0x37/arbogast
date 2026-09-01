@@ -1,5 +1,5 @@
 <p align="center">
-  <img src="assets/arbogast-wordmark.png" alt="Arbogast" width="720">
+  <img src="https://raw.githubusercontent.com/azide0x37/arbogast/main/assets/arbogast-wordmark.png" alt="Arbogast" width="720">
 </p>
 
 <p align="center">
@@ -12,6 +12,9 @@
 > was no answer. No force known to humanity could do what had just been done.
 
 <p align="center">
+  <a href="https://pypi.org/project/arbogast/"><img
+    src="https://img.shields.io/pypi/v/arbogast.svg"
+    alt="PyPI release"></a>
   <a href="https://github.com/azide0x37/arbogast/actions/workflows/ci.yml"><img
     src="https://github.com/azide0x37/arbogast/actions/workflows/ci.yml/badge.svg"
     alt="CI"></a>
@@ -24,6 +27,12 @@ Arbogast is for computations that are finite enough to check, large enough to di
 and delicate enough that “the script returned this” is not an acceptable proof boundary.
 It keeps exact computations, validated numerical evidence, imported facts, deductions, and
 conjectures separate, then joins them in a machine-readable **claim graph**.
+
+Install the current public release from [PyPI](https://pypi.org/project/arbogast/):
+
+```bash
+uv add arbogast
+```
 
 ```text
 mathematical input
@@ -75,9 +84,12 @@ Before editing campaign code or spawning subagents:
 4. record the readiness theorem in the campaign claim graph; and
 5. dispatch only tasks covered by the active readiness claim.
 
-Start with the [AI agent bootstrap guide](docs/agent-bootstrap.md), copy the
-[campaign bootstrap prompt](prompts/campaign-bootstrap.md), or use the
-[blank campaign template](examples/campaigns/_template/README.md).
+Start with the
+[AI agent bootstrap guide](https://github.com/azide0x37/arbogast/blob/main/docs/agent-bootstrap.md),
+copy the
+[campaign bootstrap prompt](https://github.com/azide0x37/arbogast/blob/main/prompts/campaign-bootstrap.md),
+or use the
+[blank campaign template](https://github.com/azide0x37/arbogast/tree/main/examples/campaigns/_template).
 
 ## The motivating workflow: Antieau, Klüners, and Malle
 
@@ -149,7 +161,7 @@ or host crash recovery. The release does not claim built-in SSH deployment, Slur
 cloud provisioning, remote license handling, or workstation reconstruction. Reproducibility
 means another machine can recover the same canonical claim and verify its evidence; it need not
 recreate the original workstation or repeat an expensive discovery schedule. See
-[Research campaigns](docs/research-campaigns.md).
+[Research campaigns](https://github.com/azide0x37/arbogast/blob/main/docs/research-campaigns.md).
 
 ## Certified arithmetic in 0.2
 
@@ -176,7 +188,9 @@ implicit `polredbest` identifications do not cross the boundary.
 Substantial arithmetic results provide `verify()`, `certificate`, `claim()`, and `claim_graph()`.
 Their versioned proving receipt is nested inside the existing central
 `VerificationCertificate`; 0.1 claim and certificate schemas remain valid and replayable.
-Read [Certified arithmetic](docs/certified-arithmetic.md) for the complete theorem and trust
+Read
+[Certified arithmetic](https://github.com/azide0x37/arbogast/blob/main/docs/certified-arithmetic.md)
+for the complete theorem and trust
 boundary.
 
 ## Certified deformation in 0.3
@@ -197,7 +211,8 @@ Every substantial result within the portable receipt limits retains the establis
 `certificate`, `claim()`, and `claim_graph()` boundary. The 0.3 operations are intentionally
 non-shardable: the implemented problems are small globally coupled finite linear systems, and
 splitting them would not create independently meaningful proof tasks. Read
-[Certified deformation](docs/deformation.md) for the exact limits, supported inputs, and
+[Certified deformation](https://github.com/azide0x37/arbogast/blob/main/docs/deformation.md) for
+the exact limits, supported inputs, and
 deferrals.
 
 ## Certified numeric-to-exact bridge in 0.4
@@ -232,7 +247,9 @@ different cover, word, endpoint, or action is rejected as invalid input.
 
 Numeric operations return typed unknown or unsupported outcomes when precision, witness data, or
 scope is insufficient. The portable surface requires no external numerical backend and exposes no
-generic evaluator. Read [Certified numeric-to-exact bridge](docs/numeric.md) for the complete
+generic evaluator. Read
+[Certified numeric-to-exact bridge](https://github.com/azide0x37/arbogast/blob/main/docs/numeric.md)
+for the complete
 boundary and the three runnable journeys.
 
 ## Certified bounded p-adic arithmetic
@@ -260,7 +277,9 @@ The public four-point M23 dataset therefore returns `Unsupported` at the automat
 boundary. Supplying an independently certified local factorization fragment returns `Partial`
 with explicit obligations rather than a global model. All p-adic operations are non-shardable and
 use exactly the portable verifier families `padic.finite-exact.v1` and
-`padic.three-point-exact.v1`. Read [Certified bounded p-adic arithmetic](docs/padic.md) for the
+`padic.three-point-exact.v1`. Read
+[Certified bounded p-adic arithmetic](https://github.com/azide0x37/arbogast/blob/main/docs/padic.md)
+for the
 complete supported slices and deferrals.
 
 ## What 0.1.0 is—and is not
@@ -287,15 +306,18 @@ implemented in 0.1.0:
 - **frame** choices so automorphisms and conventions cannot silently move the problem;
 - **certify** the result in a compact, independently checkable form.
 
-See [the theorem boundary](docs/theorem-boundaries.md) for the exact epistemic contract.
+See
+[the theorem boundary](https://github.com/azide0x37/arbogast/blob/main/docs/theorem-boundaries.md)
+for the exact epistemic contract.
 
 ## Installation and contributor checkout
 
-Arbogast 0.6.0 supports Python 3.11 through 3.14. Pin the exact GitHub source tag with
-[uv](https://docs.astral.sh/uv/):
+Arbogast 0.6.0 supports Python 3.11 through 3.14. For a reproducible campaign, pin the production
+PyPI release with [uv](https://docs.astral.sh/uv/); `uv.lock` then records the exact resolved
+distribution artifacts and hashes:
 
 ```bash
-uv add "arbogast @ git+https://github.com/azide0x37/arbogast.git@v0.6.0"
+uv add "arbogast==0.6.0"
 ```
 
 For a contributor checkout:
@@ -315,11 +337,13 @@ discovery adapters, the closed operation-specific PARI arithmetic adapter, the p
 finite-exact deformation layer, the backend-free validated numeric-to-exact bridge, and bounded
 finite-precision p-adic arithmetic with portable exact replay. The PARI path keeps explicit
 portable-versus-pinned verification
-requirements; see [Optional backends](docs/optional-backends.md),
-[Certified arithmetic](docs/certified-arithmetic.md), and
-[Certified deformation](docs/deformation.md), and
-[Certified numeric-to-exact bridge](docs/numeric.md), and
-[Certified bounded p-adic arithmetic](docs/padic.md).
+requirements; see
+[Optional backends](https://github.com/azide0x37/arbogast/blob/main/docs/optional-backends.md),
+[Certified arithmetic](https://github.com/azide0x37/arbogast/blob/main/docs/certified-arithmetic.md),
+[Certified deformation](https://github.com/azide0x37/arbogast/blob/main/docs/deformation.md),
+[Certified numeric-to-exact bridge](https://github.com/azide0x37/arbogast/blob/main/docs/numeric.md),
+and
+[Certified bounded p-adic arithmetic](https://github.com/azide0x37/arbogast/blob/main/docs/padic.md).
 
 ## Thirty-second tour
 
@@ -396,7 +420,9 @@ uv run arbogast proof-gap claim-graph.json --claim claim.id
 that claim's canonical digest; it describes formalization work without changing mathematical
 status. Ad-hoc JSON with an `obligations` field is rejected.
 
-Read [Claims and certificates](docs/certificates-and-claims.md) for the schema and trust
+Read
+[Claims and certificates](https://github.com/azide0x37/arbogast/blob/main/docs/certificates-and-claims.md)
+for the schema and trust
 boundary.
 
 ## CLI
@@ -471,19 +497,21 @@ The public surface is organized by mathematical layer:
 | `arbogast.agent` | Bounded operation contexts, module manifests, hazards, capability routes, and a declared code DAG |
 | `arbogast.export` | Stable JSON, agent, paper, and Lean-facing representations |
 
-For architecture and dependency direction, see [Architecture](docs/architecture.md).
+For architecture and dependency direction, see
+[Architecture](https://github.com/azide0x37/arbogast/blob/main/docs/architecture.md).
 
 ## Runnable examples
 
 ### Exact group cohomology
 
-[`examples/group_cohomology/cyclic_action_h1.py`](examples/group_cohomology/cyclic_action_h1.py)
+[`examples/group_cohomology/cyclic_action_h1.py`](https://github.com/azide0x37/arbogast/blob/main/examples/group_cohomology/cyclic_action_h1.py)
 is the sub-second hello world. It constructs a cyclic action over \(\mathbf F_{11}\), computes
 \(H^1\), exposes explicit representatives and quotient data, and verifies the result.
 
 ### An exact M23 real-component certificate
 
-[`examples/hurwitz/m23_real_component/`](examples/hurwitz/m23_real_component/) is the flagship
+[`examples/hurwitz/m23_real_component/`](https://github.com/azide0x37/arbogast/tree/main/examples/hurwitz/m23_real_component)
+is the flagship
 finite certificate. A checked-in witness dataset exhausts 7,114 product-one inner orbits for the
 passport \((2A,3A,6A,2A)\): exactly 1,428 generate the pinned M23 and the other 5,686 are
 intransitive. Six standard pure-braid generators act transitively on the generating class.
@@ -503,14 +531,14 @@ not part of the verifier's trusted base.
 
 ### Prove without search
 
-[`examples/certificates/prove_without_search/`](examples/certificates/prove_without_search/)
+[`examples/certificates/prove_without_search/`](https://github.com/azide0x37/arbogast/tree/main/examples/certificates/prove_without_search)
 contains two programs. `discover.py` searches for a witness and writes a certificate.
 `verify.py` intentionally knows nothing about the search strategy and checks only the emitted
 finite evidence. This is the core design in miniature.
 
 ### A local research campaign
 
-[`examples/campaigns/antieau_klueners_malle/`](examples/campaigns/antieau_klueners_malle/)
+[`examples/campaigns/antieau_klueners_malle/`](https://github.com/azide0x37/arbogast/tree/main/examples/campaigns/antieau_klueners_malle)
 runs a small deterministic local analogue of the motivating workflow. It records imported prior
 work, a persisted plan, capability matching, attempt states, a canonical target-scoped candidate,
 and an explicit terminal state in an authoritative ledger. The imported statement starts in the
@@ -524,21 +552,27 @@ contact the Klüners--Malle database or a remote scheduler at runtime.
 The 0.2 examples are finite, deterministic, and safe to run without GP. Where PARI can discover
 the same data, the portable lane replays the normalized witness rather than rerunning discovery.
 
-- [`aim_a_cocycle`](examples/arithmetic/aim_a_cocycle/) verifies both a solved affine family and
+- [`aim_a_cocycle`](https://github.com/azide0x37/arbogast/tree/main/examples/arithmetic/aim_a_cocycle)
+  verifies both a solved affine family and
   an inconsistent target with a literal left-nullspace separator, then combines both claims in a
   claim graph.
-- [`inflation_restriction`](examples/arithmetic/inflation_restriction/) checks the five-term
+- [`inflation_restriction`](https://github.com/azide0x37/arbogast/tree/main/examples/arithmetic/inflation_restriction)
+  checks the five-term
   sequence for the nonsplit extension \(C_2\to C_4\to C_2\), including transgression and exactness.
-- [`q_kummer_selmer`](examples/arithmetic/q_kummer_selmer/) certifies
+- [`q_kummer_selmer`](https://github.com/azide0x37/arbogast/tree/main/examples/arithmetic/q_kummer_selmer)
+  certifies
   \(\mathbf Q(\{2,\infty\},2)=\langle[-1],[2]\rangle\), its real and \(2\)-adic localizations,
   and a one-dimensional complete local-condition kernel.
-- [`quadratic_field`](examples/arithmetic/quadratic_field/) keeps the pinned presentation
+- [`quadratic_field`](https://github.com/azide0x37/arbogast/tree/main/examples/arithmetic/quadratic_field)
+  keeps the pinned presentation
   \(t^2-t-1\) and verifies \(\operatorname N(t)=-1\) and \((2t-1)^2=5\).
-- [`nonabelian_twists`](examples/arithmetic/nonabelian_twists/) exhausts the pointed
+- [`nonabelian_twists`](https://github.com/azide0x37/arbogast/tree/main/examples/arithmetic/nonabelian_twists)
+  exhausts the pointed
   \(H^1(C_2,S_3)\) for the trivial action, yielding exactly the identity and transposition
   classes without pretending that the result is a vector space or a twisted model.
 - The additive
-  [`local_global.py`](examples/campaigns/antieau_klueners_malle/local_global.py) campaign runs
+  [`local_global.py`](https://github.com/azide0x37/arbogast/blob/main/examples/campaigns/antieau_klueners_malle/local_global.py)
+  campaign runs
   cheap local obstruction tasks before provenance-driven global aiming. “Locally unobstructed”
   remains non-closing; failed search, timeout, and missing capabilities remain `Unknown`.
 
@@ -547,10 +581,12 @@ the same data, the portable lane replays the normalized witness rather than reru
 The 0.3 development examples are portable finite computations and require no external algebra
 backend.
 
-- [`exact_spaces`](examples/deformation/exact_spaces/) constructs a three-term deformation
+- [`exact_spaces`](https://github.com/azide0x37/arbogast/tree/main/examples/deformation/exact_spaces)
+  constructs a three-term deformation
   complex, verifies its gauge, tangent, and obstruction spaces, then checks framing,
   equivariance, invariant deformations, rigidity, and the resulting claim graphs.
-- [`finite_lifts`](examples/deformation/finite_lifts/) exercises a solved affine lift family, a
+- [`finite_lifts`](https://github.com/azide0x37/arbogast/tree/main/examples/deformation/finite_lifts)
+  exercises a solved affine lift family, a
   literal obstruction, separate unique and non-unique outcomes, and a fixed lift backed by an
   explicit contraction certificate.
 
@@ -558,15 +594,18 @@ backend.
 
 The 0.4 examples are portable and require no external numerical or algebra backend.
 
-- [`two_sheet_cover`](examples/numeric/two_sheet_cover/) validates the two finite branch points of
+- [`two_sheet_cover`](https://github.com/azide0x37/arbogast/tree/main/examples/numeric/two_sheet_cover)
+  validates the two finite branch points of
   the cover \(x^2-t(t-1)\), replays separated sheet continuations, recovers the branch cycles, and
   binds them to one exact Nielsen vertex. It then proves the supported normalized quadratic
   \(B_2\) generator homotopy while retaining absent-witness and general-word continuations as
   `NumericUnknown`.
-- [`sqrt2_exactification`](examples/numeric/sqrt2_exactification/) keeps bounded recognition
+- [`sqrt2_exactification`](https://github.com/azide0x37/arbogast/tree/main/examples/numeric/sqrt2_exactification)
+  keeps bounded recognition
   separate from exact polynomial substitution, retains the ambiguous branch as `NumericUnknown`,
   and rejects a damaged receipt.
-- [`weighted_braid_plan`](examples/numeric/weighted_braid_plan/) proves exact cost optimality in a
+- [`weighted_braid_plan`](https://github.com/azide0x37/arbogast/tree/main/examples/numeric/weighted_braid_plan)
+  proves exact cost optimality in a
   supplied finite action while showing that the selected word alone authorizes neither a numerical
   endpoint nor an exact cover target.
 
@@ -574,19 +613,24 @@ The 0.4 examples are portable and require no external numerical or algebra backe
 
 The five 0.5 p-adic examples are portable finite replays and require no external p-adic backend.
 
-- [`frobenius_slopes`](examples/padic/frobenius_slopes/) certifies a supplied semilinear Frobenius
+- [`frobenius_slopes`](https://github.com/azide0x37/arbogast/tree/main/examples/padic/frobenius_slopes)
+  certifies a supplied semilinear Frobenius
   operator under the arithmetic convention and its Newton multiplicities, then keeps the ordinary
   summand `Unknown` until an exact saturated projector is supplied.
-- [`three_point_good_reduction`](examples/padic/three_point_good_reduction/) certifies the displayed
+- [`three_point_good_reduction`](https://github.com/azide0x37/arbogast/tree/main/examples/padic/three_point_good_reduction)
+  certifies the displayed
   tame beta model at \(p=5\) as good; that one-component good model also supplies the displayed
   semistable and stable results without general stable-model discovery. Other primes remain
   `Unsupported` rather than proofs of bad reduction.
-- [`special_deformation_datum`](examples/padic/special_deformation_datum/) separates certified
+- [`special_deformation_datum`](https://github.com/azide0x37/arbogast/tree/main/examples/padic/special_deformation_datum)
+  separates certified
   componentwise formal identities from an unproved geometric Wewers extraction.
-- [`lifts_rigid_descent`](examples/padic/lifts_rigid_descent/) exhausts one pinned chart, rejects a
+- [`lifts_rigid_descent`](https://github.com/azide0x37/arbogast/tree/main/examples/padic/lifts_rigid_descent)
+  exhausts one pinned chart, rejects a
   label-only action, computes fixed classes, and closes only the rigid pinned
   \(\mathbf F_p\)-chart descent witnessed by exact coefficients and two-sided base change.
-- [`m23_local_frontier`](examples/padic/m23_local_frontier/) keeps the public four-point M23 request
+- [`m23_local_frontier`](https://github.com/azide0x37/arbogast/tree/main/examples/padic/m23_local_frontier)
+  keeps the public four-point M23 request
   `Unsupported` and a separate exact mod-23 factorization `Partial` with four open obligations.
 
 ## Reproducibility and theorem boundaries
@@ -612,7 +656,7 @@ source/input → canonical object → discovery receipt → verification certifi
 - Backend discovery does not make the backend part of the verifier's trusted base.
 
 The conventions that make certificates portable are recorded in
-[Mathematical conventions](docs/mathematical-conventions.md).
+[Mathematical conventions](https://github.com/azide0x37/arbogast/blob/main/docs/mathematical-conventions.md).
 
 ## Agents, papers, and Lean
 
@@ -637,7 +681,8 @@ only when the conclusion and every hypothesis supply explicit Lean renderings; e
 retain those hypotheses as implications. It does not invoke Lean, translate
 arbitrary matrix or orbit certificates, or claim that an axiom has been proved. Rich finite
 witness bridges—such as rank witnesses, orbit trees, and completeness partitions—remain explicit
-future work. See [Agent and Lean exports](docs/agent-and-lean-exports.md).
+future work. See
+[Agent and Lean exports](https://github.com/azide0x37/arbogast/blob/main/docs/agent-and-lean-exports.md).
 
 ## Development
 
@@ -655,7 +700,7 @@ CI runs lint, formatting, strict typing, the complete test suite, and core examp
 Python 3.11, 3.12, 3.13, and 3.14. A separate Python 3.11 release lane installs the exact wheel and
 sdist and runs every packaged example; pinned PARI lanes replay that same candidate trio with GP.
 Contributions must preserve deterministic serialization and theorem boundaries; start with
-[CONTRIBUTING.md](CONTRIBUTING.md).
+[CONTRIBUTING.md](https://github.com/azide0x37/arbogast/blob/main/CONTRIBUTING.md).
 
 ## License boundary
 
@@ -667,7 +712,10 @@ additional permission.
 
 Arbogast 0.6.0 is alpha research software. Certificate verification is intended to be small
 and inspectable, but users remain responsible for auditing the hypotheses and imported facts
-of any theorem they rely on. See [SECURITY.md](SECURITY.md) for reporting integrity or
-parser issues and [CITATION.cff](CITATION.cff) for citation metadata.
+of any theorem they rely on. See
+[SECURITY.md](https://github.com/azide0x37/arbogast/blob/main/SECURITY.md) for reporting integrity
+or parser issues and
+[CITATION.cff](https://github.com/azide0x37/arbogast/blob/main/CITATION.cff) for citation metadata.
 
-Release history is in [CHANGELOG.md](CHANGELOG.md).
+Release history is in
+[CHANGELOG.md](https://github.com/azide0x37/arbogast/blob/main/CHANGELOG.md).

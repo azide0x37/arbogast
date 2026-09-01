@@ -8,7 +8,7 @@ version = "0.1.0"
 description = "A certificate-first Arbogast research campaign"
 requires-python = ">=3.11,<3.15"
 dependencies = [
-  "arbogast @ git+https://github.com/azide0x37/arbogast.git@v0.6.0",
+  "arbogast==0.6.0",
 ]
 
 [project.scripts]

@@ -6,6 +6,12 @@ All notable changes to Arbogast are documented here. The project follows
 
 ## [Unreleased]
 
+### Changed
+
+- Public installation guidance now uses the production PyPI package, the campaign template pins
+  `arbogast==0.6.0` from the registry, and the package README uses index-safe absolute links.
+- Package metadata now advertises the canonical documentation and changelog locations.
+
 ## [0.6.0] - 2026-08-31
 
 ### Added
